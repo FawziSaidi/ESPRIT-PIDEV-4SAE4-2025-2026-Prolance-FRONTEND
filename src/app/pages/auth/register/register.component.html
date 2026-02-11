@@ -1,0 +1,136 @@
+<!-- ========== REGISTER PAGE ========== -->
+<div class="auth-wrapper">
+  <div class="auth-overlay"></div>
+
+  <div class="auth-container">
+    <div class="card auth-card">
+      <div class="card-header card-header-icon card-header-primary text-center">
+        <div class="card-icon">
+          <i class="material-icons">person_add</i>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <h3 class="auth-title">Join Prolance</h3>
+        <p class="auth-subtitle text-muted">Create your free account in seconds</p>
+
+        <!-- User Type Toggle -->
+        <div class="type-toggle">
+          <button class="toggle-btn" [class.active]="userType === 'freelancer'" (click)="setUserType('freelancer')">
+            <i class="material-icons">person</i> I want to Work
+          </button>
+          <button class="toggle-btn" [class.active]="userType === 'recruiter'" (click)="setUserType('recruiter')">
+            <i class="material-icons">business_center</i> I want to Hire
+          </button>
+        </div>
+
+        <!-- Social Register -->
+        <div class="social-login">
+          <button class="btn btn-just-icon btn-round btn-google" (click)="socialRegister('google')" [disabled]="isLoading">
+            <i class="fa fa-google"></i>
+          </button>
+          <button class="btn btn-just-icon btn-round btn-github" (click)="socialRegister('github')" [disabled]="isLoading">
+            <i class="fa fa-github"></i>
+          </button>
+        </div>
+        <div class="divider">
+          <span>or register with email</span>
+        </div>
+
+        <!-- Register Form -->
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+          <div class="form-group bmd-form-group"
+               [class.has-success]="registerForm.get('fullName')?.valid && registerForm.get('fullName')?.touched"
+               [class.has-danger]="registerForm.get('fullName')?.invalid && registerForm.get('fullName')?.touched">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="material-icons">face</i></span>
+              </div>
+              <input type="text" class="form-control" placeholder="Full Name" formControlName="fullName">
+            </div>
+            <small class="text-danger" *ngIf="registerForm.get('fullName')?.hasError('required') && registerForm.get('fullName')?.touched">
+              Full name is required
+            </small>
+            <small class="text-danger" *ngIf="registerForm.get('fullName')?.hasError('minlength') && registerForm.get('fullName')?.touched">
+              Name must be at least 2 characters
+            </small>
+          </div>
+
+          <div class="form-group bmd-form-group"
+               [class.has-success]="registerForm.get('email')?.valid && registerForm.get('email')?.touched"
+               [class.has-danger]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="material-icons">email</i></span>
+              </div>
+              <input type="email" class="form-control" placeholder="Email Address" formControlName="email">
+            </div>
+            <small class="text-danger" *ngIf="registerForm.get('email')?.hasError('required') && registerForm.get('email')?.touched">
+              Email is required
+            </small>
+            <small class="text-danger" *ngIf="registerForm.get('email')?.hasError('email') && registerForm.get('email')?.touched">
+              Please enter a valid email
+            </small>
+          </div>
+
+          <div class="form-group bmd-form-group"
+               [class.has-success]="registerForm.get('password')?.valid && registerForm.get('password')?.touched"
+               [class.has-danger]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="material-icons">lock</i></span>
+              </div>
+              <input [type]="showPassword ? 'text' : 'password'" class="form-control" placeholder="Password (min. 8 characters)" formControlName="password">
+              <div class="input-group-append">
+                <span class="input-group-text toggle-password" (click)="togglePassword()">
+                  <i class="material-icons">{{ showPassword ? 'visibility_off' : 'visibility' }}</i>
+                </span>
+              </div>
+            </div>
+            <small class="text-danger" *ngIf="registerForm.get('password')?.hasError('required') && registerForm.get('password')?.touched">
+              Password is required
+            </small>
+            <small class="text-danger" *ngIf="registerForm.get('password')?.hasError('minlength') && registerForm.get('password')?.touched">
+              Password must be at least 8 characters
+            </small>
+          </div>
+
+          <div class="form-group terms-group"
+               [class.has-danger]="registerForm.get('agreeTerms')?.invalid && registerForm.get('agreeTerms')?.touched">
+            <div class="form-check">
+              <label class="form-check-label">
+                <input class="form-check-input" type="checkbox" formControlName="agreeTerms">
+                <span class="form-check-sign"><span class="check"></span></span>
+                I agree to the <a class="text-primary" href="javascript:void(0)">Terms of Service</a> and <a class="text-primary" href="javascript:void(0)">Privacy Policy</a>
+              </label>
+            </div>
+            <small class="text-danger" *ngIf="registerForm.get('agreeTerms')?.invalid && registerForm.get('agreeTerms')?.touched">
+              You must agree to the terms
+            </small>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-round btn-block btn-lg auth-submit" [disabled]="isLoading">
+            <span *ngIf="!isLoading">
+              {{ userType === 'freelancer' ? 'Create Freelancer Account' : 'Create Recruiter Account' }}
+            </span>
+            <span *ngIf="isLoading" class="spinner-wrap">
+              <i class="material-icons spinner-icon">autorenew</i> Creating account...
+            </span>
+          </button>
+        </form>
+
+        <p class="auth-switch text-center">
+          Already have an account? <a routerLink="/login" class="text-primary font-weight-bold">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Footer -->
+  <footer class="auth-footer">
+    <a class="footer-brand" routerLink="/">
+      <strong>Pro</strong>lance
+    </a>
+    <span class="footer-copy">&copy; {{ currentYear }} Prolance. All rights reserved.</span>
+  </footer>
+</div>

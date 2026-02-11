@@ -1,0 +1,104 @@
+<!-- ========== LOGIN PAGE ========== -->
+<div class="auth-wrapper">
+  <div class="auth-overlay"></div>
+
+  <div class="auth-container">
+    <div class="card auth-card">
+      <div class="card-header card-header-icon card-header-primary text-center">
+        <div class="card-icon">
+          <i class="material-icons">lock_open</i>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <h3 class="auth-title">Welcome Back</h3>
+        <p class="auth-subtitle text-muted">Sign in to your Prolance account</p>
+
+        <!-- Social Login -->
+        <div class="social-login">
+          <button class="btn btn-just-icon btn-round btn-google" (click)="socialLogin('google')" [disabled]="isLoading">
+            <i class="fa fa-google"></i>
+          </button>
+          <button class="btn btn-just-icon btn-round btn-github" (click)="socialLogin('github')" [disabled]="isLoading">
+            <i class="fa fa-github"></i>
+          </button>
+        </div>
+        <div class="divider">
+          <span>or sign in with email</span>
+        </div>
+
+        <!-- Login Form -->
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+          <div class="form-group bmd-form-group"
+               [class.has-success]="loginForm.get('email')?.valid && loginForm.get('email')?.touched"
+               [class.has-danger]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="material-icons">email</i></span>
+              </div>
+              <input type="email" class="form-control" placeholder="Email Address" formControlName="email">
+            </div>
+            <small class="text-danger" *ngIf="loginForm.get('email')?.hasError('required') && loginForm.get('email')?.touched">
+              Email is required
+            </small>
+            <small class="text-danger" *ngIf="loginForm.get('email')?.hasError('email') && loginForm.get('email')?.touched">
+              Please enter a valid email
+            </small>
+          </div>
+
+          <div class="form-group bmd-form-group"
+               [class.has-success]="loginForm.get('password')?.valid && loginForm.get('password')?.touched"
+               [class.has-danger]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="material-icons">lock</i></span>
+              </div>
+              <input [type]="showPassword ? 'text' : 'password'" class="form-control" placeholder="Password" formControlName="password">
+              <div class="input-group-append">
+                <span class="input-group-text toggle-password" (click)="togglePassword()">
+                  <i class="material-icons">{{ showPassword ? 'visibility_off' : 'visibility' }}</i>
+                </span>
+              </div>
+            </div>
+            <small class="text-danger" *ngIf="loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched">
+              Password is required
+            </small>
+            <small class="text-danger" *ngIf="loginForm.get('password')?.hasError('minlength') && loginForm.get('password')?.touched">
+              Password must be at least 6 characters
+            </small>
+          </div>
+
+          <div class="auth-options">
+            <div class="form-check">
+              <label class="form-check-label">
+                <input class="form-check-input" type="checkbox" formControlName="rememberMe">
+                <span class="form-check-sign"><span class="check"></span></span>
+                Remember Me
+              </label>
+            </div>
+            <a class="btn-link text-primary forgot-link" routerLink="/login">Forgot Password?</a>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-round btn-block btn-lg auth-submit" [disabled]="isLoading">
+            <span *ngIf="!isLoading">Sign In</span>
+            <span *ngIf="isLoading" class="spinner-wrap">
+              <i class="material-icons spinner-icon">autorenew</i> Signing in...
+            </span>
+          </button>
+        </form>
+
+        <p class="auth-switch text-center">
+          Don't have an account? <a routerLink="/register" class="text-primary font-weight-bold">Create one</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Footer -->
+  <footer class="auth-footer">
+    <a class="footer-brand" routerLink="/">
+      <strong>Pro</strong>lance
+    </a>
+    <span class="footer-copy">&copy; {{ currentYear }} Prolance. All rights reserved.</span>
+  </footer>
+</div>
