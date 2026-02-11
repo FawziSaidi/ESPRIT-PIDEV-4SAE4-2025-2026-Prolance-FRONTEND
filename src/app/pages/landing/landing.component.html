@@ -1,0 +1,521 @@
+<!-- ========== FLOATING BLOBS (depth effect) ========== -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- ========== NAVBAR ========== -->
+<nav class="navbar navbar-expand-lg fixed-top"
+     [ngClass]="{'navbar-transparent': navbarTransparent, 'navbar-scrolled': !navbarTransparent}">
+  <div class="container">
+    <a class="navbar-brand" routerLink="/">
+      <strong>Pro</strong>lance
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#landingNav"
+            aria-controls="landingNav" aria-expanded="false" aria-label="Toggle navigation">
+      <i class="material-icons">menu</i>
+    </button>
+    <div class="collapse navbar-collapse" id="landingNav">
+      <ul class="navbar-nav ml-auto align-items-center">
+        <li class="nav-item">
+          <a class="nav-link" href="#value-section">Browse Jobs</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#dual-path-section">Find Talent</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link btn btn-outline-white btn-round btn-sm ml-2" routerLink="/login">
+            Login
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link btn btn-primary btn-round btn-sm ml-2" routerLink="/register">
+            Join Now
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ========== HERO SECTION ========== -->
+<section class="landing-hero" id="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="container hero-content">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center">
+        <h1 class="hero-title hero-anim">Connecting Elite Freelancers<br>with Project Leaders</h1>
+        <p class="hero-subtitle hero-anim hero-anim-delay-1">
+          Prolance is the trusted marketplace where top-tier independent talent meets ambitious companies.
+          Find your next opportunity or your next team member — commission-free.
+        </p>
+        <div class="hero-actions hero-anim hero-anim-delay-2">
+          <a class="btn btn-primary btn-round btn-lg btn-pop" routerLink="/register">
+            <i class="material-icons">search</i> Find a Job
+          </a>
+          <a class="btn btn-outline-white btn-round btn-lg btn-pop ml-3" routerLink="/register">
+            <i class="material-icons">group_add</i> Hire Talent
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== VALUE PROPOSITION ========== -->
+<section class="landing-section bg-light" id="value-section">
+  <div class="container">
+    <div class="row justify-content-center mb-5 reveal">
+      <div class="col-lg-7 text-center">
+        <h2 class="section-title">Why Freelancers Choose Prolance</h2>
+        <p class="section-subtitle text-muted">
+          We built the platform freelancers actually deserve — transparent, fast, and fair.
+        </p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-4 col-md-6 reveal reveal-delay-1">
+        <div class="card feature-card text-center">
+          <div class="card-body">
+            <div class="feature-icon icon-success">
+              <i class="material-icons">money_off</i>
+            </div>
+            <h4 class="card-title">Zero Commission</h4>
+            <p class="card-description text-muted">
+              Keep 100% of what you earn. No hidden fees, no service charges, no surprises on payday.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 reveal reveal-delay-2">
+        <div class="card feature-card text-center">
+          <div class="card-body">
+            <div class="feature-icon icon-info">
+              <i class="material-icons">verified_user</i>
+            </div>
+            <h4 class="card-title">Verified Jobs</h4>
+            <p class="card-description text-muted">
+              Every project is vetted by our team. Work with confidence knowing every client is legitimate.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-12 reveal reveal-delay-3">
+        <div class="card feature-card text-center">
+          <div class="card-body">
+            <div class="feature-icon icon-primary">
+              <i class="material-icons">flash_on</i>
+            </div>
+            <h4 class="card-title">Fast Payments</h4>
+            <p class="card-description text-muted">
+              Get paid within 24 hours of milestone approval. No 30-day invoicing cycles.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== HOW IT WORKS – Timeline ========== -->
+<section class="landing-section" id="how-it-works-section">
+  <div class="container">
+    <div class="row justify-content-center mb-5 reveal">
+      <div class="col-lg-7 text-center">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle text-muted">
+          From posting to payout — three simple steps.
+        </p>
+      </div>
+    </div>
+    <div class="timeline reveal">
+      <div class="timeline-line"></div>
+      <div class="timeline-step">
+        <div class="timeline-indicator">
+          <i class="material-icons">edit</i>
+        </div>
+        <div class="timeline-content card">
+          <div class="card-body">
+            <span class="timeline-badge">Step 1</span>
+            <h4 class="card-title">Post a Job</h4>
+            <p class="card-description text-muted">
+              Describe your project requirements, set a budget, and publish it to our curated talent pool in under 2 minutes.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-step">
+        <div class="timeline-indicator">
+          <i class="material-icons">group</i>
+        </div>
+        <div class="timeline-content card">
+          <div class="card-body">
+            <span class="timeline-badge">Step 2</span>
+            <h4 class="card-title">Get Matched</h4>
+            <p class="card-description text-muted">
+              Our algorithm matches you with pre-vetted freelancers. Review portfolios, chat, and select your ideal candidate.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-step">
+        <div class="timeline-indicator">
+          <i class="material-icons">account_balance_wallet</i>
+        </div>
+        <div class="timeline-content card">
+          <div class="card-body">
+            <span class="timeline-badge">Step 3</span>
+            <h4 class="card-title">Get Paid</h4>
+            <p class="card-description text-muted">
+              Milestone-based payments are released within 24 hours of approval. Secure escrow protects both parties.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FEATURED JOB CATEGORIES ========== -->
+<section class="landing-section bg-light" id="categories-section">
+  <div class="container">
+    <div class="row justify-content-center mb-5 reveal">
+      <div class="col-lg-7 text-center">
+        <h2 class="section-title">Explore Job Categories</h2>
+        <p class="section-subtitle text-muted">
+          Find opportunities across the fastest-growing industries.
+        </p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-4 col-md-6 reveal reveal-delay-1">
+        <div class="card category-card">
+          <div class="card-body d-flex align-items-center">
+            <div class="category-icon icon-primary">
+              <i class="material-icons">code</i>
+            </div>
+            <div class="category-text">
+              <h5 class="card-title">Web Development</h5>
+              <p class="card-description text-muted">120+ active jobs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 reveal reveal-delay-2">
+        <div class="card category-card">
+          <div class="card-body d-flex align-items-center">
+            <div class="category-icon icon-info">
+              <i class="material-icons">brush</i>
+            </div>
+            <div class="category-text">
+              <h5 class="card-title">UI/UX Design</h5>
+              <p class="card-description text-muted">85+ active jobs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 reveal reveal-delay-3">
+        <div class="card category-card">
+          <div class="card-body d-flex align-items-center">
+            <div class="category-icon icon-success">
+              <i class="material-icons">trending_up</i>
+            </div>
+            <div class="category-text">
+              <h5 class="card-title">Digital Marketing</h5>
+              <p class="card-description text-muted">60+ active jobs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 reveal reveal-delay-1">
+        <div class="card category-card">
+          <div class="card-body d-flex align-items-center">
+            <div class="category-icon icon-warning">
+              <i class="material-icons">phone_iphone</i>
+            </div>
+            <div class="category-text">
+              <h5 class="card-title">Mobile Apps</h5>
+              <p class="card-description text-muted">75+ active jobs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 reveal reveal-delay-2">
+        <div class="card category-card">
+          <div class="card-body d-flex align-items-center">
+            <div class="category-icon icon-danger">
+              <i class="material-icons">ondemand_video</i>
+            </div>
+            <div class="category-text">
+              <h5 class="card-title">Video & Animation</h5>
+              <p class="card-description text-muted">40+ active jobs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6 reveal reveal-delay-3">
+        <div class="card category-card">
+          <div class="card-body d-flex align-items-center">
+            <div class="category-icon icon-rose">
+              <i class="material-icons">translate</i>
+            </div>
+            <div class="category-text">
+              <h5 class="card-title">Writing & Translation</h5>
+              <p class="card-description text-muted">55+ active jobs</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== DUAL-USER PATH ========== -->
+<section class="landing-section" id="dual-path-section">
+  <div class="container">
+    <div class="row justify-content-center mb-5 reveal">
+      <div class="col-lg-7 text-center">
+        <h2 class="section-title">How Do You Want to Get Started?</h2>
+        <p class="section-subtitle text-muted">
+          Whether you're offering skills or searching for them, Prolance has you covered.
+        </p>
+      </div>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-lg-5 col-md-6 reveal reveal-delay-1">
+        <div class="card path-card">
+          <div class="card-header card-header-icon card-header-primary">
+            <div class="card-icon">
+              <i class="material-icons">person</i>
+            </div>
+          </div>
+          <div class="card-body text-center">
+            <h3 class="card-title">I am a Freelancer</h3>
+            <p class="card-description text-muted">
+              Create your profile, showcase your portfolio, and get matched with high-value projects that fit your expertise.
+            </p>
+            <a class="btn btn-primary btn-round btn-pop" routerLink="/register">
+              <i class="material-icons">arrow_forward</i> Sign Up as Freelancer
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5 col-md-6 reveal reveal-delay-2">
+        <div class="card path-card">
+          <div class="card-header card-header-icon card-header-info">
+            <div class="card-icon">
+              <i class="material-icons">work</i>
+            </div>
+          </div>
+          <div class="card-body text-center">
+            <h3 class="card-title">I am a Recruiter</h3>
+            <p class="card-description text-muted">
+              Post a job in minutes, review curated applications, and hire pre-vetted freelancers for your next project.
+            </p>
+            <a class="btn btn-info btn-round btn-pop" routerLink="/register">
+              <i class="material-icons">arrow_forward</i> Post a Job
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SOCIAL PROOF / STATS ========== -->
+<section class="landing-section stats-section" id="stats-section">
+  <div class="stats-overlay"></div>
+  <div class="container position-relative" style="z-index: 2;">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center mb-5 reveal">
+        <h2 class="section-title text-white">Trusted by Thousands</h2>
+        <p class="section-subtitle text-white-70">
+          Numbers that speak louder than words.
+        </p>
+      </div>
+    </div>
+    <div class="row text-center text-white">
+      <div class="col-md-4 reveal reveal-delay-1">
+        <div class="stat-item">
+          <i class="material-icons stat-icon">people</i>
+          <h2 class="stat-number">10,000+</h2>
+          <p class="stat-label">Freelancers</p>
+        </div>
+      </div>
+      <div class="col-md-4 reveal reveal-delay-2">
+        <div class="stat-item">
+          <i class="material-icons stat-icon">work_outline</i>
+          <h2 class="stat-number">500+</h2>
+          <p class="stat-label">Active Jobs</p>
+        </div>
+      </div>
+      <div class="col-md-4 reveal reveal-delay-3">
+        <div class="stat-item">
+          <i class="material-icons stat-icon">attach_money</i>
+          <h2 class="stat-number">$2M+</h2>
+          <p class="stat-label">Paid to Freelancers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TESTIMONIALS (Glassmorphism) ========== -->
+<section class="landing-section testimonial-section" id="testimonial-section">
+  <div class="container">
+    <div class="row justify-content-center mb-5 reveal">
+      <div class="col-lg-7 text-center">
+        <h2 class="section-title">What Our Community Says</h2>
+        <p class="section-subtitle text-muted">
+          Real stories from freelancers and recruiters on Prolance.
+        </p>
+      </div>
+    </div>
+    <div class="row justify-content-center reveal">
+      <div class="col-lg-8">
+        <div class="testimonial-glass-card">
+          <div class="testimonial-body" *ngFor="let t of testimonials; let i = index"
+               [class.active]="i === activeTestimonial">
+            <div class="testimonial-quote">
+              <i class="material-icons quote-icon">format_quote</i>
+              <p>{{ t.quote }}</p>
+            </div>
+            <div class="testimonial-author">
+              <img [src]="t.avatar" [alt]="t.name" class="testimonial-avatar">
+              <div>
+                <strong>{{ t.name }}</strong>
+                <span>{{ t.role }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="testimonial-dots">
+            <span *ngFor="let t of testimonials; let i = index"
+                  class="dot" [class.active]="i === activeTestimonial"
+                  (click)="setTestimonial(i)"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FAQ ACCORDION ========== -->
+<section class="landing-section bg-light" id="faq-section">
+  <div class="container">
+    <div class="row justify-content-center mb-5 reveal">
+      <div class="col-lg-7 text-center">
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-subtitle text-muted">
+          Everything you need to know before getting started.
+        </p>
+      </div>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-lg-8 reveal">
+        <div class="faq-item" [class.open]="activeFaq === 0" (click)="toggleFaq(0)">
+          <div class="faq-question">
+            <span>Is Prolance really commission-free?</span>
+            <i class="material-icons faq-chevron">expand_more</i>
+          </div>
+          <div class="faq-answer">
+            <p>Yes. Freelancers keep 100% of their earnings. We monetize through optional premium features for recruiters, not by taking a cut from your hard work.</p>
+          </div>
+        </div>
+        <div class="faq-item" [class.open]="activeFaq === 1" (click)="toggleFaq(1)">
+          <div class="faq-question">
+            <span>How fast do I get paid after a milestone?</span>
+            <i class="material-icons faq-chevron">expand_more</i>
+          </div>
+          <div class="faq-answer">
+            <p>Payments are released within 24 hours of milestone approval. Funds go directly to your linked bank account or PayPal.</p>
+          </div>
+        </div>
+        <div class="faq-item" [class.open]="activeFaq === 2" (click)="toggleFaq(2)">
+          <div class="faq-question">
+            <span>How does Prolance verify jobs and clients?</span>
+            <i class="material-icons faq-chevron">expand_more</i>
+          </div>
+          <div class="faq-answer">
+            <p>Every job posting and client account goes through a manual review by our Trust &amp; Safety team. We verify identities, company details, and payment methods before anything goes live.</p>
+          </div>
+        </div>
+        <div class="faq-item" [class.open]="activeFaq === 3" (click)="toggleFaq(3)">
+          <div class="faq-question">
+            <span>Can I use Prolance for both freelancing and hiring?</span>
+            <i class="material-icons faq-chevron">expand_more</i>
+          </div>
+          <div class="faq-answer">
+            <p>Absolutely. A single Prolance account lets you switch between freelancer and recruiter modes at any time. Many of our power users do both.</p>
+          </div>
+        </div>
+        <div class="faq-item" [class.open]="activeFaq === 4" (click)="toggleFaq(4)">
+          <div class="faq-question">
+            <span>What happens if there's a dispute?</span>
+            <i class="material-icons faq-chevron">expand_more</i>
+          </div>
+          <div class="faq-answer">
+            <p>Our built-in escrow and mediation system protects both parties. If a disagreement arises, our support team steps in to review the work and resolve the issue fairly.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FINAL CTA ========== -->
+<section class="landing-section cta-section" id="cta-section">
+  <div class="container">
+    <div class="row justify-content-center reveal">
+      <div class="col-lg-7 text-center">
+        <h2 class="section-title">Ready to Start?</h2>
+        <p class="section-subtitle text-muted">
+          Join Prolance today and take the next step in your freelance career — or find the perfect talent for your team.
+        </p>
+        <a class="btn btn-primary btn-round btn-lg btn-pop" routerLink="/register">
+          <i class="material-icons">person_add</i> Create Your Free Account
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="landing-footer">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 text-center text-md-left">
+        <a class="footer-brand" routerLink="/">
+          <strong>Pro</strong>lance
+        </a>
+      </div>
+      <div class="col-md-4 text-center">
+        <ul class="footer-links">
+          <li><a href="javascript:void(0)">Privacy Policy</a></li>
+          <li><a href="javascript:void(0)">Terms of Service</a></li>
+          <li><a href="javascript:void(0)">Contact</a></li>
+        </ul>
+      </div>
+      <div class="col-md-4 text-center text-md-right">
+        <div class="social-buttons">
+          <a href="javascript:void(0)" class="btn btn-just-icon btn-round btn-sm btn-twitter">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a href="javascript:void(0)" class="btn btn-just-icon btn-round btn-sm btn-linkedin">
+            <i class="fa fa-linkedin"></i>
+          </a>
+          <a href="javascript:void(0)" class="btn btn-just-icon btn-round btn-sm btn-github">
+            <i class="fa fa-github"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-12 text-center">
+        <p class="copyright">
+          &copy; {{ currentYear }} <strong>Prolance</strong>. Crafted with
+          <i class="material-icons" style="font-size: 14px; position: relative; top: 2px; color: #e91e63;">favorite</i>
+          for the freelance community.
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>

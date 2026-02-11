@@ -1,0 +1,394 @@
+@import '../../../../assets/scss/core/variables';
+@import '../../../../assets/scss/core/mixins';
+
+// ═══════════════════════════════════════════════
+// AUTH PAGE – Shared Layout
+// ═══════════════════════════════════════════════
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background:
+    url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1920&q=80')
+    center center / cover no-repeat;
+  padding: 40px 16px;
+}
+
+.auth-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba($purple-600, 0.75) 0%,
+    rgba($purple-400, 0.65) 50%,
+    rgba($cyan-600, 0.60) 100%
+  );
+  z-index: 0;
+}
+
+.auth-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+}
+
+// ═══════════════════════════════════════════════
+// AUTH CARD
+// ═══════════════════════════════════════════════
+.auth-card {
+  border: 0;
+  border-radius: $border-radius-large;
+  box-shadow: 0 16px 38px -12px rgba(0, 0, 0, 0.56),
+              0 4px 25px 0 rgba(0, 0, 0, 0.12),
+              0 8px 10px -5px rgba(0, 0, 0, 0.2);
+  overflow: visible;
+
+  .card-header {
+    &.card-header-icon {
+      text-align: center;
+      margin-top: -30px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+      border: 0;
+
+      .card-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: linear-gradient(60deg, $purple-400, $purple-600);
+        @include shadow-big-color($brand-primary);
+
+        i {
+          font-size: 32px;
+          color: $white;
+          line-height: 1;
+        }
+      }
+    }
+  }
+
+  .card-body {
+    padding: 20px 32px 28px;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// TYPOGRAPHY
+// ═══════════════════════════════════════════════
+.auth-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: $black-color;
+  text-align: center;
+  margin: 16px 0 4px;
+}
+
+.auth-subtitle {
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+// ═══════════════════════════════════════════════
+// USER TYPE TOGGLE
+// ═══════════════════════════════════════════════
+.type-toggle {
+  display: flex;
+  border-radius: $border-radius-extreme;
+  overflow: hidden;
+  border: 2px solid $brand-primary;
+  margin-bottom: 20px;
+}
+
+.toggle-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: $brand-primary;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+
+  .material-icons {
+    font-size: 18px;
+  }
+
+  &.active {
+    background: linear-gradient(60deg, $purple-400, $purple-600);
+    color: $white;
+  }
+
+  &:not(.active):hover {
+    background: rgba($brand-primary, 0.08);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SOCIAL LOGIN
+// ═══════════════════════════════════════════════
+.social-login {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 16px;
+
+  .btn {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    line-height: 46px;
+    font-size: 18px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    }
+  }
+
+  .btn-google {
+    background: #db4437;
+    color: $white;
+    &:hover { background: darken(#db4437, 6%); }
+  }
+
+  .btn-github {
+    background: $grey-900;
+    color: $white;
+    &:hover { background: lighten($grey-900, 8%); }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// DIVIDER
+// ═══════════════════════════════════════════════
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 8px 0 20px;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  span {
+    padding: 0 14px;
+    font-size: 12px;
+    color: $gray-color;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// FORM CONTROLS
+// ═══════════════════════════════════════════════
+.form-group {
+  margin-bottom: 20px;
+
+  .input-group {
+    .input-group-prepend .input-group-text,
+    .input-group-append .input-group-text {
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid #d2d2d2;
+      border-radius: 0;
+      padding: 0 12px 0 0;
+      color: $gray-color;
+      transition: color 0.3s ease, border-color 0.3s ease;
+
+      i { font-size: 20px; }
+    }
+
+    .input-group-append .input-group-text {
+      padding: 0 0 0 12px;
+    }
+
+    .form-control {
+      border: 0;
+      border-bottom: 1px solid #d2d2d2;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 8px 0;
+      font-size: 14px;
+      background: transparent;
+      transition: border-color 0.3s ease;
+
+      &:focus {
+        border-bottom-color: $brand-primary;
+        box-shadow: 0 1px 0 0 $brand-primary;
+      }
+
+      &::placeholder {
+        color: #aaa;
+        font-weight: 300;
+      }
+    }
+  }
+
+  &.has-success {
+    .input-group-text { color: $brand-success; border-bottom-color: $brand-success; }
+    .form-control { border-bottom-color: $brand-success; }
+  }
+
+  &.has-danger {
+    .input-group-text { color: $brand-danger; border-bottom-color: $brand-danger; }
+    .form-control { border-bottom-color: $brand-danger; }
+  }
+
+  .text-danger {
+    display: block;
+    font-size: 11px;
+    margin-top: 6px;
+    padding-left: 2px;
+  }
+}
+
+.toggle-password {
+  cursor: pointer;
+  &:hover { color: $brand-primary; }
+}
+
+// ═══════════════════════════════════════════════
+// TERMS GROUP
+// ═══════════════════════════════════════════════
+.terms-group {
+  margin-bottom: 24px;
+
+  .form-check-label {
+    font-size: 13px;
+    color: $gray-dark;
+
+    a {
+      text-decoration: none;
+      &:hover { text-decoration: underline; }
+    }
+  }
+
+  .text-danger {
+    margin-top: 4px;
+    padding-left: 28px;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SUBMIT BUTTON
+// ═══════════════════════════════════════════════
+.auth-submit {
+  background: linear-gradient(60deg, $purple-400, $purple-600);
+  @include shadow-big-color($brand-primary);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 12px 0;
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+
+  &:hover:not(:disabled) {
+    @include shadow-16dp-color($brand-primary);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+  }
+}
+
+.spinner-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spinner-icon {
+  animation: spin 1s linear infinite;
+  font-size: 20px;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+// ═══════════════════════════════════════════════
+// AUTH SWITCH LINK
+// ═══════════════════════════════════════════════
+.auth-switch {
+  margin-top: 20px;
+  font-size: 14px;
+  color: $gray-color;
+
+  a {
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// AUTH FOOTER
+// ═══════════════════════════════════════════════
+.auth-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 32px;
+  gap: 6px;
+
+  .footer-brand {
+    font-size: 1.2rem;
+    color: $white;
+    text-decoration: none;
+    font-weight: 300;
+    strong { font-weight: 700; }
+    &:hover { color: $white; text-decoration: none; }
+  }
+
+  .footer-copy {
+    font-size: 12px;
+    color: rgba($white, 0.6);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// RESPONSIVE
+// ═══════════════════════════════════════════════
+@media (max-width: 576px) {
+  .auth-card .card-body {
+    padding: 16px 20px 24px;
+  }
+
+  .auth-title { font-size: 1.35rem; }
+
+  .toggle-btn {
+    font-size: 11px;
+    padding: 8px 8px;
+    .material-icons { font-size: 16px; }
+  }
+}
