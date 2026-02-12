@@ -1,0 +1,63 @@
+<div class="container mp-container">
+
+  <!-- ════════ HEADER ════════ -->
+  <div class="mp-header">
+    <div>
+      <h2 class="mp-title">My Projects</h2>
+      <p class="text-muted">Track the status and progress of your ongoing work</p>
+    </div>
+  </div>
+
+  <!-- ════════ PROJECT CARDS ════════ -->
+  <div class="mp-grid">
+    <div class="card mp-card" *ngFor="let p of projects">
+      <div class="card-body">
+
+        <!-- Top Row -->
+        <div class="mp-card-top">
+          <div>
+            <h4 class="mp-card-title">{{ p.title }}</h4>
+            <span class="mp-counterpart">
+              <i class="material-icons">{{ currentRole === 'freelancer' ? 'business' : 'person' }}</i>
+              {{ getCounterpartLabel() }}: <strong>{{ getCounterpart(p) }}</strong>
+            </span>
+          </div>
+          <span class="mp-status" [ngClass]="getStatusClass(p.status)">{{ p.status }}</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="mp-progress-wrap">
+          <div class="mp-progress-header">
+            <span>Progress</span>
+            <span class="mp-progress-pct">{{ p.progress }}%</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar" [ngClass]="getProgressClass(p.progress)"
+                 role="progressbar"
+                 [style.width.%]="p.progress">
+            </div>
+          </div>
+        </div>
+
+        <!-- Meta Row -->
+        <div class="mp-meta">
+          <div class="mp-meta-item">
+            <i class="material-icons">attach_money</i>
+            <span>Budget: <strong>${{ p.budget | number }}</strong></span>
+          </div>
+          <div class="mp-meta-item">
+            <i class="material-icons">event</i>
+            <span>Deadline: <strong>{{ p.deadline }}</strong></span>
+          </div>
+        </div>
+
+        <!-- Tech Stack -->
+        <div class="mp-tags">
+          <span class="mp-tag" *ngFor="let tech of p.techStack">{{ tech }}</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
