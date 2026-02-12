@@ -47,7 +47,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     setTimeout(() => {
       this.isLoading = false;
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/app/dashboard']);
     }, 1500);
   }
 
@@ -55,7 +55,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     setTimeout(() => {
       this.isLoading = false;
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/app/dashboard']);
     }, 1200);
   }
 }

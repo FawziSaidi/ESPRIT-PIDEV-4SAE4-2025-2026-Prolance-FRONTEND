@@ -7,6 +7,7 @@ import { AppRoutingModule } from './app.routing';
 import { ComponentsModule } from './components/components.module';
 import { AppComponent } from './app.component';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
+import { UserLayoutComponent } from './layouts/user-layout/user-layout.component';
 import { LandingModule } from './pages/landing/landing.module';
 import { AuthModule } from './pages/auth/auth.module';
 
@@ -25,7 +26,7 @@ import { AuthModule } from './pages/auth/auth.module';
   declarations: [
     AppComponent,
     AdminLayoutComponent,
-
+    UserLayoutComponent,
   ],
   providers: [],
   bootstrap: [AppComponent]

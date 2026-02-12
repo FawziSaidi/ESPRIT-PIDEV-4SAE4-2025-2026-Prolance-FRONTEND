@@ -1,0 +1,89 @@
+<!-- ════════ TOP NAVBAR ════════ -->
+<nav class="user-navbar" [class.scrolled]="navbarScrolled">
+  <div class="container navbar-inner">
+
+    <!-- Brand -->
+    <a class="navbar-brand" routerLink="/app/dashboard">
+      <i class="material-icons brand-icon">hub</i>
+      <span class="brand-text">Prolance</span>
+    </a>
+
+    <!-- Mobile Toggle -->
+    <button class="navbar-toggler" (click)="toggleMobileMenu()">
+      <i class="material-icons">{{ mobileMenuOpen ? 'close' : 'menu' }}</i>
+    </button>
+
+    <!-- Nav Links -->
+    <div class="navbar-links" [class.open]="mobileMenuOpen">
+      <a class="nav-link" routerLink="/app/marketplace" routerLinkActive="active" (click)="mobileMenuOpen = false">
+        <i class="material-icons">storefront</i> Marketplace
+      </a>
+      <a class="nav-link" routerLink="/app/projects" routerLinkActive="active" (click)="mobileMenuOpen = false">
+        <i class="material-icons">folder_shared</i> My Projects
+      </a>
+      <a class="nav-link" routerLink="/app/wallet" routerLinkActive="active" (click)="mobileMenuOpen = false">
+        <i class="material-icons">account_balance_wallet</i> Wallet
+      </a>
+    </div>
+
+    <!-- Right Section -->
+    <div class="navbar-right">
+      <!-- Role Switcher (compact) -->
+      <div class="role-chip-group">
+        <button class="role-chip" [class.active]="currentRole === 'freelancer'" (click)="toggleRole('freelancer')">
+          Freelancer
+        </button>
+        <button class="role-chip" [class.active]="currentRole === 'client'" (click)="toggleRole('client')">
+          Client
+        </button>
+      </div>
+
+      <!-- Profile Dropdown -->
+      <div class="profile-dropdown-wrapper">
+        <button class="profile-avatar" (click)="toggleProfileDropdown()">
+          <i class="material-icons">person</i>
+        </button>
+        <div class="profile-dropdown" [class.open]="profileDropdownOpen">
+          <div class="dropdown-header">
+            <span class="dropdown-name">Alex Johnson</span>
+            <span class="dropdown-role">{{ currentRole | titlecase }}</span>
+          </div>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" routerLink="/app/dashboard" (click)="profileDropdownOpen = false">
+            <i class="material-icons">dashboard</i> Dashboard
+          </a>
+          <a class="dropdown-item" routerLink="/app/settings" (click)="profileDropdownOpen = false">
+            <i class="material-icons">settings</i> Settings
+          </a>
+          <a class="dropdown-item admin-link" *ngIf="currentRole === 'admin'" (click)="goToAdmin(); profileDropdownOpen = false">
+            <i class="material-icons">admin_panel_settings</i> System Admin
+          </a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item logout-item" (click)="logout(); profileDropdownOpen = false">
+            <i class="material-icons">logout</i> Logout
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+<!-- ════════ MAIN CONTENT ════════ -->
+<main class="user-main">
+  <router-outlet></router-outlet>
+</main>
+
+<!-- ════════ FOOTER ════════ -->
+<footer class="user-footer">
+  <div class="container">
+    <div class="footer-inner">
+      <span class="footer-brand">&copy; {{ currentYear }} <strong>Prolance</strong></span>
+      <span class="footer-links">
+        <a href="javascript:void(0)">Terms</a>
+        <a href="javascript:void(0)">Privacy</a>
+        <a href="javascript:void(0)">Support</a>
+      </span>
+    </div>
+  </div>
+</footer>

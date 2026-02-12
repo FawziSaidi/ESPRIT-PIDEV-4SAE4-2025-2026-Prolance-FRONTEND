@@ -1,0 +1,298 @@
+@import '../../../../assets/scss/core/variables';
+@import '../../../../assets/scss/core/mixins';
+
+.jf-container {
+  max-width: 1200px;
+}
+
+// ── Header ──
+.jf-header {
+  margin-bottom: 24px;
+}
+
+.jf-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: $black-color;
+  margin-bottom: 4px;
+}
+
+// ── Toolbar ──
+.jf-toolbar {
+  border-radius: $border-radius-large;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.jf-toolbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.jf-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: $border-radius-small;
+  padding: 0 12px;
+
+  i {
+    font-size: 20px;
+    color: $gray-color;
+  }
+
+  .form-control {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 10px 0;
+    font-size: 14px;
+
+    &:focus { box-shadow: none; }
+  }
+}
+
+.jf-filter-select {
+  width: auto;
+  min-width: 160px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: $border-radius-small;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  background: $white;
+
+  &:focus {
+    border-color: $brand-primary;
+    box-shadow: 0 0 0 1px $brand-primary;
+  }
+}
+
+.jf-results-count {
+  font-size: 13px;
+  color: $gray-color;
+  margin-bottom: 20px;
+
+  strong { color: $black-color; }
+}
+
+// ── Job Cards Grid ──
+.jf-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jf-card {
+  border-radius: $border-radius-large;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px -10px rgba(0, 0, 0, 0.12);
+    border-color: rgba($brand-primary, 0.15);
+  }
+
+  .card-body {
+    padding: 24px;
+  }
+}
+
+.jf-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.jf-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: $black-color;
+  margin: 0 0 6px;
+}
+
+.jf-company {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: $gray-color;
+
+  i { font-size: 16px; }
+}
+
+.jf-budget {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.jf-budget-value {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: $brand-primary;
+
+  small {
+    font-size: 12px;
+    font-weight: 400;
+    color: $gray-color;
+  }
+}
+
+.jf-budget-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: $gray-color;
+}
+
+.jf-description {
+  font-size: 13px;
+  color: lighten($black-color, 20%);
+  line-height: 1.6;
+  margin-bottom: 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ── Tags ──
+.jf-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.jf-tag {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 20px;
+  background: rgba($brand-primary, 0.08);
+  color: $brand-primary;
+  letter-spacing: 0.2px;
+}
+
+// ── Card Footer ──
+.jf-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.jf-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.jf-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: $gray-color;
+
+  i { font-size: 16px; }
+}
+
+.jf-level {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 3px 10px;
+  border-radius: 12px;
+
+  &.level-entry {
+    background: rgba($brand-success, 0.1);
+    color: darken($brand-success, 8%);
+  }
+  &.level-mid {
+    background: rgba($brand-info, 0.1);
+    color: darken($brand-info, 8%);
+  }
+  &.level-expert {
+    background: rgba($brand-warning, 0.1);
+    color: darken($brand-warning, 8%);
+  }
+}
+
+.jf-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, $purple-400, $purple-600);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 8px 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+
+  i { font-size: 16px; }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba($brand-primary, 0.35);
+  }
+}
+
+// ── Empty State ──
+.jf-empty {
+  text-align: center;
+  padding: 60px 20px;
+
+  i {
+    font-size: 56px;
+    color: $gray-light;
+    margin-bottom: 12px;
+  }
+
+  h4 {
+    font-weight: 500;
+    color: $black-color;
+    margin-bottom: 4px;
+  }
+}
+
+// ── Responsive ──
+@media (max-width: 767px) {
+  .jf-toolbar-inner {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .jf-filter-select {
+    width: 100%;
+  }
+
+  .jf-card-top {
+    flex-direction: column;
+  }
+
+  .jf-budget {
+    text-align: left;
+  }
+
+  .jf-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .jf-apply-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

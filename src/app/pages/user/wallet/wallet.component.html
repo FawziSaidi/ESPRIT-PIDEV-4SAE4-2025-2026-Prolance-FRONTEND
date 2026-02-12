@@ -1,0 +1,101 @@
+<div class="container wl-container">
+
+  <!-- ════════ HEADER ════════ -->
+  <div class="wl-header">
+    <div>
+      <h2 class="wl-title">Wallet</h2>
+      <p class="text-muted">Manage your earnings, withdrawals, and pending payments</p>
+    </div>
+  </div>
+
+  <!-- ════════ BALANCE CARDS ════════ -->
+  <div class="row">
+    <div class="col-lg-4 col-md-6">
+      <div class="card wl-balance-card wl-balance-primary">
+        <div class="wl-balance-content">
+          <div class="wl-balance-icon">
+            <i class="material-icons">account_balance_wallet</i>
+          </div>
+          <div>
+            <span class="wl-balance-label">Available Balance</span>
+            <span class="wl-balance-value">${{ balance | number:'1.2-2' }}</span>
+          </div>
+        </div>
+        <button class="btn btn-round btn-sm wl-withdraw-btn">
+          <i class="material-icons">arrow_upward</i> Withdraw
+        </button>
+      </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+      <div class="card wl-balance-card wl-balance-warning">
+        <div class="wl-balance-content">
+          <div class="wl-balance-icon">
+            <i class="material-icons">schedule</i>
+          </div>
+          <div>
+            <span class="wl-balance-label">Pending</span>
+            <span class="wl-balance-value">${{ pendingAmount | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 col-md-12">
+      <div class="card wl-balance-card wl-balance-success">
+        <div class="wl-balance-content">
+          <div class="wl-balance-icon">
+            <i class="material-icons">savings</i>
+          </div>
+          <div>
+            <span class="wl-balance-label">Total Withdrawn</span>
+            <span class="wl-balance-value">${{ totalWithdrawn | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TRANSACTION HISTORY ════════ -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card wl-card">
+        <div class="card-header card-header-primary">
+          <h4 class="card-title">Transaction History</h4>
+          <p class="card-category">All wallet activity and payment records</p>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover wl-table">
+              <thead class="text-primary">
+                <tr>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Project</th>
+                  <th>Date</th>
+                  <th class="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let tx of transactions">
+                  <td>
+                    <span class="wl-type-badge" [ngClass]="getTypeClass(tx.type)">
+                      <i class="material-icons">{{ getTypeIcon(tx.type) }}</i>
+                    </span>
+                  </td>
+                  <td class="wl-desc">{{ tx.description }}</td>
+                  <td class="wl-project">{{ tx.project }}</td>
+                  <td class="wl-date">{{ tx.date }}</td>
+                  <td class="text-right" [ngClass]="getTypeClass(tx.type)">
+                    <span class="wl-amount">
+                      {{ tx.type === 'debit' ? '-' : tx.type === 'pending' ? '~' : '+' }}${{ tx.amount | number:'1.2-2' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
