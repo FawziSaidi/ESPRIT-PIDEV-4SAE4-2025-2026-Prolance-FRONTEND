@@ -4,12 +4,11 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { AppRoutingModule } from './app.routing';
-import { ComponentsModule } from './components/components.module';
+import { ComponentsModule } from './frontoffice/components.module';
 import { AppComponent } from './app.component';
-import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
-import { UserLayoutComponent } from './layouts/user-layout/user-layout.component';
-import { LandingModule } from './pages/landing/landing.module';
-import { AuthModule } from './pages/auth/auth.module';
+import { UserLayoutComponent } from './frontoffice/user-layout/user-layout.component';
+import { LandingModule } from './authentification/landing/landing.module';
+import { AuthModule } from './authentification/auth/auth.module';
 
 @NgModule({
   imports: [
@@ -25,7 +24,6 @@ import { AuthModule } from './pages/auth/auth.module';
   ],
   declarations: [
     AppComponent,
-    AdminLayoutComponent,
     UserLayoutComponent,
   ],
   providers: [],

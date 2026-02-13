@@ -3,11 +3,10 @@ import { CommonModule, } from '@angular/common';
 import { BrowserModule  } from '@angular/platform-browser';
 import { Routes, RouterModule } from '@angular/router';
 
-import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
-import { UserLayoutComponent } from './layouts/user-layout/user-layout.component';
-import { LandingComponent } from './pages/landing/landing.component';
-import { LoginComponent } from './pages/auth/login/login.component';
-import { RegisterComponent } from './pages/auth/register/register.component';
+import { UserLayoutComponent } from './frontoffice/user-layout/user-layout.component';
+import { LandingComponent } from './authentification/landing/landing.component';
+import { LoginComponent } from './authentification/auth/login/login.component';
+import { RegisterComponent } from './authentification/auth/register/register.component';
 
 const routes: Routes =[
   {
@@ -28,15 +27,7 @@ const routes: Routes =[
     component: UserLayoutComponent,
     children: [{
       path: '',
-      loadChildren: () => import('./layouts/user-layout/user-layout.module').then(m => m.UserLayoutModule)
-    }]
-  },
-  {
-    path: '',
-    component: AdminLayoutComponent,
-    children: [{
-      path: '',
-      loadChildren: () => import('./layouts/admin-layout/admin-layout.module').then(m => m.AdminLayoutModule)
+      loadChildren: () => import('./frontoffice/user-layout/user-layout.module').then(m => m.UserLayoutModule)
     }]
   }
 ];

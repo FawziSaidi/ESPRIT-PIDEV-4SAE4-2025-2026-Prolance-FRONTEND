@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RoleService } from '../../../services/role.service';
+import { RoleService } from '../../services/role.service';
 
 interface Activity {
   icon: string;

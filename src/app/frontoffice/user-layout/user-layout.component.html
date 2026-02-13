@@ -15,15 +15,21 @@
 
     <!-- Nav Links -->
     <div class="navbar-links" [class.open]="mobileMenuOpen">
-      <a class="nav-link" routerLink="/app/marketplace" routerLinkActive="active" (click)="mobileMenuOpen = false">
-        <i class="material-icons">storefront</i> Marketplace
-      </a>
-      <a class="nav-link" routerLink="/app/projects" routerLinkActive="active" (click)="mobileMenuOpen = false">
-        <i class="material-icons">folder_shared</i> My Projects
-      </a>
-      <a class="nav-link" routerLink="/app/wallet" routerLinkActive="active" (click)="mobileMenuOpen = false">
-        <i class="material-icons">account_balance_wallet</i> Wallet
-      </a>
+          <a class="dropdown-item" routerLink="/app/dashboard" (click)="profileDropdownOpen = false">
+            <i class="material-icons">dashboard</i> Dashboard
+          </a>
+           <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+            <i class="material-icons">folder_shared</i> Projects
+          </a>
+          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+            <i class="material-icons">forum</i> Forum
+          </a>
+          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+            <i class="material-icons">campaign</i> Publicité
+          </a>
+          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+            <i class="material-icons">event</i> Événement
+          </a>
     </div>
 
     <!-- Right Section -->
@@ -48,16 +54,14 @@
             <span class="dropdown-name">Alex Johnson</span>
             <span class="dropdown-role">{{ currentRole | titlecase }}</span>
           </div>
+
           <div class="dropdown-divider"></div>
-          <a class="dropdown-item" routerLink="/app/dashboard" (click)="profileDropdownOpen = false">
-            <i class="material-icons">dashboard</i> Dashboard
-          </a>
-          <a class="dropdown-item" routerLink="/app/settings" (click)="profileDropdownOpen = false">
-            <i class="material-icons">settings</i> Settings
-          </a>
-          <a class="dropdown-item admin-link" *ngIf="currentRole === 'admin'" (click)="goToAdmin(); profileDropdownOpen = false">
-            <i class="material-icons">admin_panel_settings</i> System Admin
-          </a>
+            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+              <i class="material-icons">person</i> Profil
+            </a>
+            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+              <i class="material-icons">track_changes</i> Suivie projets
+            </a>
           <div class="dropdown-divider"></div>
           <a class="dropdown-item logout-item" (click)="logout(); profileDropdownOpen = false">
             <i class="material-icons">logout</i> Logout
