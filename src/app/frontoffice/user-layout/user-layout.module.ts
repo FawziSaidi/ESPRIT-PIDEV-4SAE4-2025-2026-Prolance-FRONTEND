@@ -5,17 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatRippleModule } from '@angular/material/core';
 
-import { UserDashboardComponent } from '../../pages/user/user-dashboard/user-dashboard.component';
-import { JobFeedComponent } from '../../pages/user/job-feed/job-feed.component';
-import { MyProjectsComponent } from '../../pages/user/my-projects/my-projects.component';
-import { WalletComponent } from '../../pages/user/wallet/wallet.component';
+import { UserDashboardComponent } from '../../authentification/user-dashboard/user-dashboard.component';
+
 
 const userRoutes: Routes = [
   { path: '',            redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard',   component: UserDashboardComponent },
-  { path: 'marketplace', component: JobFeedComponent },
-  { path: 'projects',    component: MyProjectsComponent },
-  { path: 'wallet',      component: WalletComponent },
 ];
 
 @NgModule({
@@ -28,9 +23,6 @@ const userRoutes: Routes = [
   ],
   declarations: [
     UserDashboardComponent,
-    JobFeedComponent,
-    MyProjectsComponent,
-    WalletComponent,
   ]
 })
 export class UserLayoutModule {}
