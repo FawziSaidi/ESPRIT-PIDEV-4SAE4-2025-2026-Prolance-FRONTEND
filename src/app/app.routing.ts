@@ -29,6 +29,10 @@ const routes: Routes =[
       path: '',
       loadChildren: () => import('./frontoffice/user-layout/user-layout.module').then(m => m.UserLayoutModule)
     }]
+  },
+  {
+    path: 'admin',
+    loadChildren: () => import('./backoffice/backoffice.module').then(m => m.BackofficeModule)
   }
 ];
 
