@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { RoleService } from '../../services/role.service';
 
 interface Activity {
   icon: string;
@@ -15,8 +14,12 @@ interface Activity {
   styleUrls: ['./user-dashboard.component.scss']
 })
 export class UserDashboardComponent implements OnInit {
+
+  // ── Current User ──
+  currentUser: { name: string; role: string } | null = null;
+
   get currentRole(): string {
-    return this.roleService.currentRole;
+    return this.currentUser?.role.toLowerCase() || '';
   }
 
   // ── Freelancer KPIs ──
@@ -51,7 +54,13 @@ export class UserDashboardComponent implements OnInit {
     { icon: 'star',           iconColor: 'success', title: 'Review submitted',            subtitle: '5 stars to Aisha Patel',              time: '3 days ago' },
   ];
 
-  constructor(private roleService: RoleService) {}
+  constructor() {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // Load user session from localStorage
+    const name = localStorage.getItem('userName') || 'User';
+    const role = localStorage.getItem('role') || 'client';
+
+    this.currentUser = { name, role };
+  }
 }

@@ -23,3 +23,24 @@ import { RegisterComponent } from './register/register.component';
   ]
 })
 export class AuthModule {}
+export interface RegisterRequest {
+  name: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: string;       // e.g., "ADMIN" or "USER"
+  birthDate?: string; // optional, format "YYYY-MM-DD"
+}
+
+
+export interface AuthRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  role: 'ADMIN' | 'USER' | 'CLIENT' | 'FREELANCER';
+}
+
+
