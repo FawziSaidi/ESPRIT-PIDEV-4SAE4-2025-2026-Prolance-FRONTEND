@@ -6,11 +6,13 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatRippleModule } from '@angular/material/core';
 
 import { UserDashboardComponent } from '../../authentification/user-dashboard/user-dashboard.component';
+import { AdCenterComponent } from '../../pages/ads/ad-center.component';
 
 
 const userRoutes: Routes = [
   { path: '',            redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard',   component: UserDashboardComponent },
+  { path: 'ads',         component: AdCenterComponent },
 ];
 
 @NgModule({
@@ -23,6 +25,7 @@ const userRoutes: Routes = [
   ],
   declarations: [
     UserDashboardComponent,
+    AdCenterComponent,
   ]
 })
 export class UserLayoutModule {}

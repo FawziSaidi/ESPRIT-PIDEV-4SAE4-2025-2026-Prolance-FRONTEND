@@ -1,0 +1,1075 @@
+@import '../../../assets/scss/core/variables';
+@import '../../../assets/scss/core/mixins';
+
+// ═══════════════════════════════════════════════
+// AD CENTER CONTAINER
+// ═══════════════════════════════════════════════
+.ad-container {
+  max-width: 1200px;
+}
+
+// ── Page Header ──
+.ad-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  h2 {
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: $black-color;
+    margin-bottom: 4px;
+
+    strong { font-weight: 700; }
+  }
+
+  p {
+    font-size: 14px;
+    margin-bottom: 0;
+  }
+}
+
+.role-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, $purple-400, $purple-600);
+  color: $white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+
+// ── Create Button ──
+.btn-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: $white;
+  background: linear-gradient(135deg, $purple-400, $purple-600);
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba($brand-primary, 0.3);
+  white-space: nowrap;
+
+  i { font-size: 20px; }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba($brand-primary, 0.4);
+  }
+
+  &.sm {
+    padding: 8px 18px;
+    font-size: 13px;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// KPI CARDS
+// ═══════════════════════════════════════════════
+.kpi-row {
+  margin-bottom: 8px;
+}
+
+.ad-card {
+  border-radius: $border-radius-large;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.card-stats .card-title {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+// ═══════════════════════════════════════════════
+// PERFORMANCE CHART
+// ═══════════════════════════════════════════════
+.chart-body {
+  height: 280px;
+  padding: 16px 20px 12px;
+}
+
+// ═══════════════════════════════════════════════
+// CAMPAIGN TABLE
+// ═══════════════════════════════════════════════
+.ad-table {
+  thead th {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $gray-color;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.06);
+    padding: 12px 8px;
+  }
+
+  tbody td {
+    vertical-align: middle;
+    padding: 14px 8px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  }
+
+  tbody tr {
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: rgba($brand-primary, 0.02);
+    }
+  }
+}
+
+// ── Thumbnail ──
+.td-thumb {
+  width: 80px;
+}
+
+.ad-thumbnail {
+  width: 72px;
+  height: 42px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+// ── Campaign Title ──
+.campaign-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: $black-color;
+  margin-bottom: 2px;
+}
+
+.campaign-date {
+  display: block;
+  font-size: 11px;
+  color: $gray-color;
+}
+
+// ── Type Chip ──
+.type-chip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+
+  &.type-featured_profile {
+    background: rgba($brand-primary, 0.1);
+    color: $brand-primary;
+  }
+
+  &.type-banner {
+    background: rgba($brand-info, 0.1);
+    color: $brand-info;
+  }
+
+  &.type-job_boost {
+    background: rgba($brand-warning, 0.1);
+    color: darken($brand-warning, 10%);
+  }
+}
+
+// ── Status Badges ──
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 5px 12px;
+  border-radius: 12px;
+}
+
+.badge-warning {
+  background: rgba($brand-warning, 0.12);
+  color: darken($brand-warning, 12%);
+}
+
+.badge-success {
+  background: rgba($brand-success, 0.12);
+  color: darken($brand-success, 10%);
+}
+
+.badge-danger {
+  background: rgba($brand-danger, 0.12);
+  color: $brand-danger;
+}
+
+.badge-expired {
+  background: rgba($gray-color, 0.12);
+  color: $gray-color;
+}
+
+.rejection-reason {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  cursor: help;
+
+  i {
+    font-size: 16px;
+    color: $brand-danger;
+  }
+}
+
+// ── Performance Stats ──
+.perf-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: $black-color;
+
+    i {
+      font-size: 14px;
+      color: $gray-color;
+    }
+  }
+}
+
+// ── Sparkline ──
+.sparkline {
+  width: 80px;
+  height: 24px;
+}
+
+// ── Action Buttons ──
+.td-actions {
+  white-space: nowrap;
+}
+
+.btn-action {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  margin-left: 4px;
+
+  i { font-size: 18px; }
+
+  &.btn-edit {
+    color: $brand-info;
+
+    &:hover {
+      background: rgba($brand-info, 0.1);
+    }
+  }
+
+  &.btn-delete {
+    color: $brand-danger;
+
+    &:hover {
+      background: rgba($brand-danger, 0.1);
+    }
+  }
+}
+
+// ── Empty State ──
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+
+  > i {
+    font-size: 56px;
+    color: rgba($brand-primary, 0.2);
+    margin-bottom: 16px;
+  }
+
+  h4 {
+    font-size: 18px;
+    font-weight: 600;
+    color: $black-color;
+    margin-bottom: 8px;
+  }
+
+  p {
+    font-size: 14px;
+    color: $gray-color;
+    margin-bottom: 20px;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-container {
+  background: $white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+
+  &.modal-sm {
+    max-width: 420px;
+  }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header-custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 12px;
+
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: $black-color;
+    margin: 0;
+  }
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  i { font-size: 20px; color: $gray-color; }
+
+  &:hover { background: rgba(0, 0, 0, 0.1); }
+}
+
+// ── Step Indicator ──
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 24px;
+  gap: 0;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  opacity: 0.4;
+
+  &.active {
+    opacity: 1;
+  }
+
+  span {
+    font-size: 11px;
+    font-weight: 600;
+    color: $gray-color;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  &.active span {
+    color: $brand-primary;
+  }
+}
+
+.step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  color: $gray-color;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+
+  .step.active & {
+    background: linear-gradient(135deg, $purple-400, $purple-600);
+    color: $white;
+    box-shadow: 0 3px 10px rgba($brand-primary, 0.3);
+  }
+
+  .step.done & {
+    background: $brand-success;
+    color: $white;
+  }
+}
+
+.step-line {
+  width: 50px;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 0 8px;
+  margin-bottom: 22px;
+  transition: background 0.3s ease;
+
+  &.active {
+    background: linear-gradient(135deg, $purple-400, $purple-600);
+  }
+}
+
+// ── Modal Body ──
+.modal-body-custom {
+  padding: 8px 24px 20px;
+}
+
+.step-subtitle {
+  font-size: 14px;
+  color: $gray-color;
+  margin-bottom: 20px;
+}
+
+// ── Plan Grid ──
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.plan-card {
+  position: relative;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: 20px 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+
+  &:hover {
+    border-color: rgba($brand-primary, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  &.selected {
+    border-color: $brand-primary;
+    background: rgba($brand-primary, 0.03);
+    box-shadow: 0 4px 15px rgba($brand-primary, 0.15);
+  }
+
+  h5 {
+    font-size: 14px;
+    font-weight: 700;
+    color: $black-color;
+    margin: 10px 0 6px;
+  }
+
+  p {
+    font-size: 12px;
+    color: $gray-color;
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+}
+
+.plan-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, $purple-400, $purple-600);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  i { font-size: 24px; color: $white; }
+}
+
+.plan-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  gap: 8px;
+}
+
+.plan-price {
+  font-weight: 700;
+  color: $brand-primary;
+  font-size: 14px;
+}
+
+.plan-location {
+  color: $gray-color;
+  text-transform: capitalize;
+}
+
+.plan-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+
+  i {
+    font-size: 22px;
+    color: $brand-primary;
+  }
+}
+
+// ── Form Fields ──
+.form-group-custom {
+  margin-bottom: 18px;
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: $gray-color;
+    margin-bottom: 6px;
+  }
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: $white;
+  color: $black-color;
+
+  &::placeholder { color: rgba($gray-color, 0.6); }
+
+  &:focus {
+    border-color: $brand-primary;
+    box-shadow: 0 0 0 3px rgba($brand-primary, 0.1);
+  }
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+// ── File Upload ──
+.file-upload-area {
+  position: relative;
+}
+
+.file-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  border: 2px dashed rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  color: $gray-color;
+  font-size: 13px;
+
+  i { font-size: 32px; color: rgba($brand-primary, 0.5); }
+
+  &:hover {
+    border-color: $brand-primary;
+    background: rgba($brand-primary, 0.02);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// PREVIEW (Step 3)
+// ═══════════════════════════════════════════════
+.preview-container {
+  margin-bottom: 20px;
+}
+
+.preview-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: $gray-color;
+  margin-bottom: 10px;
+}
+
+// ── Banner Preview ──
+.preview-banner {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+
+  img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .preview-banner-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    padding: 20px 16px 14px;
+    color: $white;
+
+    h5 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    p {
+      font-size: 12px;
+      opacity: 0.85;
+      margin: 0;
+    }
+  }
+}
+
+// ── Profile Preview ──
+.preview-profile {
+  position: relative;
+  border: 2px solid $brand-primary;
+  border-radius: 12px;
+  overflow: hidden;
+  background: $white;
+}
+
+.preview-profile-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: linear-gradient(135deg, $purple-400, $purple-600);
+  color: $white;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  border-radius: 0 0 0 10px;
+}
+
+.preview-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+}
+
+.preview-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $purple-400, $purple-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i { font-size: 28px; color: $white; }
+}
+
+.preview-profile-info {
+  flex: 1;
+  min-width: 0;
+
+  h5 {
+    font-size: 15px;
+    font-weight: 700;
+    color: $black-color;
+    margin-bottom: 4px;
+  }
+
+  p {
+    font-size: 12px;
+    color: $gray-color;
+    margin-bottom: 4px;
+  }
+
+  .preview-link {
+    font-size: 11px;
+    color: $brand-primary;
+    word-break: break-all;
+  }
+}
+
+// ── Job Boost Preview ──
+.preview-job {
+  position: relative;
+  border: 2px solid $brand-warning;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba($brand-warning, 0.03);
+}
+
+.preview-job-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: linear-gradient(135deg, $orange-400, $orange-600);
+  color: $white;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  border-radius: 0 0 0 10px;
+}
+
+.preview-job-card {
+  padding: 20px;
+
+  h5 {
+    font-size: 15px;
+    font-weight: 700;
+    color: $black-color;
+    margin-bottom: 6px;
+  }
+
+  p {
+    font-size: 13px;
+    color: $gray-color;
+    margin-bottom: 12px;
+  }
+}
+
+.preview-job-meta {
+  display: flex;
+  gap: 16px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: $gray-color;
+
+    i { font-size: 16px; }
+  }
+}
+
+// ── Cost Summary ──
+.preview-cost {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-top: 16px;
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  color: $gray-color;
+
+  &.total {
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    margin-top: 6px;
+    padding-top: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: $black-color;
+
+    span:last-child {
+      color: $brand-primary;
+    }
+  }
+}
+
+// ── Modal Footer ──
+.modal-footer-custom {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 24px 20px;
+}
+
+.btn-secondary {
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background: transparent;
+  color: $gray-color;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: rgba(0, 0, 0, 0.2);
+    color: $black-color;
+  }
+}
+
+.btn-primary-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  color: $white;
+  background: linear-gradient(135deg, $purple-400, $purple-600);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba($brand-primary, 0.25);
+
+  i { font-size: 18px; }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba($brand-primary, 0.35);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  color: $white;
+  background: linear-gradient(135deg, $red-400, $red-600);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba($brand-danger, 0.25);
+
+  i { font-size: 18px; }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba($brand-danger, 0.35);
+  }
+}
+
+// ── Delete Confirmation ──
+.delete-body {
+  text-align: center;
+
+  p {
+    font-size: 14px;
+    color: $gray-color;
+    margin: 0;
+  }
+}
+
+.delete-icon-wrap {
+  margin-bottom: 12px;
+
+  i {
+    font-size: 48px;
+    color: $brand-warning;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// THEME: CLIENT (Teal/Cyan overrides)
+// ═══════════════════════════════════════════════
+$teal-primary: #00897b;
+$teal-light: #26a69a;
+$teal-dark: #00796b;
+
+.theme-client {
+  .plan-card:hover {
+    border-color: rgba($teal-primary, 0.3);
+  }
+
+  .plan-card.selected {
+    border-color: $teal-primary;
+    background: rgba($teal-primary, 0.03);
+    box-shadow: 0 4px 15px rgba($teal-primary, 0.15);
+  }
+
+  .form-input:focus {
+    border-color: $teal-primary;
+    box-shadow: 0 0 0 3px rgba($teal-primary, 0.1);
+  }
+
+  .file-upload-label:hover {
+    border-color: $teal-primary;
+    background: rgba($teal-primary, 0.02);
+
+    i { color: rgba($teal-primary, 0.6); }
+  }
+
+  .file-upload-label i {
+    color: rgba($teal-primary, 0.5);
+  }
+
+  .ad-table tbody tr:hover {
+    background: rgba($teal-primary, 0.02);
+  }
+
+  .empty-state > i {
+    color: rgba($teal-primary, 0.2);
+  }
+
+  .preview-profile {
+    border-color: $teal-primary;
+  }
+
+  .preview-profile-badge,
+  .preview-avatar {
+    background: linear-gradient(135deg, $teal-light, $teal-dark);
+  }
+
+  .preview-profile-info .preview-link {
+    color: $teal-primary;
+  }
+
+  .cost-row.total span:last-child {
+    color: $teal-primary;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// MARKET INSIGHTS SECTION (COMPACT MODE)
+// ═══════════════════════════════════════════════
+.market-insights-section {
+  margin-top: 2rem;
+}
+
+.section-title-insights {
+  color: #333;
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.compact-card {
+  .card-header {
+    padding: 0.75rem 1rem;
+    
+    h5.card-title {
+      font-size: 1rem;
+      margin-bottom: 0.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      
+      i {
+        font-size: 1.15rem;
+      }
+    }
+    
+    .card-category {
+      font-size: 0.8rem;
+      margin: 0;
+    }
+  }
+  
+  .compact-chart-body {
+    padding: 0.75rem 1rem 1rem 1rem;
+    height: 180px;
+    max-height: 180px;
+    
+    canvas {
+      max-height: 180px !important;
+      height: 180px !important;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// RESPONSIVE
+// ═══════════════════════════════════════════════
+@media (max-width: 767px) {
+  .ad-header {
+    flex-direction: column;
+
+    h2 { font-size: 1.3rem; }
+  }
+
+  .plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-container {
+    max-height: 95vh;
+  }
+
+  .ad-table {
+    font-size: 12px;
+  }
+
+  .ad-thumbnail {
+    width: 56px;
+    height: 32px;
+  }
+
+  .step-line {
+    width: 30px;
+  }
+}
+
+@media (max-width: 575px) {
+  .kpi-row .col-sm-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
