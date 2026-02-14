@@ -39,6 +39,8 @@
 
         <!-- Register Form -->
         <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+
+          <!-- Full Name -->
           <div class="form-group bmd-form-group"
                [class.has-success]="registerForm.get('fullName')?.valid && registerForm.get('fullName')?.touched"
                [class.has-danger]="registerForm.get('fullName')?.invalid && registerForm.get('fullName')?.touched">
@@ -56,6 +58,40 @@
             </small>
           </div>
 
+          <!-- Last Name -->
+          <div class="form-group bmd-form-group"
+               [class.has-success]="registerForm.get('lastName')?.valid && registerForm.get('lastName')?.touched"
+               [class.has-danger]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="material-icons">face</i></span>
+              </div>
+              <input type="text" class="form-control" placeholder="Last Name" formControlName="lastName">
+            </div>
+            <small class="text-danger" *ngIf="registerForm.get('lastName')?.hasError('required') && registerForm.get('lastName')?.touched">
+              Last name is required
+            </small>
+            <small class="text-danger" *ngIf="registerForm.get('lastName')?.hasError('minlength') && registerForm.get('lastName')?.touched">
+              Last name must be at least 2 characters
+            </small>
+          </div>
+
+          <!-- Birth Date -->
+          <div class="form-group bmd-form-group"
+               [class.has-success]="registerForm.get('birthDate')?.valid && registerForm.get('birthDate')?.touched"
+               [class.has-danger]="registerForm.get('birthDate')?.invalid && registerForm.get('birthDate')?.touched">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text"><i class="material-icons">calendar_today</i></span>
+              </div>
+              <input type="date" class="form-control" placeholder="Birth Date" formControlName="birthDate">
+            </div>
+            <small class="text-danger" *ngIf="registerForm.get('birthDate')?.hasError('required') && registerForm.get('birthDate')?.touched">
+              Birth date is required
+            </small>
+          </div>
+
+          <!-- Email -->
           <div class="form-group bmd-form-group"
                [class.has-success]="registerForm.get('email')?.valid && registerForm.get('email')?.touched"
                [class.has-danger]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
@@ -73,6 +109,7 @@
             </small>
           </div>
 
+          <!-- Password -->
           <div class="form-group bmd-form-group"
                [class.has-success]="registerForm.get('password')?.valid && registerForm.get('password')?.touched"
                [class.has-danger]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
@@ -95,6 +132,7 @@
             </small>
           </div>
 
+          <!-- Terms -->
           <div class="form-group terms-group"
                [class.has-danger]="registerForm.get('agreeTerms')?.invalid && registerForm.get('agreeTerms')?.touched">
             <div class="form-check">
@@ -109,6 +147,7 @@
             </small>
           </div>
 
+          <!-- Submit -->
           <button type="submit" class="btn btn-primary btn-round btn-block btn-lg auth-submit" [disabled]="isLoading">
             <span *ngIf="!isLoading">
               {{ userType === 'freelancer' ? 'Create Freelancer Account' : 'Create Recruiter Account' }}
@@ -117,6 +156,7 @@
               <i class="material-icons spinner-icon">autorenew</i> Creating account...
             </span>
           </button>
+
         </form>
 
         <p class="auth-switch text-center">
