@@ -9,14 +9,14 @@ export class SidebarComponent implements OnInit {
   activeMenu: string = 'dashboard';
 
   menuItems = [
-    { id: 'dashboard', icon: '📊', label: 'DASHBOARD', link: '#' },
-    { id: 'profile', icon: '👤', label: 'PROFILE', link: '#' },
-    { id: 'users', icon: '👥', label: 'TABLE DES UTILISATEURS', link: '#' },
-    { id: 'projet', icon: '📋', label: 'PROJET', link: '#' },
-    { id: 'forum', icon: '💬', label: 'FORUM', link: '#' },
-    { id: 'publicite', icon: '📷', label: 'PUBLICITÉ', link: '#' },
-    { id: 'evenement', icon: '📅', label: 'ÉVÉNEMENT', link: '#' },
-    { id: 'logout', icon: '🔌', label: 'LOGOUT', link: '#' }
+    { id: 'dashboard', icon: '📊', label: 'DASHBOARD', link: '#', route: '/admin/dashboard' },
+    { id: 'profile', icon: '👤', label: 'PROFILE', link: '#', route: null },
+    { id: 'users', icon: '👥', label: 'TABLE DES UTILISATEURS', link: '#', route: null },
+    { id: 'projet', icon: '📋', label: 'PROJET', link: '#', route: null },
+    { id: 'forum', icon: '💬', label: 'FORUM', link: '#', route: null },
+    { id: 'ads', icon: '📷', label: 'ADS', link: '#', route: '/admin/ads' },
+    { id: 'evenement', icon: '📅', label: 'ÉVÉNEMENT', link: '#', route: null },
+    { id: 'logout', icon: '🔌', label: 'LOGOUT', link: '#', route: null }
   ];
 
   constructor() { }
