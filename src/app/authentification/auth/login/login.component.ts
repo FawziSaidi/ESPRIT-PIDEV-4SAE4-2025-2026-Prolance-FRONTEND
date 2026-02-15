@@ -70,7 +70,10 @@ export class LoginComponent implements OnInit, OnDestroy {
       next: (res: AuthResponse) => {
         this.isLoading = false;
 
-        // Save session data
+        // Save unified session (includes id from backend)
+        this.authService.setSession(res, authRequest.email);
+
+        // Legacy keys (kept for backward compatibility)
         localStorage.setItem('token', res.token);
         localStorage.setItem('userName', authRequest.email);
         localStorage.setItem('role', res.role);

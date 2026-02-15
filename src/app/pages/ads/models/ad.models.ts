@@ -1,9 +1,14 @@
-// ── Ad Plan Entity (PostgreSQL Ready) ──
-export type AdType = 'Banner' | 'Featured_Profile' | 'Job_Boost';
-export type AdLocation = 'Landing_Page' | 'Job_Feed' | 'Sidebar';
+// ═══════════════════════════════════════════════
+// Backend Enums (Match Spring Boot exactly)
+// ═══════════════════════════════════════════════
+export type AdType = 'BANNER' | 'FEATURED_PROFILE' | 'JOB_BOOST';
+export type AdLocation = 'LANDING_PAGE' | 'JOB_FEED' | 'SEARCH_SIDEBAR';
 export type CampaignStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'EXPIRED';
-export type RoleType = 'freelancer' | 'client';
+export type RoleType = 'FREELANCER' | 'CLIENT';
 
+// ═══════════════════════════════════════════════
+// AdPlan DTO (GET /plans response item)
+// ═══════════════════════════════════════════════
 export interface AdPlan {
   id: number;
   name: string;
@@ -12,10 +17,12 @@ export interface AdPlan {
   location: AdLocation;
   roleType: RoleType;
   description?: string;
-  icon?: string;
+  icon?: string;           // Frontend-only (mapped locally)
 }
 
-// ── Ad Campaign Entity (PostgreSQL Ready) ──
+// ═══════════════════════════════════════════════
+// CampaignResponse DTO (GET /campaigns response item)
+// ═══════════════════════════════════════════════
 export interface AdCampaign {
   id: number;
   userId: number;
@@ -26,15 +33,35 @@ export interface AdCampaign {
   targetUrl: string;
   status: CampaignStatus;
   rejectionReason?: string;
-  createdAt: Date;
-  // Backend-ready fields for Spring Boot / PostgreSQL
-  roleType: RoleType;       // Links campaign to 'freelancer' or 'client' context
-  targetId?: number;        // Links to Freelancer Profile ID or Job Post ID
-  // Computed / display fields
+  createdAt: Date | string;
+  roleType: RoleType;
+  targetId?: number;
+  // Enriched / joined fields from backend
   planName?: string;
   planType?: AdType;
   planLocation?: AdLocation;
   views?: number;
   clicks?: number;
+  // Frontend-only display fields
   sparklineData?: number[];
+}
+
+// ═══════════════════════════════════════════════
+// CreateCampaignRequest DTO (POST /campaigns body)
+// ═══════════════════════════════════════════════
+export interface CreateCampaignRequest {
+  planId: number;
+  title: string;
+  description: string;
+  imageUrl: string;
+  targetUrl: string;
+  roleType: RoleType;
+  targetId?: number;
+}
+
+// ═══════════════════════════════════════════════
+// Admin action DTOs
+// ═══════════════════════════════════════════════
+export interface RejectCampaignRequest {
+  rejectionReason: string;
 }

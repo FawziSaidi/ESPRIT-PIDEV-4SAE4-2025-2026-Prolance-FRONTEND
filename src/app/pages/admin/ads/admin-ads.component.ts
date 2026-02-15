@@ -1,12 +1,13 @@
-import { Component, OnInit } from '@angular/core';
-import { AdCampaign, AdPlan, CampaignStatus } from '../../ads/models/ad.models';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { AdCampaign, CampaignStatus } from '../../ads/models/ad.models';
+import { AdsService } from '../../../services/ads.service';
 
 @Component({
   selector: 'app-admin-ads',
   templateUrl: './admin-ads.component.html',
   styleUrls: ['./admin-ads.component.css']
 })
-export class AdminAdsComponent implements OnInit {
+export class AdminAdsComponent implements OnInit, OnDestroy {
 
   // ═══════════════════════════════════════════════
   // STATE
@@ -28,145 +29,48 @@ export class AdminAdsComponent implements OnInit {
   // Fade-out animation tracking
   fadingOutIds: Set<number> = new Set();
 
-  // ═══════════════════════════════════════════════
-  // MOCK DATA — All Campaigns (cross-role, admin sees everything)
-  // ═══════════════════════════════════════════════
+  // Toast
+  toastMessage = '';
+  toastType: 'success' | 'error' = 'success';
+  showToast = false;
+  private toastTimer: any;
 
-  campaigns: AdCampaign[] = [
-    // ── PENDING campaigns (Approval Queue) ──
-    {
-      id: 101, userId: 1, planId: 4,
-      title: 'Urgent: React Native Developer',
-      description: 'Looking for a React Native expert for a 3-month contract. Must have experience with Expo and TypeScript.',
-      imageUrl: 'https://placehold.co/400x200/00897b/white?text=React+Native+Dev',
-      targetUrl: 'https://prolance.com/jobs/42',
-      status: 'PENDING', createdAt: new Date('2026-02-10'),
-      roleType: 'client', targetId: 42,
-      planName: 'Featured Job', planType: 'Job_Boost', planLocation: 'Job_Feed',
-      views: 0, clicks: 0, sparklineData: [0, 0, 0, 0, 0, 0, 0]
-    },
-    {
-      id: 102, userId: 2, planId: 1,
-      title: 'Senior DevOps Engineer — Hire Me',
-      description: 'AWS & Kubernetes certified engineer with 8+ years of experience in CI/CD pipelines.',
-      imageUrl: 'https://placehold.co/400x200/9c27b0/white?text=DevOps+Engineer',
-      targetUrl: 'https://prolance.com/profile/maria',
-      status: 'PENDING', createdAt: new Date('2026-02-12'),
-      roleType: 'freelancer', targetId: 201,
-      planName: 'Profile Spotlight', planType: 'Featured_Profile', planLocation: 'Job_Feed',
-      views: 0, clicks: 0, sparklineData: [0, 0, 0, 0, 0, 0, 0]
-    },
-    {
-      id: 103, userId: 3, planId: 5,
-      title: 'Full-Stack Team Needed — Startup',
-      description: 'We are a fast-growing fintech startup seeking 3 full-stack developers for a 6-month engagement.',
-      imageUrl: 'https://placehold.co/400x200/ff9800/white?text=Fintech+Startup',
-      targetUrl: 'https://prolance.com/jobs/67',
-      status: 'PENDING', createdAt: new Date('2026-02-13'),
-      roleType: 'client', targetId: 67,
-      planName: 'Job Feed Banner', planType: 'Banner', planLocation: 'Job_Feed',
-      views: 0, clicks: 0, sparklineData: [0, 0, 0, 0, 0, 0, 0]
-    },
-    {
-      id: 104, userId: 4, planId: 2,
-      title: 'Creative UI/UX Designer Portfolio',
-      description: 'Award-winning designer specializing in SaaS products and mobile applications.',
-      imageUrl: 'https://placehold.co/400x200/e91e63/white?text=UI+UX+Portfolio',
-      targetUrl: 'https://prolance.com/profile/sarah',
-      status: 'PENDING', createdAt: new Date('2026-02-14'),
-      roleType: 'freelancer', targetId: 301,
-      planName: 'Landing Page Banner', planType: 'Banner', planLocation: 'Landing_Page',
-      views: 0, clicks: 0, sparklineData: [0, 0, 0, 0, 0, 0, 0]
-    },
+  // All campaigns (loaded from backend)
+  campaigns: AdCampaign[] = [];
 
-    // ── ACTIVE campaigns (Active Inventory) ──
-    {
-      id: 201, userId: 1, planId: 1,
-      title: 'Senior Angular Dev Available',
-      description: 'Experienced Angular developer available for enterprise projects. 10+ years in the industry.',
-      imageUrl: 'https://placehold.co/400x200/9c27b0/white?text=Angular+Dev',
-      targetUrl: 'https://prolance.com/profile/alex',
-      status: 'ACTIVE', createdAt: new Date('2025-12-01'),
-      roleType: 'freelancer', targetId: 101,
-      planName: 'Profile Spotlight', planType: 'Featured_Profile', planLocation: 'Job_Feed',
-      views: 12400, clicks: 623, sparklineData: [45, 62, 78, 95, 110, 88, 102]
-    },
-    {
-      id: 202, userId: 1, planId: 2,
-      title: 'Prolance — My Freelance Brand',
-      description: 'Showcase my full-stack skills on the landing page. Specializing in Angular, Node.js & AWS.',
-      imageUrl: 'https://placehold.co/400x200/7b1fa2/white?text=Freelance+Brand',
-      targetUrl: 'https://prolance.com/profile/alex',
-      status: 'ACTIVE', createdAt: new Date('2025-11-15'),
-      roleType: 'freelancer', targetId: 101,
-      planName: 'Landing Page Banner', planType: 'Banner', planLocation: 'Landing_Page',
-      views: 8900, clicks: 412, sparklineData: [30, 42, 55, 38, 60, 72, 65]
-    },
-    {
-      id: 203, userId: 5, planId: 6,
-      title: 'Hire Top Designers — Premium Banner',
-      description: 'Attract world-class UI/UX designers to your projects. Premium placement guaranteed.',
-      imageUrl: 'https://placehold.co/400x200/00695c/white?text=Top+Designers',
-      targetUrl: 'https://prolance.com/jobs/71',
-      status: 'ACTIVE', createdAt: new Date('2026-01-05'),
-      roleType: 'client', targetId: 71,
-      planName: 'Landing Page Banner', planType: 'Banner', planLocation: 'Landing_Page',
-      views: 6200, clicks: 310, sparklineData: [50, 55, 62, 70, 68, 75, 80]
-    },
-    {
-      id: 204, userId: 6, planId: 4,
-      title: 'Blockchain Developer — Remote Contract',
-      description: 'Seeking Solidity & Rust developer for DeFi protocol development. 6-month contract.',
-      imageUrl: 'https://placehold.co/400x200/3f51b5/white?text=Blockchain+Dev',
-      targetUrl: 'https://prolance.com/jobs/89',
-      status: 'ACTIVE', createdAt: new Date('2026-01-20'),
-      roleType: 'client', targetId: 89,
-      planName: 'Featured Job', planType: 'Job_Boost', planLocation: 'Job_Feed',
-      views: 4500, clicks: 198, sparklineData: [20, 35, 42, 55, 48, 60, 72]
-    },
-    {
-      id: 205, userId: 7, planId: 3,
-      title: 'Data Science Freelancer — ML Expert',
-      description: 'Machine learning specialist with publications in NeurIPS. Available for consulting.',
-      imageUrl: 'https://placehold.co/400x200/4caf50/white?text=ML+Expert',
-      targetUrl: 'https://prolance.com/profile/james',
-      status: 'ACTIVE', createdAt: new Date('2026-02-01'),
-      roleType: 'freelancer', targetId: 401,
-      planName: 'Sidebar Showcase', planType: 'Banner', planLocation: 'Sidebar',
-      views: 3200, clicks: 145, sparklineData: [15, 22, 30, 28, 35, 40, 38]
-    },
+  isLoading = false;
 
-    // ── REJECTED (for reference in inspect) ──
-    {
-      id: 301, userId: 8, planId: 3,
-      title: 'Get Rich Quick — Freelancing Secrets',
-      description: 'Learn the secrets to making $10k/month freelancing. Limited time offer!',
-      imageUrl: 'https://placehold.co/400x200/f44336/white?text=REJECTED',
-      targetUrl: 'https://spam-site.com/offer',
-      status: 'REJECTED',
-      rejectionReason: 'Misleading claims and spam content. Violates advertising guidelines.',
-      createdAt: new Date('2026-01-28'),
-      roleType: 'freelancer', targetId: 501,
-      planName: 'Sidebar Showcase', planType: 'Banner', planLocation: 'Sidebar',
-      views: 0, clicks: 0, sparklineData: [0, 0, 0, 0, 0, 0, 0]
-    }
-  ];
+  constructor(private adsService: AdsService) {}
 
-  // Mock user data keyed by userId
-  readonly userMap: Record<number, { name: string; email: string; avatar: string }> = {
-    1: { name: 'Alex Johnson', email: 'alex@prolance.com', avatar: 'AJ' },
-    2: { name: 'Maria Garcia', email: 'maria@prolance.com', avatar: 'MG' },
-    3: { name: 'TechFin Corp', email: 'hr@techfin.io', avatar: 'TF' },
-    4: { name: 'Sarah Chen', email: 'sarah@prolance.com', avatar: 'SC' },
-    5: { name: 'GlobalHire Ltd', email: 'ads@globalhire.com', avatar: 'GH' },
-    6: { name: 'DeFi Labs', email: 'talent@defilabs.io', avatar: 'DL' },
-    7: { name: 'James Wright', email: 'james@prolance.com', avatar: 'JW' },
-    8: { name: 'Spam Account', email: 'spam@fake.com', avatar: 'SA' }
-  };
+  ngOnInit(): void {
+    this.loadAllCampaigns();
+  }
 
-  constructor() {}
+  ngOnDestroy(): void {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+  }
 
-  ngOnInit(): void {}
+  private loadAllCampaigns(): void {
+    this.isLoading = true;
+    this.adsService.getAllAdminCampaigns().subscribe({
+      next: (data) => {
+        this.campaigns = data;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.campaigns = [];
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private displayToast(message: string, type: 'success' | 'error'): void {
+    this.toastMessage = message;
+    this.toastType = type;
+    this.showToast = true;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.showToast = false, 4000);
+  }
 
   // ═══════════════════════════════════════════════
   // COMPUTED VIEWS
@@ -208,20 +112,13 @@ export class AdminAdsComponent implements OnInit {
   // USER INFO HELPERS
   // ═══════════════════════════════════════════════
 
-  getUserName(userId: number): string {
-    return this.userMap[userId]?.name || 'Unknown User';
-  }
-
-  getUserEmail(userId: number): string {
-    return this.userMap[userId]?.email || '—';
-  }
-
   getUserAvatar(userId: number): string {
-    return this.userMap[userId]?.avatar || '??';
+    const initials = 'U' + userId;
+    return initials.substring(0, 2).toUpperCase();
   }
 
   getRoleBadge(role: string): string {
-    return role === 'freelancer' ? 'Freelancer' : 'Client';
+    return role === 'FREELANCER' ? 'Freelancer' : 'Client';
   }
 
   // ═══════════════════════════════════════════════
@@ -229,15 +126,15 @@ export class AdminAdsComponent implements OnInit {
   // ═══════════════════════════════════════════════
 
   approveCampaign(campaign: AdCampaign): void {
-    const idx = this.campaigns.findIndex(c => c.id === campaign.id);
-    if (idx !== -1) {
-      this.campaigns[idx] = {
-        ...this.campaigns[idx],
-        status: 'ACTIVE',
-        views: 0,
-        clicks: 0
-      };
-    }
+    this.adsService.adminApprove(campaign.id).subscribe({
+      next: () => {
+        this.displayToast('Campaign approved successfully.', 'success');
+        this.loadAllCampaigns();
+      },
+      error: () => {
+        this.displayToast('Failed to approve campaign.', 'error');
+      }
+    });
   }
 
   // ═══════════════════════════════════════════════
@@ -258,17 +155,20 @@ export class AdminAdsComponent implements OnInit {
 
   confirmReject(): void {
     if (this.rejectingCampaignId === null) return;
-    const idx = this.campaigns.findIndex(c => c.id === this.rejectingCampaignId);
-    if (idx !== -1) {
-      this.campaigns[idx] = {
-        ...this.campaigns[idx],
-        status: 'REJECTED',
-        rejectionReason: this.rejectReason.trim() || 'Rejected by admin.'
-      };
-    }
+    const id = this.rejectingCampaignId;
+    const reason = this.rejectReason.trim() || 'Rejected by admin.';
     this.showRejectModal = false;
     this.rejectingCampaignId = null;
     this.rejectReason = '';
+    this.adsService.adminReject(id, reason).subscribe({
+      next: () => {
+        this.displayToast('Campaign rejected.', 'success');
+        this.loadAllCampaigns();
+      },
+      error: () => {
+        this.displayToast('Failed to reject campaign.', 'error');
+      }
+    });
   }
 
   // ═══════════════════════════════════════════════
@@ -292,11 +192,19 @@ export class AdminAdsComponent implements OnInit {
     this.showDeleteConfirm = false;
     this.deletingCampaignId = null;
 
-    // Wait for CSS fade animation, then remove from array
-    setTimeout(() => {
-      this.campaigns = this.campaigns.filter(c => c.id !== id);
-      this.fadingOutIds.delete(id);
-    }, 400);
+    this.adsService.adminDelete(id).subscribe({
+      next: () => {
+        setTimeout(() => {
+          this.fadingOutIds.delete(id);
+          this.displayToast('Campaign deleted.', 'success');
+          this.loadAllCampaigns();
+        }, 400);
+      },
+      error: () => {
+        this.fadingOutIds.delete(id);
+        this.displayToast('Failed to delete campaign.', 'error');
+      }
+    });
   }
 
   isFadingOut(campaignId: number): boolean {

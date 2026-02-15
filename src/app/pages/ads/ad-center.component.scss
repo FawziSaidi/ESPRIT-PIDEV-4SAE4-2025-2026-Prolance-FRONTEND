@@ -1073,3 +1073,99 @@ $teal-dark: #00796b;
     max-width: 100%;
   }
 }
+
+// ═══════════════════════════════════════════════
+// TOAST NOTIFICATION
+// ═══════════════════════════════════════════════
+.toast-notification {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  animation: slideInRight 0.3s ease;
+
+  .material-icons { font-size: 20px; }
+
+  &.toast-success { background: #43a047; }
+  &.toast-error   { background: #e53935; }
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 8px;
+  .material-icons { font-size: 18px; }
+  &:hover { color: #fff; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+// ═══════════════════════════════════════════════
+// LOADING / SPINNER STATE
+// ═══════════════════════════════════════════════
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  color: #999;
+
+  .material-icons {
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
+
+  p {
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+.spin {
+  animation: spinAnim 1s linear infinite;
+}
+
+@keyframes spinAnim {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+// ═══════════════════════════════════════════════
+// EMPTY STATE — compact variant (for modals)
+// ═══════════════════════════════════════════════
+.empty-state.compact {
+  padding: 24px 16px;
+
+  .material-icons { font-size: 32px; }
+  h4 { font-size: 15px; }
+  p  { font-size: 13px; }
+}
+
+// ═══════════════════════════════════════════════
+// PLAN TIER LABEL
+// ═══════════════════════════════════════════════
+.plan-tier {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 4px;
+}

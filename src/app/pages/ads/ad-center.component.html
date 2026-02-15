@@ -1,11 +1,18 @@
-<div class="container ad-container role-theme" [class.theme-freelancer]="currentRole === 'freelancer'" [class.theme-client]="currentRole === 'client'">
+<!-- ════════ TOAST NOTIFICATION ════════ -->
+<div class="toast-notification" *ngIf="showToast" [class.toast-success]="toastType === 'success'" [class.toast-error]="toastType === 'error'">
+  <i class="material-icons">{{ toastType === 'success' ? 'check_circle' : 'error' }}</i>
+  <span>{{ toastMessage }}</span>
+  <button class="toast-close" (click)="showToast = false"><i class="material-icons">close</i></button>
+</div>
+
+<div class="container ad-container role-theme" [class.theme-freelancer]="currentRole === 'FREELANCER'" [class.theme-client]="currentRole === 'CLIENT'">
 
   <!-- ════════ PAGE HEADER ════════ -->
   <div class="ad-header">
     <div class="ad-header-text">
       <h2>Ad Center <span class="role-label" [ngStyle]="{'background': roleColors.gradient}">{{ currentRole | titlecase }}</span></h2>
       <p class="text-muted">
-        {{ currentRole === 'freelancer'
+        {{ currentRole === 'FREELANCER'
           ? 'Boost your profile visibility and land more gigs.'
           : 'Promote your job posts and attract top talent.' }}
       </p>
@@ -89,10 +96,16 @@
       <div class="card ad-card">
         <div class="card-header" [ngClass]="roleCardHeaderClass">
           <h4 class="card-title">My Campaigns</h4>
-          <p class="card-category">{{ currentRole === 'freelancer' ? 'Your freelance promotion campaigns' : 'Your job promotion campaigns' }}</p>
+          <p class="card-category">{{ currentRole === 'FREELANCER' ? 'Your freelance promotion campaigns' : 'Your job promotion campaigns' }}</p>
         </div>
         <div class="card-body table-responsive">
-          <table class="table ad-table" *ngIf="roleCampaigns.length > 0">
+          <!-- Loading State -->
+          <div class="loading-state" *ngIf="isLoading">
+            <i class="material-icons spin">autorenew</i>
+            <p>Loading your campaigns...</p>
+          </div>
+
+          <table class="table ad-table" *ngIf="!isLoading && roleCampaigns.length > 0">
             <thead>
               <tr>
                 <th>Ad Preview</th>
@@ -161,10 +174,10 @@
           </table>
 
           <!-- Empty State -->
-          <div class="empty-state" *ngIf="roleCampaigns.length === 0">
+          <div class="empty-state" *ngIf="!isLoading && roleCampaigns.length === 0">
             <i class="material-icons">campaign</i>
-            <h4>No Campaigns Yet</h4>
-            <p>Create your first ad campaign to start getting visibility.</p>
+            <h4>No ads created yet.</h4>
+            <p>Start your first campaign above!</p>
             <button class="btn-create sm" [ngStyle]="{'background': roleColors.gradient}" (click)="openCreateModal()">
               <i class="material-icons">add_circle</i> Create Campaign
             </button>
@@ -210,10 +223,23 @@
     <!-- ── STEP 1: Select Ad Type ── -->
     <div class="modal-body-custom" *ngIf="modalStep === 1">
       <p class="step-subtitle">Choose the ad type that best fits your goal.</p>
-      <div class="plan-grid">
+      <!-- Plans Loading -->
+      <div class="loading-state" *ngIf="plansLoading">
+        <i class="material-icons spin">autorenew</i>
+        <p>Loading plans...</p>
+      </div>
+
+      <!-- Plans Error / Empty -->
+      <div class="empty-state compact" *ngIf="!plansLoading && plansError">
+        <i class="material-icons">cloud_off</i>
+        <p>No plans available at the moment.</p>
+      </div>
+
+      <div class="plan-grid" *ngIf="!plansLoading && rolePlans.length > 0">
         <div class="plan-card" *ngFor="let plan of rolePlans"
              [class.selected]="selectedPlanId === plan.id"
              (click)="selectPlan(plan.id)">
+          <small class="plan-tier text-muted">{{ getPlanTier(plan) }}</small>
           <div class="plan-icon-wrap" [ngStyle]="{'background': roleColors.gradient}">
             <i class="material-icons">{{ plan.icon }}</i>
           </div>
@@ -264,7 +290,7 @@
       <p class="step-subtitle">Here's how your ad will look on the platform.</p>
 
       <!-- Banner Preview -->
-      <div class="preview-container" *ngIf="selectedPlan?.type === 'Banner'">
+      <div class="preview-container" *ngIf="selectedPlan?.type === 'BANNER'">
         <div class="preview-label">Banner Preview — {{ selectedPlan?.location?.replace('_', ' ') }}</div>
         <div class="preview-banner">
           <img [src]="formImageUrl || 'https://placehold.co/728x90/9c27b0/white?text=Your+Banner'" alt="Banner Preview" />
@@ -276,7 +302,7 @@
       </div>
 
       <!-- Featured Profile Preview -->
-      <div class="preview-container" *ngIf="selectedPlan?.type === 'Featured_Profile'">
+      <div class="preview-container" *ngIf="selectedPlan?.type === 'FEATURED_PROFILE'">
         <div class="preview-label">Profile Spotlight Preview — Search Results</div>
         <div class="preview-profile">
           <div class="preview-profile-badge">SPOTLIGHT</div>
@@ -292,7 +318,7 @@
       </div>
 
       <!-- Job Boost Preview -->
-      <div class="preview-container" *ngIf="selectedPlan?.type === 'Job_Boost'">
+      <div class="preview-container" *ngIf="selectedPlan?.type === 'JOB_BOOST'">
         <div class="preview-label">Featured Job Preview — Job Feed</div>
         <div class="preview-job">
           <div class="preview-job-badge">FEATURED</div>
