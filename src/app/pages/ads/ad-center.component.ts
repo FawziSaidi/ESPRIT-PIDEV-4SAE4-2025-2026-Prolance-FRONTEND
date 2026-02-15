@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
-import { RoleService } from '../../services/role.service';
-import { Subscription } from 'rxjs';
-import { AdPlan, AdCampaign, CampaignStatus, AdType, RoleType } from './models/ad.models';
+import { AuthService } from '../../services/auth.services';
+import { AdsService } from '../../services/ads.service';
+import { AdPlan, AdCampaign, CampaignStatus, AdType, RoleType, CreateCampaignRequest } from './models/ad.models';
 
 declare var Chart: any;
 
@@ -11,13 +11,12 @@ declare var Chart: any;
   styleUrls: ['./ad-center.component.scss']
 })
 export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
-  // ── Role ──
-  currentRole: RoleType = 'freelancer';
-  private roleSub!: Subscription;
+  // ── Role (auto-detected from JWT) ──
+  currentRole: RoleType = 'FREELANCER';
 
   // ── Role-Based Color Palette ──
-  readonly ROLE_COLORS = {
-    freelancer: {
+  readonly ROLE_COLORS: Record<RoleType, any> = {
+    FREELANCER: {
       primary: '#9c27b0',
       primaryLight: '#ab47bc',
       primaryDark: '#8e24aa',
@@ -27,7 +26,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
       secondary: '#7b1fa2',
       cardHeaderClass: 'card-header-primary'
     },
-    client: {
+    CLIENT: {
       primary: '#00897b',
       primaryLight: '#26a69a',
       primaryDark: '#00796b',
@@ -38,6 +37,15 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
       cardHeaderClass: 'card-header-info'
     }
   };
+
+  // ── Loading / Empty / Toast State ──
+  isLoading = false;
+  plansLoading = false;
+  plansError = false;
+  toastMessage = '';
+  toastType: 'success' | 'error' = 'success';
+  showToast = false;
+  private toastTimer: any;
 
   // ── Modal State ──
   showCreateModal = false;
@@ -59,82 +67,17 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ── KPI Stats ──
   stats = {
-    activeAds: 3,
-    totalImpressions: 24850,
-    totalClicks: 1247,
-    remainingBudget: 1520
+    activeAds: 0,
+    totalImpressions: 0,
+    totalClicks: 0,
+    remainingBudget: 0
   };
 
-  // ── Ad Plans (with roleType) ──
-  adPlans: AdPlan[] = [
-    // Freelancer plans
-    { id: 1, name: 'Profile Spotlight', type: 'Featured_Profile', price: 29.99, location: 'Job_Feed', roleType: 'freelancer', description: 'Puts your profile at the top of search results with a highlighted border.', icon: 'person_pin' },
-    { id: 2, name: 'Landing Page Banner', type: 'Banner', price: 49.99, location: 'Landing_Page', roleType: 'freelancer', description: 'High-visibility graphic banner on the main landing page.', icon: 'panorama' },
-    { id: 3, name: 'Sidebar Showcase', type: 'Banner', price: 19.99, location: 'Sidebar', roleType: 'freelancer', description: 'Compact banner displayed in the sidebar across all pages.', icon: 'view_sidebar' },
-    // Client plans
-    { id: 4, name: 'Featured Job', type: 'Job_Boost', price: 34.99, location: 'Job_Feed', roleType: 'client', description: 'Highlights your job post with a special color and badge in the feed.', icon: 'work_outline' },
-    { id: 5, name: 'Job Feed Banner', type: 'Banner', price: 44.99, location: 'Job_Feed', roleType: 'client', description: 'Large banner displayed at the top of the job feed.', icon: 'featured_video' },
-    { id: 6, name: 'Landing Page Banner', type: 'Banner', price: 49.99, location: 'Landing_Page', roleType: 'client', description: 'High-visibility graphic banner on the main landing page.', icon: 'panorama' },
-  ];
+  // ── Ad Plans (loaded from backend) ──
+  adPlans: AdPlan[] = [];
 
-  // ── Campaigns (Mock Data — with roleType & targetId) ──
-  campaigns: AdCampaign[] = [
-    {
-      id: 1, userId: 1, planId: 1, title: 'Senior Angular Dev Available',
-      description: 'Experienced Angular developer available for enterprise projects.',
-      imageUrl: 'https://placehold.co/300x150/9c27b0/white?text=Angular+Dev',
-      targetUrl: 'https://prolance.com/profile/alex', status: 'ACTIVE',
-      createdAt: new Date('2025-12-01'), roleType: 'freelancer', targetId: 101,
-      planName: 'Profile Spotlight', planType: 'Featured_Profile', planLocation: 'Job_Feed',
-      views: 12400, clicks: 623, sparklineData: [45, 62, 78, 95, 110, 88, 102]
-    },
-    {
-      id: 2, userId: 1, planId: 2, title: 'Prolance — My Freelance Brand',
-      description: 'Showcase my full-stack skills on the landing page.',
-      imageUrl: 'https://placehold.co/300x150/7b1fa2/white?text=My+Brand',
-      targetUrl: 'https://prolance.com/profile/alex', status: 'ACTIVE',
-      createdAt: new Date('2025-11-15'), roleType: 'freelancer', targetId: 101,
-      planName: 'Landing Page Banner', planType: 'Banner', planLocation: 'Landing_Page',
-      views: 8900, clicks: 412, sparklineData: [30, 42, 55, 38, 60, 72, 65]
-    },
-    {
-      id: 3, userId: 1, planId: 4, title: 'Urgent: React Native Developer',
-      description: 'Looking for a React Native expert for a 3-month contract.',
-      imageUrl: 'https://placehold.co/300x150/00897b/white?text=React+Native',
-      targetUrl: 'https://prolance.com/jobs/42', status: 'PENDING',
-      createdAt: new Date('2026-02-10'), roleType: 'client', targetId: 42,
-      planName: 'Featured Job', planType: 'Job_Boost', planLocation: 'Job_Feed',
-      views: 0, clicks: 0, sparklineData: [0, 0, 0, 0, 0, 0, 0]
-    },
-    {
-      id: 4, userId: 1, planId: 3, title: 'Full-Stack Freelancer — Portfolio',
-      description: 'Check out my portfolio of 50+ completed projects.',
-      imageUrl: 'https://placehold.co/300x150/f44336/white?text=Portfolio',
-      targetUrl: 'https://prolance.com/profile/alex/portfolio', status: 'REJECTED',
-      rejectionReason: 'Image contains misleading claims. Please revise and resubmit.',
-      createdAt: new Date('2026-01-20'), roleType: 'freelancer', targetId: 101,
-      planName: 'Sidebar Showcase', planType: 'Banner', planLocation: 'Sidebar',
-      views: 3550, clicks: 212, sparklineData: [20, 15, 10, 5, 0, 0, 0]
-    },
-    {
-      id: 5, userId: 1, planId: 5, title: 'Cloud Migration Experts Wanted',
-      description: 'We need AWS/GCP certified engineers for a large-scale migration.',
-      imageUrl: 'https://placehold.co/300x150/4caf50/white?text=Cloud+Jobs',
-      targetUrl: 'https://prolance.com/jobs/58', status: 'EXPIRED',
-      createdAt: new Date('2025-09-01'), roleType: 'client', targetId: 58,
-      planName: 'Job Feed Banner', planType: 'Banner', planLocation: 'Job_Feed',
-      views: 0, clicks: 0, sparklineData: [80, 75, 60, 40, 20, 5, 0]
-    },
-    {
-      id: 6, userId: 1, planId: 6, title: 'Hire Top Designers — Banner',
-      description: 'Attract world-class UI/UX designers to your projects.',
-      imageUrl: 'https://placehold.co/300x150/00695c/white?text=Designers',
-      targetUrl: 'https://prolance.com/jobs/71', status: 'ACTIVE',
-      createdAt: new Date('2026-01-05'), roleType: 'client', targetId: 71,
-      planName: 'Landing Page Banner', planType: 'Banner', planLocation: 'Landing_Page',
-      views: 6200, clicks: 310, sparklineData: [50, 55, 62, 70, 68, 75, 80]
-    },
-  ];
+  // ── Campaigns (loaded from backend) ──
+  campaigns: AdCampaign[] = [];
 
   // ── Chart References ──
   @ViewChild('perfChart', { static: false }) perfChartRef!: ElementRef<HTMLCanvasElement>;
@@ -146,16 +89,16 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   private reachChartInstance: any = null;
   private conversionChartInstance: any = null;
 
-  private nextId = 7;
-
-  constructor(private roleService: RoleService) {}
+  constructor(private authService: AuthService, private adsService: AdsService) {}
 
   ngOnInit(): void {
-    this.roleSub = this.roleService.currentRole$.subscribe(role => {
+    // Auto-detect role from JWT — no manual toggle
+    const role = this.authService.getRole();
+    if (role === 'FREELANCER' || role === 'CLIENT') {
       this.currentRole = role;
-      this.recalcStats();
-      this.rebuildChart();
-    });
+    }
+    this.loadPlans();
+    this.loadCampaigns();
   }
 
   ngAfterViewInit(): void {
@@ -164,7 +107,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy(): void {
-    this.roleSub?.unsubscribe();
+    if (this.toastTimer) clearTimeout(this.toastTimer);
     if (this.perfChartInstance) {
       this.perfChartInstance.destroy();
     }
@@ -193,18 +136,25 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.adPlans.filter(p => p.roleType === this.currentRole);
   }
 
-  // ── Campaigns filtered by active role ──
+  // ── Campaigns — no filter needed, backend returns only user's campaigns ──
   get roleCampaigns(): AdCampaign[] {
-    return this.campaigns.filter(c => c.roleType === this.currentRole);
+    return this.campaigns;
+  }
+
+  // ── Plan Tier Label ──
+  getPlanTier(plan: AdPlan): string {
+    if (plan.location === 'LANDING_PAGE') return 'Elite';
+    if (plan.location === 'SEARCH_SIDEBAR' || plan.name.toLowerCase().includes('feed banner')) return 'Pro';
+    return 'Starter';
   }
 
   // ── Dynamic Performance Section Headers ──
   get perfTitle(): string {
-    return this.currentRole === 'freelancer' ? 'Profile Performance' : 'Jobs Visibility';
+    return this.currentRole === 'FREELANCER' ? 'Profile Performance' : 'Jobs Visibility';
   }
 
   get perfCategory(): string {
-    return this.currentRole === 'freelancer'
+    return this.currentRole === 'FREELANCER'
       ? 'How many times your profile was featured'
       : 'Reach of your promoted job postings';
   }
@@ -295,66 +245,58 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
       this.formImageFileName = file.name;
       // Mock: generate a placeholder URL based on the plan
       const plan = this.selectedPlan;
-      const color = plan?.type === 'Banner' ? '00bcd4' : plan?.type === 'Job_Boost' ? 'ff9800' : '9c27b0';
+      const color = plan?.type === 'BANNER' ? '00bcd4' : plan?.type === 'JOB_BOOST' ? 'ff9800' : '9c27b0';
       this.formImageUrl = `https://placehold.co/300x150/${color}/white?text=${encodeURIComponent(this.formTitle || 'Ad+Preview')}`;
     }
   }
 
-  /**
-   * Submit campaign — handles both CREATE and UPDATE.
-   * Ready for HttpClient: replace mock logic with
-   *   this.http.post<AdCampaign>('/api/campaigns', payload)
-   *   this.http.put<AdCampaign>(`/api/campaigns/${id}`, payload)
-   */
   submitCampaign(): void {
     const plan = this.selectedPlan;
     if (!plan) return;
 
     const colorHex = this.roleColors.primary.replace('#', '');
+    const payload: CreateCampaignRequest = {
+      planId: plan.id,
+      title: this.formTitle,
+      description: this.formDescription,
+      imageUrl: this.formImageUrl || `https://placehold.co/300x150/${colorHex}/white?text=${encodeURIComponent(this.formTitle)}`,
+      targetUrl: this.formTargetUrl,
+      roleType: this.currentRole
+    };
 
     if (this.isEditing && this.editingCampaignId !== null) {
-      const idx = this.campaigns.findIndex(c => c.id === this.editingCampaignId);
-      if (idx !== -1) {
-        this.campaigns[idx] = {
-          ...this.campaigns[idx],
-          planId: plan.id,
-          title: this.formTitle,
-          description: this.formDescription,
-          imageUrl: this.formImageUrl || `https://placehold.co/300x150/${colorHex}/white?text=${encodeURIComponent(this.formTitle)}`,
-          targetUrl: this.formTargetUrl,
-          status: 'PENDING',
-          rejectionReason: undefined,
-          roleType: this.currentRole,
-          planName: plan.name,
-          planType: plan.type,
-          planLocation: plan.location
-        };
-      }
+      this.adsService.updateCampaign(this.editingCampaignId, payload).subscribe({
+        next: () => {
+          this.closeModal();
+          this.displayToast('Campaign updated successfully!', 'success');
+          this.loadCampaigns();
+        },
+        error: () => {
+          this.closeModal();
+          this.displayToast('Failed to update campaign. Please try again.', 'error');
+        }
+      });
     } else {
-      const newCampaign: AdCampaign = {
-        id: this.nextId++,
-        userId: 1,
-        planId: plan.id,
-        title: this.formTitle,
-        description: this.formDescription,
-        imageUrl: this.formImageUrl || `https://placehold.co/300x150/${colorHex}/white?text=${encodeURIComponent(this.formTitle)}`,
-        targetUrl: this.formTargetUrl,
-        status: 'PENDING',
-        createdAt: new Date(),
-        roleType: this.currentRole,
-        targetId: undefined,
-        planName: plan.name,
-        planType: plan.type,
-        planLocation: plan.location,
-        views: 0,
-        clicks: 0,
-        sparklineData: [0, 0, 0, 0, 0, 0, 0]
-      };
-      this.campaigns.unshift(newCampaign);
+      this.adsService.createCampaign(payload).subscribe({
+        next: () => {
+          this.closeModal();
+          this.displayToast('Campaign created! It is now pending approval.', 'success');
+          this.loadCampaigns();
+        },
+        error: () => {
+          this.closeModal();
+          this.displayToast('Failed to create campaign. Please try again.', 'error');
+        }
+      });
     }
+  }
 
-    this.closeModal();
-    this.recalcStats();
+  private displayToast(message: string, type: 'success' | 'error'): void {
+    this.toastMessage = message;
+    this.toastType = type;
+    this.showToast = true;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.showToast = false, 4000);
   }
 
   // ═══════════════════════════════════════════════
@@ -377,11 +319,22 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
 
   deleteCampaign(): void {
     if (this.deletingCampaignId !== null) {
-      this.campaigns = this.campaigns.filter(c => c.id !== this.deletingCampaignId);
-      this.recalcStats();
+      const id = this.deletingCampaignId;
+      this.showDeleteConfirm = false;
+      this.deletingCampaignId = null;
+      this.adsService.deleteCampaign(id).subscribe({
+        next: () => {
+          this.displayToast('Campaign deleted.', 'success');
+          this.loadCampaigns();
+        },
+        error: () => {
+          this.displayToast('Failed to delete campaign.', 'error');
+        }
+      });
+    } else {
+      this.showDeleteConfirm = false;
+      this.deletingCampaignId = null;
     }
-    this.showDeleteConfirm = false;
-    this.deletingCampaignId = null;
   }
 
   canEdit(campaign: AdCampaign): boolean {
@@ -389,28 +342,51 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // ═══════════════════════════════════════════════
-  // CRUD — READ  (HttpClient-ready)
+  // DATA LOADING
   // ═══════════════════════════════════════════════
 
-  /**
-   * Ready for HttpClient: replace with
-   *   this.http.get<AdCampaign[]>(`/api/campaigns?userId=${userId}&role=${role}`)
-   */
   private loadCampaigns(): void {
-    // Currently uses mock data — swap with HTTP call
-    this.recalcStats();
+    this.isLoading = true;
+    this.adsService.getMyCampaigns().subscribe({
+      next: (data) => {
+        this.campaigns = data;
+        this.recalcStats();
+        this.isLoading = false;
+      },
+      error: () => {
+        this.campaigns = [];
+        this.recalcStats();
+        this.isLoading = false;
+      }
+    });
   }
 
-  /**
-   * Ready for HttpClient: replace with
-   *   this.http.get<{activeAds, totalImpressions, totalClicks, remainingBudget}>(`/api/campaigns/stats?role=${role}`)
-   */
+  private loadPlans(): void {
+    this.plansLoading = true;
+    this.plansError = false;
+    this.adsService.getPlans().subscribe({
+      next: (plans) => {
+        const iconMap: Record<string, string> = {
+          'FEATURED_PROFILE': 'person_pin', 'BANNER': 'panorama',
+          'JOB_BOOST': 'work_outline'
+        };
+        this.adPlans = plans.map(p => ({ ...p, icon: iconMap[p.type] || 'campaign' }));
+        this.plansLoading = false;
+      },
+      error: () => {
+        this.adPlans = [];
+        this.plansLoading = false;
+        this.plansError = true;
+      }
+    });
+  }
+
   private recalcStats(): void {
     const visible = this.roleCampaigns;
     this.stats.activeAds = visible.filter(c => c.status === 'ACTIVE').length;
     this.stats.totalImpressions = visible.reduce((sum, c) => sum + (c.views || 0), 0);
     this.stats.totalClicks = visible.reduce((sum, c) => sum + (c.clicks || 0), 0);
-    this.stats.remainingBudget = this.currentRole === 'freelancer' ? 1520 : 3200;
+    this.stats.remainingBudget = this.currentRole === 'FREELANCER' ? 1520 : 3200;
   }
 
   private resetForm(): void {
@@ -460,10 +436,10 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     // Role-specific mock data
-    const viewsData = this.currentRole === 'freelancer'
+    const viewsData = this.currentRole === 'FREELANCER'
       ? [320, 450, 380, 510, 620, 480, 550]
       : [410, 520, 490, 630, 710, 560, 640];
-    const clicksData = this.currentRole === 'freelancer'
+    const clicksData = this.currentRole === 'FREELANCER'
       ? [15, 28, 22, 35, 42, 30, 38]
       : [22, 35, 28, 48, 55, 40, 50];
 
@@ -482,7 +458,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
         labels,
         datasets: [
           {
-            label: this.currentRole === 'freelancer' ? 'Profile Views' : 'Job Views',
+            label: this.currentRole === 'FREELANCER' ? 'Profile Views' : 'Job Views',
             data: viewsData,
             borderColor: colors.primary,
             backgroundColor: viewsGradient,
@@ -589,7 +565,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     const labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'];
 
     // Role-specific mock data (impressions over 6 weeks)
-    const reachData = this.currentRole === 'freelancer'
+    const reachData = this.currentRole === 'FREELANCER'
       ? [1200, 1450, 1680, 1920, 2100, 2350]
       : [1800, 2100, 2450, 2680, 2900, 3200];
 
@@ -603,7 +579,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
       data: {
         labels,
         datasets: [{
-          label: this.currentRole === 'freelancer' ? 'Profile Views' : 'Job Views',
+          label: this.currentRole === 'FREELANCER' ? 'Profile Views' : 'Job Views',
           data: reachData,
           borderColor: colors.primary,
           backgroundColor: gradient,
@@ -649,11 +625,11 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     const colors = this.roleColors;
 
     // Role-specific labels and data
-    const labels = this.currentRole === 'freelancer'
+    const labels = this.currentRole === 'FREELANCER'
       ? ['Profile Views', 'Skill Searches', 'Portfolio Clicks']
       : ['Job Views', 'Application Starts', 'Candidate Engagement'];
 
-    const ctrData = this.currentRole === 'freelancer'
+    const ctrData = this.currentRole === 'FREELANCER'
       ? [5.2, 7.8, 6.1] // CTR percentages
       : [4.8, 6.5, 5.9];
 
@@ -701,7 +677,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   get marketInsightsSubtitle(): string {
-    return this.currentRole === 'freelancer'
+    return this.currentRole === 'FREELANCER'
       ? 'Real-time market trends for Freelancers'
       : 'Real-time market trends for Clients';
   }

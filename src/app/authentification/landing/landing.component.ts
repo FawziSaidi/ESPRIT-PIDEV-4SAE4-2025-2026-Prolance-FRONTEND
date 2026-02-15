@@ -1,5 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, HostListener, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { AdsService } from '../../services/ads.service';
+import { AdCampaign } from '../../pages/ads/models/ad.models';
 
 @Component({
   selector: 'app-landing',
@@ -33,13 +35,42 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   ];
 
+  // Ad slots — categorized by planLocation
+  landingPageBanners: AdCampaign[] = [];
+  jobFeedAds: AdCampaign[] = [];
+
   private observer!: IntersectionObserver;
   private testimonialInterval: any;
 
-  constructor(private router: Router, private el: ElementRef) {}
+  constructor(private router: Router, private el: ElementRef, private adsService: AdsService) {}
 
   ngOnInit(): void {
     document.body.classList.add('landing-page');
+    this.loadLandingAds();
+  }
+
+  private loadLandingAds(): void {
+    this.adsService.getActiveAds().subscribe({
+      next: (ads) => {
+        this.landingPageBanners = ads
+          .filter(a => a.planLocation === 'LANDING_PAGE')
+          .slice(0, 3);
+        this.jobFeedAds = ads
+          .filter(a => a.planLocation === 'JOB_FEED')
+          .slice(0, 4);
+        // Re-scan DOM for new .reveal elements after Angular renders the ads
+        setTimeout(() => this.initScrollReveal(), 100);
+      },
+      error: () => {
+        this.landingPageBanners = [];
+        this.jobFeedAds = [];
+      }
+    });
+  }
+
+  onAdClick(ad: AdCampaign): void {
+    this.adsService.recordClick(ad.id).subscribe();
+    // Navigation happens via the <a> href — no need to block
   }
 
   ngAfterViewInit(): void {
@@ -90,7 +121,7 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
       });
     }, options);
 
-    const revealElements = this.el.nativeElement.querySelectorAll('.reveal');
+    const revealElements = this.el.nativeElement.querySelectorAll('.reveal:not(.visible)');
     revealElements.forEach((el: Element) => this.observer.observe(el));
   }
 

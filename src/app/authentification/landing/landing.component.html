@@ -61,6 +61,28 @@
   </div>
 </section>
 
+<!-- ========== AD SLOT 1 — After Hero ========== -->
+<section class="partner-zone" *ngIf="landingPageBanners.length > 0">
+  <div class="container">
+    <div class="partner-banner-wrap reveal">
+      <a [href]="landingPageBanners[0].targetUrl" target="_blank" rel="noopener noreferrer"
+         class="partner-banner-link" (click)="onAdClick(landingPageBanners[0])">
+        <img [src]="landingPageBanners[0].imageUrl" [alt]="landingPageBanners[0].title" class="partner-banner-img">
+        <span class="promo-tag">Sponsored</span>
+      </a>
+    </div>
+  </div>
+</section>
+<section class="partner-zone partner-empty-slot" *ngIf="landingPageBanners.length === 0">
+  <div class="container">
+    <div class="partner-empty-cta reveal">
+      <i class="material-icons">campaign</i>
+      <p>Promote your business to thousands of freelancers &amp; recruiters</p>
+      <a class="btn btn-outline-primary btn-round btn-sm" routerLink="/login">Advertise Here</a>
+    </div>
+  </div>
+</section>
+
 <!-- ========== VALUE PROPOSITION ========== -->
 <section class="landing-section bg-light" id="value-section">
   <div class="container">
@@ -112,6 +134,35 @@
           </div>
         </div>
       </div>
+
+      <!-- ── Dynamic Job-Feed Entries (appended to grid) ── -->
+      <!-- DEBUG: jobFeedAds.length = {{ jobFeedAds.length }} -->
+      <div class="col-lg-4 col-md-6 reveal"
+           *ngFor="let ad of jobFeedAds; let i = index"
+           [class.reveal-delay-1]="i % 3 === 0"
+           [class.reveal-delay-2]="i % 3 === 1"
+           [class.reveal-delay-3]="i % 3 === 2">
+        <a [href]="ad.targetUrl" target="_blank" rel="noopener noreferrer"
+           class="card feature-card member-highlight text-center"
+           [class.spotlight-freelancer]="ad.roleType === 'FREELANCER'"
+           [class.spotlight-client]="ad.roleType === 'CLIENT'"
+           (click)="onAdClick(ad)">
+          <div class="card-body">
+            <span class="spotlight-badge" [class.badge-freelancer]="ad.roleType === 'FREELANCER'" [class.badge-client]="ad.roleType === 'CLIENT'">
+              {{ ad.roleType === 'FREELANCER' ? 'Featured Talent' : 'Premium Job' }}
+            </span>
+            <div class="feature-icon" [class.icon-primary]="ad.roleType === 'FREELANCER'" [class.icon-info]="ad.roleType === 'CLIENT'">
+              <i class="material-icons">{{ ad.roleType === 'FREELANCER' ? 'person_pin' : 'work' }}</i>
+            </div>
+            <h4 class="card-title">{{ ad.title }}</h4>
+            <p class="card-description text-muted">
+              {{ ad.description | slice:0:100 }}{{ ad.description.length > 100 ? '...' : '' }}
+            </p>
+            <span class="member-highlight-label">Ad</span>
+          </div>
+        </a>
+      </div>
+
     </div>
   </div>
 </section>
@@ -265,6 +316,19 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== AD SLOT 2 — Between Categories & Dual Path ========== -->
+<section class="partner-zone" *ngIf="landingPageBanners.length > 1">
+  <div class="container">
+    <div class="partner-banner-wrap reveal">
+      <a [href]="landingPageBanners[1].targetUrl" target="_blank" rel="noopener noreferrer"
+         class="partner-banner-link" (click)="onAdClick(landingPageBanners[1])">
+        <img [src]="landingPageBanners[1].imageUrl" [alt]="landingPageBanners[1].title" class="partner-banner-img">
+        <span class="promo-tag">Sponsored</span>
+      </a>
     </div>
   </div>
 </section>
@@ -474,6 +538,19 @@
           <i class="material-icons">person_add</i> Create Your Free Account
         </a>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== AD SLOT 3 — Above Footer ========== -->
+<section class="partner-zone" *ngIf="landingPageBanners.length > 2">
+  <div class="container">
+    <div class="partner-banner-wrap reveal">
+      <a [href]="landingPageBanners[2].targetUrl" target="_blank" rel="noopener noreferrer"
+         class="partner-banner-link" (click)="onAdClick(landingPageBanners[2])">
+        <img [src]="landingPageBanners[2].imageUrl" [alt]="landingPageBanners[2].title" class="partner-banner-img">
+        <span class="promo-tag">Sponsored</span>
+      </a>
     </div>
   </div>
 </section>

@@ -1,3 +1,4 @@
 export const environment = {
-  production: true
+  production: true,
+  adsServiceUrl: 'http://localhost:8090/ads-service/api'
 };

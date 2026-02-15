@@ -1,3 +1,10 @@
+<!-- Toast Notification -->
+<div class="toast-notification" *ngIf="showToast" [class.toast-success]="toastType === 'success'" [class.toast-error]="toastType === 'error'">
+  <i class="material-icons">{{ toastType === 'success' ? 'check_circle' : 'error' }}</i>
+  <span>{{ toastMessage }}</span>
+  <button class="toast-close" (click)="showToast = false"><i class="material-icons">close</i></button>
+</div>
+
 <div class="admin-ads compact">
 
   <!-- ════════ PAGE HEADER + KPI STRIP ════════ -->
@@ -39,8 +46,14 @@
       <p class="section-desc">Review pending ad submissions and approve or reject them.</p>
     </div>
 
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <i class="material-icons spin">autorenew</i>
+      <p>Loading campaigns...</p>
+    </div>
+
     <!-- Horizontal Scrollable Cards -->
-    <div class="approval-scroll" *ngIf="pendingCampaigns.length > 0">
+    <div class="approval-scroll" *ngIf="!isLoading && pendingCampaigns.length > 0">
       <div class="approval-card"
            *ngFor="let c of pendingCampaigns"
            [class.fading-out]="isFadingOut(c.id)">
@@ -62,10 +75,10 @@
           <div class="creator-row">
             <div class="avatar-circle">{{ getUserAvatar(c.userId) }}</div>
             <div class="creator-info">
-              <span class="creator-name">{{ getUserName(c.userId) }}</span>
-              <span class="creator-meta">{{ getUserEmail(c.userId) }}</span>
+              <span class="creator-name">User #{{ c.userId }}</span>
+              <span class="creator-meta">{{ c.createdAt | date:'shortDate' }}</span>
             </div>
-            <span class="role-chip" [class.role-freelancer]="c.roleType === 'freelancer'" [class.role-client]="c.roleType === 'client'">
+            <span class="role-chip" [class.role-freelancer]="c.roleType === 'FREELANCER'" [class.role-client]="c.roleType === 'CLIENT'">
               {{ getRoleBadge(c.roleType) }}
             </span>
           </div>
@@ -98,7 +111,7 @@
     </div>
 
     <!-- Empty State -->
-    <div class="empty-queue" *ngIf="pendingCampaigns.length === 0">
+    <div class="empty-queue" *ngIf="!isLoading && pendingCampaigns.length === 0">
       <i class="material-icons">verified</i>
       <p>All caught up! No campaigns awaiting approval.</p>
     </div>
@@ -117,13 +130,14 @@
       <p class="section-desc">Currently running advertisements across the platform.</p>
     </div>
 
-    <div class="table-wrap" *ngIf="activeCampaigns.length > 0">
+    <div class="table-wrap" *ngIf="!isLoading && activeCampaigns.length > 0">
       <table class="admin-table">
         <thead>
           <tr>
             <th>Ad Preview</th>
             <th>Owner</th>
             <th>Plan Type</th>
+            <th>Status</th>
             <th>Start Date</th>
             <th>Performance</th>
             <th>Trend</th>
@@ -144,8 +158,8 @@
               <div class="owner-cell">
                 <div class="avatar-circle sm">{{ getUserAvatar(c.userId) }}</div>
                 <div class="owner-info">
-                  <span class="owner-name">{{ getUserName(c.userId) }}</span>
-                  <span class="owner-role" [class.text-purple]="c.roleType === 'freelancer'" [class.text-teal]="c.roleType === 'client'">
+                  <span class="owner-name">User #{{ c.userId }}</span>
+                  <span class="owner-role" [class.text-purple]="c.roleType === 'FREELANCER'" [class.text-teal]="c.roleType === 'CLIENT'">
                     {{ getRoleBadge(c.roleType) }}
                   </span>
                 </div>
@@ -157,6 +171,10 @@
                 <span class="plan-name">{{ c.planName }}</span>
                 <span class="plan-loc">{{ c.planLocation?.replace('_', ' ') }}</span>
               </span>
+            </td>
+            <!-- Status -->
+            <td>
+              <span class="badge" [ngClass]="statusBadgeClass(c.status)">{{ c.status }}</span>
             </td>
             <!-- Start Date -->
             <td>
@@ -192,7 +210,7 @@
       </table>
     </div>
 
-    <div class="empty-queue" *ngIf="activeCampaigns.length === 0">
+    <div class="empty-queue" *ngIf="!isLoading && activeCampaigns.length === 0">
       <i class="material-icons">campaign</i>
       <p>No active campaigns at the moment.</p>
     </div>
@@ -253,12 +271,12 @@
       <div class="drawer-user-row">
         <div class="avatar-circle">{{ getUserAvatar(inspectedCampaign.userId) }}</div>
         <div>
-          <span class="drawer-user-name">{{ getUserName(inspectedCampaign.userId) }}</span>
-          <span class="drawer-user-email">{{ getUserEmail(inspectedCampaign.userId) }}</span>
+          <span class="drawer-user-name">User #{{ inspectedCampaign.userId }}</span>
+          <span class="drawer-user-email">ID: {{ inspectedCampaign.userId }}</span>
         </div>
         <span class="role-chip"
-              [class.role-freelancer]="inspectedCampaign.roleType === 'freelancer'"
-              [class.role-client]="inspectedCampaign.roleType === 'client'">
+              [class.role-freelancer]="inspectedCampaign.roleType === 'FREELANCER'"
+              [class.role-client]="inspectedCampaign.roleType === 'CLIENT'">
           {{ getRoleBadge(inspectedCampaign.roleType) }}
         </span>
       </div>

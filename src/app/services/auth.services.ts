@@ -4,6 +4,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { AuthRequest, AuthResponse, RegisterRequest } from '../authentification/auth/auth.module';
 
 export interface SessionUser {
+  id: number;
   email: string;
   role: 'ADMIN' | 'USER' | 'CLIENT' | 'FREELANCER';
   token: string;
@@ -37,6 +38,7 @@ export class AuthService {
   // ---------- SESSION ----------
   setSession(res: AuthResponse, email: string): void {
     const user: SessionUser = {
+      id: res.id,
       email,
       role: res.role,
       token: res.token
