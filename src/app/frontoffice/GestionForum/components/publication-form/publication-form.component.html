@@ -1,0 +1,116 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header">
+      <h2 class="modal-title">{{ getTitle() }}</h2>
+      <button class="btn-close" (click)="onClose()" [disabled]="loading">
+        ✕
+      </button>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="errorMessage" class="alert-error">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Form -->
+    <form (ngSubmit)="onSubmit()" class="publication-form">
+      <!-- Type Selection -->
+      <div class="form-group">
+        <label class="form-label">Post Type *</label>
+        <div class="type-selector">
+          <div 
+            *ngFor="let typeOption of typeOptions"
+            class="type-option"
+            [class.selected]="formData.type === typeOption.value"
+            (click)="formData.type = typeOption.value">
+            <span class="type-option-icon">{{ typeOption.icon }}</span>
+            <span class="type-option-label">{{ typeOption.label }}</span>
+          </div>
+        </div>
+        <span *ngIf="errors.type" class="error-text">{{ errors.type }}</span>
+      </div>
+
+      <!-- Titre -->
+      <div class="form-group">
+        <label class="form-label" for="titre">Title *</label>
+        <input
+          type="text"
+          id="titre"
+          name="titre"
+          [(ngModel)]="formData.titre"
+          class="form-input"
+          [class.error]="errors.titre"
+          placeholder="Enter your post title..."
+          maxlength="200"
+          required>
+        <div class="input-helper">
+          <span *ngIf="errors.titre" class="error-text">{{ errors.titre }}</span>
+          <span class="char-count">{{ formData.titre.length }}/200</span>
+        </div>
+      </div>
+
+      <!-- Contenu -->
+      <div class="form-group">
+        <label class="form-label" for="contenue">Content *</label>
+        <textarea
+          id="contenue"
+          name="contenue"
+          [(ngModel)]="formData.contenue"
+          class="form-textarea"
+          [class.error]="errors.contenue"
+          placeholder="Write your post content..."
+          rows="6"
+          required></textarea>
+        <span *ngIf="errors.contenue" class="error-text">{{ errors.contenue }}</span>
+      </div>
+
+      <!-- Image Upload -->
+      <div class="form-group">
+        <label class="form-label">Image (optional)</label>
+        
+        <div *ngIf="!imagePreview" class="upload-area">
+          <input
+            type="file"
+            id="imageInput"
+            accept="image/*"
+            (change)="onFileSelected($event)"
+            class="file-input">
+          <label for="imageInput" class="upload-label">
+            <div class="upload-icon">📷</div>
+            <p class="upload-text">Click to upload an image</p>
+            <p class="upload-hint">PNG, JPG, JPEG up to 5MB</p>
+          </label>
+        </div>
+
+        <div *ngIf="imagePreview" class="image-preview">
+          <img [src]="imagePreview" alt="Preview">
+          <button type="button" class="btn-remove-image" (click)="removeImage()">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="modal-actions">
+        <button
+          type="button"
+          class="btn-cancel"
+          (click)="onClose()"
+          [disabled]="loading">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn-submit"
+          [disabled]="loading">
+          <span *ngIf="!loading">{{ mode === 'create' ? 'Create' : 'Update' }}</span>
+          <span *ngIf="loading" class="loading-text">
+            <span class="spinner-small"></span>
+            Processing...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

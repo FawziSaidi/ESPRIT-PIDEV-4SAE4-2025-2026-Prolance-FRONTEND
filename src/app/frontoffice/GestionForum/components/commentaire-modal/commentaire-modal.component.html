@@ -1,0 +1,112 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="publication-info">
+        <h2 class="modal-title">Comments</h2>
+        <p class="publication-titre">{{ publication.titre }}</p>
+      </div>
+      <button class="btn-close" (click)="onClose()" [disabled]="loading">
+        ✕
+      </button>
+    </div>
+
+    <!-- Error Message -->
+    <div *ngIf="errorMessage" class="alert-error">
+      {{ errorMessage }}
+    </div>
+
+    <!-- Commentaires List -->
+    <div class="commentaires-section">
+      <div *ngIf="commentaires.length === 0 && !loading" class="empty-state">
+        <div class="empty-icon">💬</div>
+        <p>No comments yet</p>
+        <p class="empty-hint">Be the first to comment!</p>
+      </div>
+
+      <div *ngIf="loading && commentaires.length === 0" class="loading-container">
+        <div class="spinner"></div>
+        <p>Loading comments...</p>
+      </div>
+
+      <div class="commentaires-list">
+        <div *ngFor="let commentaire of commentaires" class="commentaire-item">
+          <!-- User Info -->
+          <div class="commentaire-header">
+            <div class="user-info">
+              <div class="user-avatar">
+                {{ commentaire.user?.name?.charAt(0) }}{{ commentaire.user?.lastName?.charAt(0) }}
+              </div>
+              <div class="user-details">
+                <h4 class="user-name">
+                  {{ commentaire.user?.name }} {{ commentaire.user?.lastName }}
+                </h4>
+                <span class="comment-time">{{ getTimeAgo(commentaire.createAt!) }}</span>
+              </div>
+            </div>
+
+            <!-- Actions (only for owner) -->
+            <div class="comment-actions" *ngIf="canModifyCommentaire(commentaire) && editingCommentaireId !== commentaire.id">
+              <button class="btn-icon-action edit" (click)="startEdit(commentaire)" title="Edit">
+                ✏️
+              </button>
+              <button class="btn-icon-action delete" (click)="deleteCommentaire(commentaire)" title="Delete">
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <!-- Content (View Mode) -->
+          <div *ngIf="editingCommentaireId !== commentaire.id" class="commentaire-content">
+            <p>{{ commentaire.contenue }}</p>
+          </div>
+
+          <!-- Content (Edit Mode) -->
+          <div *ngIf="editingCommentaireId === commentaire.id" class="edit-mode">
+            <textarea
+              [(ngModel)]="editingContent"
+              class="edit-textarea"
+              placeholder="Edit your comment..."
+              rows="3"></textarea>
+            <div class="edit-actions">
+              <button class="btn-cancel-edit" (click)="cancelEdit()">
+                Cancel
+              </button>
+              <button class="btn-save-edit" (click)="saveEdit(commentaire)">
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Comment Form -->
+    <div class="add-comment-section">
+      <div class="current-user-avatar">
+        U
+      </div>
+      <div class="comment-input-wrapper">
+        <textarea
+          [(ngModel)]="newCommentaire"
+          class="comment-input"
+          placeholder="Add a comment..."
+          rows="3"
+          [disabled]="loading"
+          (keydown.enter)="$event.ctrlKey && addCommentaire()"></textarea>
+        <div class="input-footer">
+          <span class="input-hint">Ctrl + Enter to send</span>
+          <button
+            class="btn-send-comment"
+            (click)="addCommentaire()"
+            [disabled]="loading || !newCommentaire.trim()">
+            <span *ngIf="!loading">Send</span>
+            <span *ngIf="loading" class="loading-text">
+              <span class="spinner-small"></span>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

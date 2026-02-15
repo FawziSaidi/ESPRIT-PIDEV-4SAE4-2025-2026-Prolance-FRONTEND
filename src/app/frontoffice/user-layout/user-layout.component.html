@@ -15,13 +15,13 @@
 
     <!-- Nav Links -->
     <div class="navbar-links" [class.open]="mobileMenuOpen">
-          <a class="dropdown-item" routerLink="/app/dashboard" (click)="profileDropdownOpen = false">
+          <a class="nav-link" routerLink="/app/dashboard" routerLinkActive="active" (click)="mobileMenuOpen = false">
             <i class="material-icons">dashboard</i> Dashboard
           </a>
            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
             <i class="material-icons">folder_shared</i> Projects
           </a>
-          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+          <a class="nav-link" routerLink="/app/forum" routerLinkActive="active" (click)="mobileMenuOpen = false">
             <i class="material-icons">forum</i> Forum
           </a>
           <a class="nav-link" href="#" (click)="mobileMenuOpen = false">

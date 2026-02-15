@@ -11,6 +11,10 @@ import { UserDashboardComponent } from '../../authentification/user-dashboard/us
 const userRoutes: Routes = [
   { path: '',            redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard',   component: UserDashboardComponent },
+  { 
+    path: 'forum', 
+    loadChildren: () => import('../GestionForum/gestion-forum.module').then(m => m.GestionForumModule)
+  },
 ];
 
 @NgModule({

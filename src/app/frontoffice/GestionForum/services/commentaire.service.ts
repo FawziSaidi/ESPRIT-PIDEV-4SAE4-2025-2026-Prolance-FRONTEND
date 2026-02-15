@@ -1,0 +1,47 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { Commentaire } from '../models/commentaire.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CommentaireService {
+  private baseUrl = 'http://localhost:8089/pidev/api/commentaires';
+
+  constructor(private http: HttpClient) {}
+
+  getAllCommentaires(): Observable<Commentaire[]> {
+    return this.http.get<Commentaire[]>(this.baseUrl);
+  }
+
+  getCommentairesByPublicationId(publicationId: number): Observable<Commentaire[]> {
+    return this.http.get<Commentaire[]>(`${this.baseUrl}/publication/${publicationId}`);
+  }
+
+  getCommentaireById(id: number): Observable<Commentaire> {
+    return this.http.get<Commentaire>(`${this.baseUrl}/${id}`);
+  }
+
+  createCommentaire(contenue: string, publicationId: number, userId: number): Observable<Commentaire> {
+    const params = new HttpParams()
+      .set('contenue', contenue)
+      .set('publicationId', publicationId.toString())
+      .set('userId', userId.toString());
+    
+    return this.http.post<Commentaire>(this.baseUrl, null, { params });
+  }
+
+  updateCommentaire(id: number, contenue: string, userId: number): Observable<Commentaire> {
+    const params = new HttpParams()
+      .set('contenue', contenue)
+      .set('userId', userId.toString());
+    
+    return this.http.put<Commentaire>(`${this.baseUrl}/${id}`, null, { params });
+  }
+
+  deleteCommentaire(id: number, userId: number): Observable<any> {
+    const params = new HttpParams().set('userId', userId.toString());
+    return this.http.delete(`${this.baseUrl}/${id}`, { params, responseType: 'text' });
+  }
+}
