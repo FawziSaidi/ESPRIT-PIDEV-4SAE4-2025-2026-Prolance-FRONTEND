@@ -1,0 +1,106 @@
+<div class="plans-container">
+
+  <div class="plans-header">
+    <h1>Choisissez votre plan
+      <span class="highlight">{{ selectedType === 'freelancer' ? 'Freelancer' : 'Client' }}</span>
+    </h1>
+    <p class="subtitle">
+      {{ selectedType === 'freelancer'
+        ? 'Boostez votre carrière avec le plan adapté à vos besoins'
+        : 'Trouvez les meilleurs freelancers pour vos projets' }}
+    </p>
+
+    <div class="billing-toggle">
+      <button
+        [class.active]="billingCycle === 'SEMESTRIELLE'"
+        (click)="setBillingCycle('SEMESTRIELLE')">
+        Semestriel
+      </button>
+      <button
+        [class.active]="billingCycle === 'ANNUELLE'"
+        (click)="setBillingCycle('ANNUELLE')">
+        Annuel
+      </button>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Chargement des plans...</p>
+  </div>
+
+  <div class="error-message" *ngIf="errorMessage">
+    <div class="error-icon">⚠️</div>
+    <p>{{ errorMessage }}</p>
+    <button class="retry-btn" (click)="loadPlans()">Réessayer</button>
+  </div>
+
+  <div class="plans-grid" *ngIf="!loading && !errorMessage">
+    <div
+      class="plan-card"
+      *ngFor="let plan of filteredPlans"
+      [ngClass]="{
+        'starter': plan.name === 'Starter',
+        'pro': plan.name === 'Pro' || plan.name === 'Business',
+        'elite': plan.name === 'Elite' || plan.name === 'Enterprise'
+      }">
+
+      <div class="popular-badge" *ngIf="isPopular(plan)">
+        POPULAIRE
+      </div>
+
+      <div class="plan-name" [ngClass]="{
+        'bg-cyan': plan.name === 'Starter',
+        'bg-orange': plan.name === 'Pro' || plan.name === 'Business',
+        'bg-purple': plan.name === 'Elite' || plan.name === 'Enterprise'
+      }">
+        {{ plan.name }}
+      </div>
+
+      <div class="plan-price">
+        <span class="price">{{ plan.price }} DT</span>
+        <span class="duration">/ {{ getDuration(plan) }}</span>
+      </div>
+
+      <p class="plan-description" *ngIf="plan.description">
+        {{ plan.description }}
+      </p>
+
+      <ul class="plan-features">
+        <li *ngFor="let feature of getFeatures(plan)">
+          <span class="check-icon" [ngClass]="{
+            'check-cyan': plan.name === 'Starter',
+            'check-orange': plan.name === 'Pro' || plan.name === 'Business',
+            'check-purple': plan.name === 'Elite' || plan.name === 'Enterprise'
+          }">✓</span>
+          {{ feature }}
+        </li>
+      </ul>
+
+      <button
+        class="subscribe-btn"
+        [ngClass]="{
+          'btn-cyan': plan.name === 'Starter',
+          'btn-orange': plan.name === 'Pro' || plan.name === 'Business',
+          'btn-purple': plan.name === 'Elite' || plan.name === 'Enterprise'
+        }"
+        (click)="onSubscribe(plan)">
+        S'abonner
+      </button>
+    </div>
+  </div>
+
+  <div class="no-plans" *ngIf="!loading && !errorMessage && filteredPlans.length === 0">
+    <p>Aucun plan disponible pour cette sélection.</p>
+  </div>
+
+  <!-- Modal de confirmation -->
+  <app-confirm-modal
+    [plan]="selectedPlan"
+    [selectedType]="selectedType"
+    [isVisible]="showModal"
+    (confirmed)="onModalConfirmed($event)"
+    (cancelled)="onModalCancelled()">
+  </app-confirm-modal>
+
+</div>

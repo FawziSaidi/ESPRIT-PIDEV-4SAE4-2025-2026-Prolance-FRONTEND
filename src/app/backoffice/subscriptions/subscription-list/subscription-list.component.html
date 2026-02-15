@@ -1,0 +1,99 @@
+<div class="list-container">
+
+  <!-- Header -->
+  <div class="list-header">
+    <h1>Gestion des Abonnements</h1>
+    <button class="btn-new" (click)="onCreate()">+ Nouveau Plan</button>
+  </div>
+
+  <!-- Filtres -->
+  <div class="filters-row">
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Rechercher un plan..."
+      [(ngModel)]="searchTerm"
+      (input)="onSearch()" />
+
+    <select class="filter-select" [(ngModel)]="filterType" (change)="onFilterType(filterType)">
+      <option value="ALL">Type: Tous</option>
+      <option value="FREELANCER">Freelancer</option>
+      <option value="CLIENT">Client</option>
+    </select>
+
+    <select class="sort-select" [(ngModel)]="sortBy" (change)="onSort(sortBy)">
+      <option value="price_asc">Tri: Prix asc</option>
+      <option value="price_desc">Tri: Prix desc</option>
+      <option value="name_asc">Tri: Nom A-Z</option>
+      <option value="name_desc">Tri: Nom Z-A</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" *ngIf="loading">
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Table -->
+  <table class="sub-table" *ngIf="!loading && !errorMessage">
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Type</th>
+        <th>Prix</th>
+        <th>Cycle</th>
+        <th>Actif</th>
+        <th>Abonnés</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let sub of filteredSubscriptions">
+        <td>{{ sub.name }}</td>
+        <td>
+          <span class="type-badge" [ngClass]="{
+            'type-freelancer': sub.type === 'FREELANCER',
+            'type-client': sub.type === 'CLIENT'
+          }">
+            {{ sub.type }}
+          </span>
+        </td>
+        <td>{{ sub.price }} DT</td>
+        <td>{{ getCycleLabel(sub.billingCycle) }}</td>
+        <td>
+          <label class="toggle-switch">
+            <input type="checkbox" [checked]="sub.isActive" (change)="onToggleActive(sub)" />
+            <span class="toggle-slider"></span>
+          </label>
+        </td>
+        <td>{{ sub.activeSubscribersCount || 0 }}</td>
+        <td class="actions-cell">
+          <button class="btn-edit" (click)="onEdit(sub.id!)">Edit</button>
+          <button class="btn-delete" (click)="onDelete(sub)">Del</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Pagination -->
+  <div class="pagination-row" *ngIf="!loading && totalPages > 0">
+    <span class="pagination-info">
+      Affichage {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ currentPage * itemsPerPage > getTotalFiltered() ? getTotalFiltered() : currentPage * itemsPerPage }} sur {{ getTotalFiltered() }} plans
+    </span>
+    <div class="pagination-buttons">
+      <button
+        *ngFor="let page of getPages()"
+        class="page-btn"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page)">
+        {{ page }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Erreur -->
+  <div class="error-message" *ngIf="errorMessage">
+    <p>⚠️ {{ errorMessage }}</p>
+    <button (click)="loadSubscriptions()">Réessayer</button>
+  </div>
+</div>

@@ -1,0 +1,135 @@
+<div class="my-subscription-container">
+
+  <!-- Loading -->
+  <div class="loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Chargement de votre abonnement...</p>
+  </div>
+
+  <!-- Erreur -->
+  <div class="error-message" *ngIf="errorMessage">
+    <p>⚠️ {{ errorMessage }}</p>
+    <button class="retry-btn" (click)="loadMySubscription()">Réessayer</button>
+  </div>
+
+  <!-- Pas d'abonnement -->
+  <div class="no-subscription" *ngIf="!loading && !errorMessage && !currentSubscription">
+    <h2>Vous n'avez pas d'abonnement actif</h2>
+    <p>Découvrez nos plans et boostez votre carrière !</p>
+    <button class="btn-explore" (click)="onChangePlan()">Voir les plans</button>
+  </div>
+
+  <!-- Abonnement actif -->
+  <div class="subscription-content" *ngIf="!loading && !errorMessage && currentSubscription">
+
+    <!-- Header -->
+    <div class="header-row">
+      <h1>Mon Abonnement</h1>
+      <span class="status-badge" [ngClass]="getStatusClass()">
+        {{ getStatusLabel() }}
+      </span>
+    </div>
+
+    <!-- Plan Info Card -->
+    <div class="plan-info-card">
+      <div class="plan-details">
+        <h2 class="plan-name">{{ getPlanName() }}</h2>
+        <p class="plan-price">{{ getPlanPrice() }}</p>
+        <p class="plan-dates">
+          Début: {{ formatDate(currentSubscription.startDate) }} |
+          Fin: {{ formatDate(currentSubscription.endDate) }}
+        </p>
+        <p class="plan-renew">
+          Renouvellement auto: {{ currentSubscription.autoRenew ? 'Oui' : 'Non' }}
+        </p>
+      </div>
+      <div class="days-remaining">
+        <span class="days-number">{{ getDaysRemaining() }}</span>
+        <span class="days-label">jours restants</span>
+      </div>
+    </div>
+
+    <!-- Utilisation -->
+    <div class="usage-section">
+      <h3>Utilisation</h3>
+
+      <!-- Projets -->
+      <div class="usage-row">
+        <span class="usage-label">
+          Projets: {{ currentSubscription.currentProjects }}/{{ currentSubscription.subscription?.maxProjects }}
+        </span>
+        <div class="progress-bar">
+          <div class="progress-fill progress-purple"
+               [style.width.%]="getProjectsPercentage()"></div>
+        </div>
+        <span class="usage-percent">{{ getProjectsPercentage() }}%</span>
+      </div>
+
+      <!-- Propositions -->
+      <div class="usage-row">
+        <span class="usage-label">
+          Propositions: {{ currentSubscription.currentProposals }}/{{ currentSubscription.subscription?.maxProposals }}
+        </span>
+        <div class="progress-bar">
+          <div class="progress-fill progress-cyan"
+               [style.width.%]="getProposalsPercentage()"></div>
+        </div>
+        <span class="usage-percent">{{ getProposalsPercentage() }}%</span>
+      </div>
+
+      <!-- Jobs actifs -->
+      <div class="usage-row">
+        <span class="usage-label">
+          Jobs actifs: 5/{{ currentSubscription.subscription?.maxActiveJobs }}
+        </span>
+        <div class="progress-bar">
+          <div class="progress-fill progress-orange"
+               [style.width.%]="getJobsPercentage()"></div>
+        </div>
+        <span class="usage-percent">{{ getJobsPercentage() }}%</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-row">
+      <button class="btn-change" (click)="onChangePlan()">Changer de plan</button>
+      <button class="btn-auto-renew" (click)="onToggleAutoRenew()">
+        {{ currentSubscription.autoRenew ? 'Désactiver' : 'Activer' }} auto-renew
+      </button>
+      <button class="btn-cancel-sub" (click)="onCancelSubscription()"
+              *ngIf="currentSubscription.status === 'ACTIVE'">
+        Annuler
+      </button>
+    </div>
+
+    <!-- Historique -->
+    <div class="history-section">
+      <h3>Historique des abonnements</h3>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Plan</th>
+            <th>Début</th>
+            <th>Fin</th>
+            <th>Montant</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ getPlanName() }}</td>
+            <td>{{ formatDate(currentSubscription.startDate) }}</td>
+            <td>{{ formatDate(currentSubscription.endDate) }}</td>
+            <td>{{ currentSubscription.amountPaid }} DT</td>
+            <td>
+              <span class="table-status" [ngClass]="getStatusClass()">
+                {{ getStatusLabel() }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>

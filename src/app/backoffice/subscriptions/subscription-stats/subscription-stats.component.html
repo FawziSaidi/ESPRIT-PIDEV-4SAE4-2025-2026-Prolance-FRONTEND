@@ -1,0 +1,95 @@
+<div class="stats-container">
+  <h1>Tableau de bord - Abonnements</h1>
+
+  <div class="loading" *ngIf="loading"><p>Chargement...</p></div>
+
+  <div class="stats-content" *ngIf="!loading">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-bar bar-purple"></div>
+        <span class="kpi-label">Total Abonnés</span>
+        <span class="kpi-value">{{ totalSubscribers }}</span>
+        <span class="kpi-change positive">+12%</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-bar bar-green"></div>
+        <span class="kpi-label">Revenus Mensuels</span>
+        <span class="kpi-value">{{ monthlyRevenue }} DT</span>
+        <span class="kpi-change positive">+8%</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-bar bar-orange"></div>
+        <span class="kpi-label">Taux d'annulation</span>
+        <span class="kpi-value">{{ cancellationRate }}%</span>
+        <span class="kpi-change negative">-2%</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-bar bar-cyan"></div>
+        <span class="kpi-label">Plan Populaire</span>
+        <span class="kpi-value">{{ popularPlan }}</span>
+        <span class="kpi-change">{{ popularPlanPercentage }}%</span>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <!-- Bar Chart -->
+      <div class="chart-card">
+        <h3>Abonnés par plan</h3>
+        <div class="bar-chart">
+          <div class="bar-item" *ngFor="let item of planChartData">
+            <span class="bar-value">{{ item.subscribers }}</span>
+            <div class="bar" [style.height.px]="getBarHeight(item.subscribers)"
+                 [style.background]="item.color"></div>
+            <span class="bar-label">{{ item.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie Chart (CSS) -->
+      <div class="chart-card">
+        <h3>Répartition par type</h3>
+        <div class="pie-container">
+          <div class="pie-chart"
+               [style.background]="'conic-gradient(#7c4dff 0% ' + freelancerPercentage + '%, #ff9800 ' + freelancerPercentage + '% 100%)'">
+          </div>
+          <div class="pie-legend">
+            <div class="legend-item">
+              <span class="legend-color" style="background: #7c4dff;"></span>
+              Freelancers {{ freelancerPercentage }}%
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #ff9800;"></span>
+              Clients {{ clientPercentage }}%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue Table -->
+    <div class="revenue-section">
+      <h3>Revenus par plan</h3>
+      <table class="revenue-table">
+        <thead>
+          <tr>
+            <th>Plan</th>
+            <th>Abonnés actifs</th>
+            <th>Prix unitaire</th>
+            <th>Revenu total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of revenueData">
+            <td>{{ row.name }}</td>
+            <td>{{ row.subscribers }}</td>
+            <td>{{ row.price }} DT</td>
+            <td class="revenue-total">{{ row.totalRevenue }} DT</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
