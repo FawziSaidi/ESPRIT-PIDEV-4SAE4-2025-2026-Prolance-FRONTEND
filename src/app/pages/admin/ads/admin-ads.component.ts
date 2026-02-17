@@ -112,13 +112,35 @@ export class AdminAdsComponent implements OnInit, OnDestroy {
   // USER INFO HELPERS
   // ═══════════════════════════════════════════════
 
+  // TODO: Enhance with userService.getUserById(userId) to display actual name/email.
+  // The AdCampaign DTO includes userId; map to user identity once UserService endpoint is available.
   getUserAvatar(userId: number): string {
     const initials = 'U' + userId;
     return initials.substring(0, 2).toUpperCase();
   }
 
-  getRoleBadge(role: string): string {
-    return role === 'FREELANCER' ? 'Freelancer' : 'Client';
+  getRoleBadge(campaign: AdCampaign): string {
+    return campaign.roleType === 'FREELANCER' ? 'Freelancer' : 'Client';
+  }
+
+  hasImage(campaign: AdCampaign): boolean {
+    return !!(campaign.imageUrl && campaign.imageUrl.trim() !== '');
+  }
+
+  getAdImage(campaign: AdCampaign): string {
+    if (this.hasImage(campaign)) {
+      return campaign.imageUrl;
+    }
+    return campaign.roleType === 'FREELANCER'
+      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(campaign.title)}`
+      : `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(campaign.title)}`;
+  }
+
+  onImgError(event: Event, campaign: AdCampaign): void {
+    const img = event.target as HTMLImageElement;
+    img.src = campaign.roleType === 'FREELANCER'
+      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(campaign.title)}`
+      : `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(campaign.title)}`;
   }
 
   // ═══════════════════════════════════════════════
@@ -127,7 +149,10 @@ export class AdminAdsComponent implements OnInit, OnDestroy {
 
   approveCampaign(campaign: AdCampaign): void {
     this.adsService.adminApprove(campaign.id).subscribe({
-      next: () => {
+      next: (updated) => {
+        // Immediate local state sync — reflect DB status without waiting for reload
+        campaign.status = 'ACTIVE';
+        if (updated) Object.assign(campaign, updated);
         this.displayToast('Campaign approved successfully.', 'success');
         this.loadAllCampaigns();
       },
@@ -161,7 +186,14 @@ export class AdminAdsComponent implements OnInit, OnDestroy {
     this.rejectingCampaignId = null;
     this.rejectReason = '';
     this.adsService.adminReject(id, reason).subscribe({
-      next: () => {
+      next: (updated) => {
+        // Immediate local state sync
+        const local = this.campaigns.find(c => c.id === id);
+        if (local) {
+          local.status = 'REJECTED';
+          local.rejectionReason = reason;
+        }
+        if (updated && local) Object.assign(local, updated);
         this.displayToast('Campaign rejected.', 'success');
         this.loadAllCampaigns();
       },

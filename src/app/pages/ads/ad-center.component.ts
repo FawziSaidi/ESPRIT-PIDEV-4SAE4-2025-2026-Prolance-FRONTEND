@@ -63,7 +63,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   formDescription = '';
   formImageUrl = '';
   formTargetUrl = '';
-  formImageFileName = '';
+  isValidImageUrl = false;
 
   // ── KPI Stats ──
   stats = {
@@ -197,7 +197,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     this.formDescription = campaign.description;
     this.formImageUrl = campaign.imageUrl;
     this.formTargetUrl = campaign.targetUrl;
-    this.formImageFileName = 'existing-image.jpg';
+    this.validateImageUrl();
     this.modalStep = 2;
     this.showCreateModal = true;
   }
@@ -237,29 +237,36 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.adPlans.find(p => p.id === this.selectedPlanId);
   }
 
-  // ── Mock Image Upload ──
-  onImageUpload(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-      this.formImageFileName = file.name;
-      // Mock: generate a placeholder URL based on the plan
-      const plan = this.selectedPlan;
-      const color = plan?.type === 'BANNER' ? '00bcd4' : plan?.type === 'JOB_BOOST' ? 'ff9800' : '9c27b0';
-      this.formImageUrl = `https://placehold.co/300x150/${color}/white?text=${encodeURIComponent(this.formTitle || 'Ad+Preview')}`;
+  // ── Image URL Validation ──
+  validateImageUrl(): void {
+    const url = this.formImageUrl?.trim();
+    if (!url) {
+      this.isValidImageUrl = false;
+      return;
     }
+    // Basic URL validation
+    try {
+      const urlObj = new URL(url);
+      this.isValidImageUrl = ['http:', 'https:'].includes(urlObj.protocol);
+    } catch {
+      this.isValidImageUrl = false;
+    }
+  }
+
+  clearImageUrl(): void {
+    this.formImageUrl = '';
+    this.isValidImageUrl = false;
   }
 
   submitCampaign(): void {
     const plan = this.selectedPlan;
     if (!plan) return;
 
-    const colorHex = this.roleColors.primary.replace('#', '');
     const payload: CreateCampaignRequest = {
       planId: plan.id,
       title: this.formTitle,
       description: this.formDescription,
-      imageUrl: this.formImageUrl || `https://placehold.co/300x150/${colorHex}/white?text=${encodeURIComponent(this.formTitle)}`,
+      imageUrl: this.formImageUrl?.trim() || '',
       targetUrl: this.formTargetUrl,
       roleType: this.currentRole
     };
@@ -341,6 +348,37 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     return campaign.status === 'PENDING' || campaign.status === 'REJECTED';
   }
 
+  hasImage(campaign: AdCampaign): boolean {
+    return !!(campaign.imageUrl && campaign.imageUrl.trim() !== '');
+  }
+
+  getAdImage(campaign: AdCampaign): string {
+    if (this.hasImage(campaign)) return campaign.imageUrl;
+    return this.getDiceBearUrl(campaign.title, campaign.roleType);
+  }
+
+  getPreviewImage(): string {
+    if (this.formImageUrl && this.formImageUrl.trim() !== '') return this.formImageUrl;
+    return this.getDiceBearUrl(this.formTitle || 'Preview', this.currentRole);
+  }
+
+  onImgError(event: Event, campaign: AdCampaign): void {
+    (event.target as HTMLImageElement).src = this.getDiceBearUrl(campaign.title, campaign.roleType);
+  }
+
+  onPreviewImgError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.src = this.getDiceBearUrl(this.formTitle || 'Preview', this.currentRole);
+    // Mark URL as invalid if it fails to load
+    this.isValidImageUrl = false;
+  }
+
+  private getDiceBearUrl(title: string, role: string): string {
+    return role === 'FREELANCER'
+      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(title)}`
+      : `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(title)}`;
+  }
+
   // ═══════════════════════════════════════════════
   // DATA LOADING
   // ═══════════════════════════════════════════════
@@ -395,7 +433,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     this.formDescription = '';
     this.formImageUrl = '';
     this.formTargetUrl = '';
-    this.formImageFileName = '';
+    this.isValidImageUrl = false;
     this.modalStep = 1;
     this.isEditing = false;
     this.editingCampaignId = null;

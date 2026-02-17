@@ -64,16 +64,26 @@
 <!-- ========== AD SLOT 1 — After Hero ========== -->
 <section class="partner-zone" *ngIf="landingPageBanners.length > 0">
   <div class="container">
-    <div class="partner-banner-wrap reveal">
+    <div class="split-glass-banner reveal">
+      <img [src]="getAdImage(landingPageBanners[0])" class="split-glass-bg" aria-hidden="true" loading="lazy">
       <a [href]="landingPageBanners[0].targetUrl" target="_blank" rel="noopener noreferrer"
-         class="partner-banner-link" (click)="onAdClick(landingPageBanners[0])">
-        <img [src]="landingPageBanners[0].imageUrl" [alt]="landingPageBanners[0].title" class="partner-banner-img">
-        <span class="promo-tag">Sponsored</span>
+         class="split-glass-inner" (click)="onAdClick(landingPageBanners[0])">
+        <img [src]="getAdImage(landingPageBanners[0])" [alt]="landingPageBanners[0].title"
+             class="split-glass-img" loading="lazy" (error)="onImgError($event, landingPageBanners[0])">
+        <div class="split-glass-text">
+          <span class="promo-tag promo-tag-inline">Sponsored</span>
+          <h4>{{ landingPageBanners[0].title }}</h4>
+          <p>{{ landingPageBanners[0].description | slice:0:120 }}</p>
+        </div>
       </a>
     </div>
   </div>
 </section>
-<section class="partner-zone partner-empty-slot" *ngIf="landingPageBanners.length === 0">
+<!-- Skeleton while loading -->
+<section class="partner-zone" *ngIf="adsLoading">
+  <div class="container"><div class="skeleton-banner reveal"></div></div>
+</section>
+<section class="partner-zone partner-empty-slot" *ngIf="!adsLoading && landingPageBanners.length === 0">
   <div class="container">
     <div class="partner-empty-cta reveal">
       <i class="material-icons">campaign</i>
@@ -135,34 +145,51 @@
         </div>
       </div>
 
-      <!-- ── Dynamic Job-Feed Entries (appended to grid) ── -->
-      <!-- DEBUG: jobFeedAds.length = {{ jobFeedAds.length }} -->
-      <div class="col-lg-4 col-md-6 reveal"
-           *ngFor="let ad of jobFeedAds; let i = index"
-           [class.reveal-delay-1]="i % 3 === 0"
-           [class.reveal-delay-2]="i % 3 === 1"
-           [class.reveal-delay-3]="i % 3 === 2">
-        <a [href]="ad.targetUrl" target="_blank" rel="noopener noreferrer"
-           class="card feature-card member-highlight text-center"
-           [class.spotlight-freelancer]="ad.roleType === 'FREELANCER'"
-           [class.spotlight-client]="ad.roleType === 'CLIENT'"
-           (click)="onAdClick(ad)">
-          <div class="card-body">
-            <span class="spotlight-badge" [class.badge-freelancer]="ad.roleType === 'FREELANCER'" [class.badge-client]="ad.roleType === 'CLIENT'">
-              {{ ad.roleType === 'FREELANCER' ? 'Featured Talent' : 'Premium Job' }}
-            </span>
-            <div class="feature-icon" [class.icon-primary]="ad.roleType === 'FREELANCER'" [class.icon-info]="ad.roleType === 'CLIENT'">
-              <i class="material-icons">{{ ad.roleType === 'FREELANCER' ? 'person_pin' : 'work' }}</i>
-            </div>
-            <h4 class="card-title">{{ ad.title }}</h4>
-            <p class="card-description text-muted">
-              {{ ad.description | slice:0:100 }}{{ ad.description.length > 100 ? '...' : '' }}
-            </p>
-            <span class="member-highlight-label">Ad</span>
-          </div>
-        </a>
-      </div>
+    </div>
 
+    <!-- ── Dynamic Grid Spotlights (CSS Grid, unlimited) ── -->
+    <!-- Skeleton cards while loading -->
+    <div class="spotlight-grid" *ngIf="adsLoading">
+      <div class="skeleton-card" *ngFor="let s of [1,2,3]"></div>
+    </div>
+    <div class="spotlight-grid" *ngIf="!adsLoading && gridSpotlights.length > 0">
+      <a *ngFor="let ad of gridSpotlights; let i = index"
+         [href]="ad.targetUrl" target="_blank" rel="noopener noreferrer"
+         class="card feature-card member-highlight text-center reveal"
+         [class.reveal-delay-1]="i % 3 === 0"
+         [class.reveal-delay-2]="i % 3 === 1"
+         [class.reveal-delay-3]="i % 3 === 2"
+         [class.spotlight-freelancer]="ad.roleType === 'FREELANCER'"
+         [class.spotlight-client]="ad.roleType === 'CLIENT'"
+         (click)="onAdClick(ad)">
+        <!-- Adaptive media container: 16/9 with mesh gradient fallback -->
+        <div class="media-container"
+             [class.mesh-freelancer]="!hasImage(ad) && ad.roleType === 'FREELANCER'"
+             [class.mesh-client]="!hasImage(ad) && ad.roleType === 'CLIENT'">
+          <img [src]="getAdImage(ad)" [alt]="ad.title" class="member-highlight-img"
+               loading="lazy" (error)="onImgError($event, ad)"
+               [class.dicebear-avatar]="!hasImage(ad)">
+        </div>
+        <div class="card-body">
+          <span class="spotlight-badge"
+                [class.badge-freelancer]="ad.roleType === 'FREELANCER'"
+                [class.badge-client]="ad.roleType === 'CLIENT'">
+            {{ ad.roleType === 'FREELANCER' ? 'Featured Talent' : 'Premium Job' }}
+          </span>
+          <div class="feature-icon"
+               [class.icon-primary]="ad.roleType === 'FREELANCER'"
+               [class.icon-info]="ad.roleType === 'CLIENT'">
+            <i class="material-icons">{{ ad.roleType === 'FREELANCER' ? 'person_pin' : 'work_outline' }}</i>
+          </div>
+          <h4 class="card-title" [ngClass]="getTitleClass(ad.title)">{{ ad.title }}</h4>
+          <p class="card-description text-muted card-desc-clamp">
+            {{ ad.description }}
+          </p>
+          <span class="member-highlight-label">Ad</span>
+          <!-- CTA slides up on hover -->
+          <span class="card-cta-hover">View Details <i class="material-icons">arrow_forward</i></span>
+        </div>
+      </a>
     </div>
   </div>
 </section>
@@ -222,6 +249,25 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== HIGHLIGHTED OPPORTUNITY (JOB_FEED banners) ========== -->
+<section class="partner-zone partner-zone-wide" *ngIf="jobFeedBanners.length > 0">
+  <div class="container">
+    <div class="split-glass-banner split-glass-wide reveal">
+      <img [src]="getAdImage(jobFeedBanners[0])" class="split-glass-bg" aria-hidden="true" loading="lazy">
+      <a [href]="jobFeedBanners[0].targetUrl" target="_blank" rel="noopener noreferrer"
+         class="split-glass-inner" (click)="onAdClick(jobFeedBanners[0])">
+        <img [src]="getAdImage(jobFeedBanners[0])" [alt]="jobFeedBanners[0].title"
+             class="split-glass-img" loading="lazy" (error)="onImgError($event, jobFeedBanners[0])">
+        <div class="split-glass-text">
+          <span class="promo-tag promo-tag-inline">Highlighted Opportunity</span>
+          <h4>{{ jobFeedBanners[0].title }}</h4>
+          <p>{{ jobFeedBanners[0].description | slice:0:150 }}</p>
+        </div>
+      </a>
     </div>
   </div>
 </section>
@@ -323,11 +369,17 @@
 <!-- ========== AD SLOT 2 — Between Categories & Dual Path ========== -->
 <section class="partner-zone" *ngIf="landingPageBanners.length > 1">
   <div class="container">
-    <div class="partner-banner-wrap reveal">
+    <div class="split-glass-banner reveal">
+      <img [src]="getAdImage(landingPageBanners[1])" class="split-glass-bg" aria-hidden="true" loading="lazy">
       <a [href]="landingPageBanners[1].targetUrl" target="_blank" rel="noopener noreferrer"
-         class="partner-banner-link" (click)="onAdClick(landingPageBanners[1])">
-        <img [src]="landingPageBanners[1].imageUrl" [alt]="landingPageBanners[1].title" class="partner-banner-img">
-        <span class="promo-tag">Sponsored</span>
+         class="split-glass-inner" (click)="onAdClick(landingPageBanners[1])">
+        <img [src]="getAdImage(landingPageBanners[1])" [alt]="landingPageBanners[1].title"
+             class="split-glass-img" loading="lazy" (error)="onImgError($event, landingPageBanners[1])">
+        <div class="split-glass-text">
+          <span class="promo-tag promo-tag-inline">Sponsored</span>
+          <h4>{{ landingPageBanners[1].title }}</h4>
+          <p>{{ landingPageBanners[1].description | slice:0:120 }}</p>
+        </div>
       </a>
     </div>
   </div>
@@ -542,14 +594,49 @@
   </div>
 </section>
 
+<!-- ========== QUICK PARTNERS (SEARCH_SIDEBAR ads) ========== -->
+<section class="landing-section quick-partners-section" *ngIf="sidebarShowcase.length > 0">
+  <div class="container">
+    <div class="row justify-content-center mb-4 reveal">
+      <div class="col-lg-7 text-center">
+        <h2 class="section-title">Quick Partners</h2>
+        <p class="section-subtitle text-muted">Trusted partners and services from the Prolance network.</p>
+      </div>
+    </div>
+    <div class="quick-partners-grid">
+      <a *ngFor="let ad of sidebarShowcase; let i = index"
+         [href]="ad.targetUrl" target="_blank" rel="noopener noreferrer"
+         class="quick-partner-card reveal"
+         [class.reveal-delay-1]="i % 3 === 0"
+         [class.reveal-delay-2]="i % 3 === 1"
+         [class.reveal-delay-3]="i % 3 === 2"
+         (click)="onAdClick(ad)">
+        <img [src]="getAdImage(ad)" [alt]="ad.title" class="quick-partner-img"
+             loading="lazy" (error)="onImgError($event, ad)">
+        <div class="quick-partner-body">
+          <h6 class="quick-partner-title">{{ ad.title }}</h6>
+          <p class="quick-partner-desc">{{ ad.description | slice:0:60 }}{{ ad.description.length > 60 ? '...' : '' }}</p>
+          <span class="member-highlight-label">Ad</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- ========== AD SLOT 3 — Above Footer ========== -->
 <section class="partner-zone" *ngIf="landingPageBanners.length > 2">
   <div class="container">
-    <div class="partner-banner-wrap reveal">
+    <div class="split-glass-banner reveal">
+      <img [src]="getAdImage(landingPageBanners[2])" class="split-glass-bg" aria-hidden="true" loading="lazy">
       <a [href]="landingPageBanners[2].targetUrl" target="_blank" rel="noopener noreferrer"
-         class="partner-banner-link" (click)="onAdClick(landingPageBanners[2])">
-        <img [src]="landingPageBanners[2].imageUrl" [alt]="landingPageBanners[2].title" class="partner-banner-img">
-        <span class="promo-tag">Sponsored</span>
+         class="split-glass-inner" (click)="onAdClick(landingPageBanners[2])">
+        <img [src]="getAdImage(landingPageBanners[2])" [alt]="landingPageBanners[2].title"
+             class="split-glass-img" loading="lazy" (error)="onImgError($event, landingPageBanners[2])">
+        <div class="split-glass-text">
+          <span class="promo-tag promo-tag-inline">Sponsored</span>
+          <h4>{{ landingPageBanners[2].title }}</h4>
+          <p>{{ landingPageBanners[2].description | slice:0:120 }}</p>
+        </div>
       </a>
     </div>
   </div>

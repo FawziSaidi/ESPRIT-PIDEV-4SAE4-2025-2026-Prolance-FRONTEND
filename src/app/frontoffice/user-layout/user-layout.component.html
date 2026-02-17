@@ -34,16 +34,6 @@
 
     <!-- Right Section -->
     <div class="navbar-right">
-      <!-- Role Switcher (compact) -->
-      <div class="role-chip-group">
-        <button class="role-chip" [class.active]="currentRole === 'freelancer'" (click)="toggleRole('freelancer')">
-          Freelancer
-        </button>
-        <button class="role-chip" [class.active]="currentRole === 'client'" (click)="toggleRole('client')">
-          Client
-        </button>
-      </div>
-
       <!-- Profile Dropdown -->
       <div class="profile-dropdown-wrapper">
         <button class="profile-avatar" (click)="toggleProfileDropdown()">
@@ -51,7 +41,7 @@
         </button>
         <div class="profile-dropdown" [class.open]="profileDropdownOpen">
           <div class="dropdown-header">
-            <span class="dropdown-name">Alex Johnson</span>
+            <span class="dropdown-name">{{ userName }}</span>
             <span class="dropdown-role">{{ currentRole | titlecase }}</span>
           </div>
 

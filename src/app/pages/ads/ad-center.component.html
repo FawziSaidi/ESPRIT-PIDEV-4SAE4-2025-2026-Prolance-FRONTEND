@@ -121,7 +121,8 @@
               <tr *ngFor="let c of roleCampaigns">
                 <!-- Thumbnail -->
                 <td class="td-thumb">
-                  <img [src]="c.imageUrl" [alt]="c.title" class="ad-thumbnail" />
+                  <img [src]="getAdImage(c)" [alt]="c.title" class="ad-thumbnail"
+                       loading="lazy" (error)="onImgError($event, c)" />
                 </td>
                 <!-- Campaign Info -->
                 <td>
@@ -256,32 +257,57 @@
       </div>
     </div>
 
-    <!-- ── STEP 2: Campaign Details Form ── -->
+    <!-- ── STEP 2: Campaign Details Form + Live Preview ── -->
     <div class="modal-body-custom" *ngIf="modalStep === 2">
       <p class="step-subtitle">Fill in your campaign details.</p>
-      <div class="form-group-custom">
-        <label>Campaign Title</label>
-        <input type="text" class="form-input" [(ngModel)]="formTitle" placeholder="e.g., Senior Developer Available" />
-      </div>
-      <div class="form-group-custom">
-        <label>Description</label>
-        <textarea class="form-input form-textarea" [(ngModel)]="formDescription" rows="3"
-                  placeholder="Describe your ad in a few sentences..."></textarea>
-      </div>
-      <div class="form-group-custom">
-        <label>Ad Image</label>
-        <div class="file-upload-area">
-          <input type="file" id="adImage" accept="image/*" (change)="onImageUpload($event)" hidden />
-          <label for="adImage" class="file-upload-label">
-            <i class="material-icons">cloud_upload</i>
-            <span *ngIf="!formImageFileName">Click to upload image</span>
-            <span *ngIf="formImageFileName">{{ formImageFileName }}</span>
-          </label>
+      <div class="step2-layout">
+        <!-- Form Column -->
+        <div class="step2-form">
+          <div class="form-group-custom">
+            <label>Campaign Title</label>
+            <input type="text" class="form-input" [(ngModel)]="formTitle" placeholder="e.g., Senior Developer Available" />
+          </div>
+          <div class="form-group-custom">
+            <label>Description</label>
+            <textarea class="form-input form-textarea" [(ngModel)]="formDescription" rows="3"
+                      placeholder="Describe your ad in a few sentences..."></textarea>
+          </div>
+          <div class="form-group-custom">
+            <label>Ad Image URL (Optional)</label>
+            <div class="url-input-wrapper">
+              <input type="url" class="form-input url-input" [(ngModel)]="formImageUrl"
+                     (input)="validateImageUrl()" placeholder="https://example.com/your-ad-image.jpg" />
+              <button type="button" class="btn-clear-url" *ngIf="formImageUrl" (click)="clearImageUrl()" title="Clear URL">
+                <i class="material-icons">close</i>
+              </button>
+              <span class="url-verified" *ngIf="isValidImageUrl" title="Link Verified">
+                <i class="material-icons">check_circle</i>
+              </span>
+            </div>
+            <small class="url-hint">Leave blank to use a default placeholder based on your role.</small>
+          </div>
+          <div class="form-group-custom">
+            <label>Target URL</label>
+            <input type="url" class="form-input" [(ngModel)]="formTargetUrl" placeholder="https://prolance.com/your-page" />
+          </div>
         </div>
-      </div>
-      <div class="form-group-custom">
-        <label>Target URL</label>
-        <input type="url" class="form-input" [(ngModel)]="formTargetUrl" placeholder="https://prolance.com/your-page" />
+        <!-- Live Preview Column -->
+        <div class="step2-preview">
+          <div class="live-preview-label">Live Preview</div>
+          <div class="live-preview-card" [ngStyle]="{'border-color': roleColors.rgbaFill}">
+            <div class="live-preview-img-wrap">
+              <img [src]="getPreviewImage()" alt="Preview" class="live-preview-img" (error)="onPreviewImgError($event)" />
+            </div>
+            <div class="live-preview-body">
+              <span class="live-preview-badge" [ngStyle]="{'background': roleColors.rgbaFill, 'color': roleColors.primary}">
+                {{ selectedPlan?.name || 'Ad Plan' }}
+              </span>
+              <h5 class="live-preview-title">{{ formTitle || 'Your Campaign Title' }}</h5>
+              <p class="live-preview-desc">{{ formDescription || 'Your campaign description will appear here...' }}</p>
+              <span class="live-preview-url">{{ formTargetUrl || 'https://prolance.com' }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

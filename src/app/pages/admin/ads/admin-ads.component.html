@@ -60,7 +60,8 @@
 
         <!-- Ad Preview Image -->
         <div class="approval-preview" (click)="openInspect(c)">
-          <img [src]="c.imageUrl" [alt]="c.title" />
+          <img [src]="getAdImage(c)" [alt]="c.title" (error)="onImgError($event, c)" loading="lazy" />
+          <span class="text-only-label" *ngIf="!hasImage(c)">Text-only</span>
           <div class="preview-overlay">
             <i class="material-icons">zoom_in</i>
           </div>
@@ -79,7 +80,7 @@
               <span class="creator-meta">{{ c.createdAt | date:'shortDate' }}</span>
             </div>
             <span class="role-chip" [class.role-freelancer]="c.roleType === 'FREELANCER'" [class.role-client]="c.roleType === 'CLIENT'">
-              {{ getRoleBadge(c.roleType) }}
+              {{ getRoleBadge(c) }}
             </span>
           </div>
 
@@ -151,7 +152,8 @@
               class="clickable-row">
             <!-- Preview -->
             <td class="td-preview">
-              <img [src]="c.imageUrl" [alt]="c.title" class="table-thumb" />
+              <img [src]="getAdImage(c)" [alt]="c.title" class="table-thumb" (error)="onImgError($event, c)" loading="lazy" />
+              <span class="text-only-badge" *ngIf="!hasImage(c)">No img</span>
             </td>
             <!-- Owner -->
             <td>
@@ -160,7 +162,7 @@
                 <div class="owner-info">
                   <span class="owner-name">User #{{ c.userId }}</span>
                   <span class="owner-role" [class.text-purple]="c.roleType === 'FREELANCER'" [class.text-teal]="c.roleType === 'CLIENT'">
-                    {{ getRoleBadge(c.roleType) }}
+                    {{ getRoleBadge(c) }}
                   </span>
                 </div>
               </div>
@@ -231,8 +233,13 @@
 
   <div class="drawer-body" *ngIf="inspectedCampaign">
     <!-- Large Preview -->
-    <div class="drawer-preview">
-      <img [src]="inspectedCampaign.imageUrl" [alt]="inspectedCampaign.title" />
+    <div class="drawer-preview" *ngIf="hasImage(inspectedCampaign)">
+      <img [src]="inspectedCampaign.imageUrl" [alt]="inspectedCampaign.title"
+           (error)="onImgError($event, inspectedCampaign)" loading="lazy" />
+    </div>
+    <div class="drawer-no-image" *ngIf="!hasImage(inspectedCampaign)">
+      <i class="material-icons">hide_image</i>
+      <span>This ad is text-only (No image provided)</span>
     </div>
 
     <!-- Status Badge -->
@@ -277,18 +284,26 @@
         <span class="role-chip"
               [class.role-freelancer]="inspectedCampaign.roleType === 'FREELANCER'"
               [class.role-client]="inspectedCampaign.roleType === 'CLIENT'">
-          {{ getRoleBadge(inspectedCampaign.roleType) }}
+          {{ getRoleBadge(inspectedCampaign) }}
         </span>
       </div>
     </div>
 
-    <!-- Plan / Budget Details -->
+    <!-- Full DB Record Details -->
     <div class="drawer-field">
-      <label>Plan & Budget</label>
+      <label>Campaign Record</label>
       <div class="drawer-meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Campaign ID</span>
+          <span class="meta-value">#{{ inspectedCampaign.id }}</span>
+        </div>
         <div class="meta-item">
           <span class="meta-label">Plan</span>
           <span class="meta-value">{{ inspectedCampaign.planName }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Plan ID</span>
+          <span class="meta-value">#{{ inspectedCampaign.planId }}</span>
         </div>
         <div class="meta-item">
           <span class="meta-label">Type</span>
@@ -301,6 +316,14 @@
         <div class="meta-item">
           <span class="meta-label">Role Type</span>
           <span class="meta-value">{{ inspectedCampaign.roleType | titlecase }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Image URL</span>
+          <span class="meta-value" style="word-break: break-all">{{ inspectedCampaign.imageUrl || '(none)' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Created</span>
+          <span class="meta-value">{{ inspectedCampaign.createdAt | date:'medium' }}</span>
         </div>
       </div>
     </div>

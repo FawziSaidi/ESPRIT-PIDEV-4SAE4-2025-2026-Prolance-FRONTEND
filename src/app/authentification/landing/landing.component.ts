@@ -35,9 +35,12 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   ];
 
-  // Ad slots — categorized by planLocation
-  landingPageBanners: AdCampaign[] = [];
-  jobFeedAds: AdCampaign[] = [];
+  // Ad slots — categorized by planLocation + planType
+  landingPageBanners: AdCampaign[] = [];   // Plans 2 & 6: LANDING_PAGE
+  gridSpotlights: AdCampaign[] = [];       // Plans 1 & 4: JOB_FEED (non-banner)
+  jobFeedBanners: AdCampaign[] = [];       // Plan 5: JOB_FEED + BANNER
+  sidebarShowcase: AdCampaign[] = [];      // Plan 3: SEARCH_SIDEBAR
+  adsLoading = true;
 
   private observer!: IntersectionObserver;
   private testimonialInterval: any;
@@ -52,20 +55,63 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   private loadLandingAds(): void {
     this.adsService.getActiveAds().subscribe({
       next: (ads) => {
+        // Plans 2 & 6 — large horizontal banners between sections
         this.landingPageBanners = ads
-          .filter(a => a.planLocation === 'LANDING_PAGE')
-          .slice(0, 3);
-        this.jobFeedAds = ads
-          .filter(a => a.planLocation === 'JOB_FEED')
-          .slice(0, 4);
+          .filter(a => a.planLocation === 'LANDING_PAGE');
+
+        // Plans 1 & 4 — spotlight / featured-job cards in the features grid
+        this.gridSpotlights = ads
+          .filter(a => a.planLocation === 'JOB_FEED' && a.planType !== 'BANNER');
+
+        // Plan 5 — banner above "Explore Categories"
+        this.jobFeedBanners = ads
+          .filter(a => a.planLocation === 'JOB_FEED' && a.planType === 'BANNER');
+
+        // Plan 3 — small cards in "Quick Partners" near footer
+        this.sidebarShowcase = ads
+          .filter(a => a.planLocation === 'SEARCH_SIDEBAR');
+
+        this.adsLoading = false;
         // Re-scan DOM for new .reveal elements after Angular renders the ads
         setTimeout(() => this.initScrollReveal(), 100);
       },
       error: () => {
         this.landingPageBanners = [];
-        this.jobFeedAds = [];
+        this.gridSpotlights = [];
+        this.jobFeedBanners = [];
+        this.sidebarShowcase = [];
+        this.adsLoading = false;
       }
     });
+  }
+
+  getAdImage(ad: AdCampaign): string {
+    if (ad.imageUrl && ad.imageUrl.trim() !== '') {
+      return ad.imageUrl;
+    }
+    return this.getDiceBearUrl(ad);
+  }
+
+  hasImage(ad: AdCampaign): boolean {
+    return !!(ad.imageUrl && ad.imageUrl.trim() !== '');
+  }
+
+  onImgError(event: Event, ad: AdCampaign): void {
+    const img = event.target as HTMLImageElement;
+    img.src = this.getDiceBearUrl(ad);
+  }
+
+  getTitleClass(title: string): string {
+    if (!title) return '';
+    if (title.length < 20) return 'title-lg';
+    if (title.length > 50) return 'title-sm';
+    return '';
+  }
+
+  private getDiceBearUrl(ad: AdCampaign): string {
+    return ad.roleType === 'FREELANCER'
+      ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(ad.title)}`
+      : `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(ad.title)}`;
   }
 
   onAdClick(ad: AdCampaign): void {
