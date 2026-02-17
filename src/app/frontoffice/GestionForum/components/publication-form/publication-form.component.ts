@@ -4,9 +4,9 @@ import { PublicationService } from '../../services/publication.service';
 import { AuthService } from '../../../../services/auth.services';
 
 interface ImagePreview {
-  file?: File;           // nouveau fichier à uploader
-  existingName?: string; // nom du fichier existant (mode edit)
-  previewUrl: string;    // URL pour l'aperçu
+  file?: File;           // new file to upload
+  existingName?: string; // existing file name (edit mode)
+  previewUrl: string;    // URL for preview
 }
 
 @Component({
@@ -26,7 +26,7 @@ export class PublicationFormComponent implements OnInit {
     type: TypePublication.ARTICLE
   };
 
-  // ✅ MULTI-IMAGES : liste d'aperçus
+  // ✅ MULTI-IMAGES: preview list
   imagePreviews: ImagePreview[] = [];
   readonly MAX_IMAGES = 5;
 
@@ -58,7 +58,7 @@ export class PublicationFormComponent implements OnInit {
     if (userId) {
       this.currentUserId = userId;
     } else {
-      console.warn('Aucun utilisateur connecté. Redirection recommandée.');
+      console.warn('No user logged in. Redirect recommended.');
     }
 
     if (this.mode === 'edit' && this.publication) {
@@ -68,7 +68,7 @@ export class PublicationFormComponent implements OnInit {
         type: this.publication.type
       };
 
-      // ✅ Charger les images existantes en mode édition
+      // ✅ Load existing images in edit mode
       if (this.publication.images && this.publication.images.length > 0) {
         this.imagePreviews = this.publication.images.map(name => ({
           existingName: name,
@@ -78,14 +78,14 @@ export class PublicationFormComponent implements OnInit {
     }
   }
 
-  // ✅ Gestion de la sélection de plusieurs fichiers
+  // ✅ Handle multiple file selection
   onFilesSelected(event: any): void {
     const files: FileList = event.target.files;
     if (!files || files.length === 0) return;
 
     const remaining = this.MAX_IMAGES - this.imagePreviews.length;
     if (remaining <= 0) {
-      this.errors.images = `Maximum ${this.MAX_IMAGES} images autorisées`;
+      this.errors.images = `Maximum ${this.MAX_IMAGES} images allowed`;
       return;
     }
 
@@ -93,14 +93,14 @@ export class PublicationFormComponent implements OnInit {
     this.errors.images = '';
 
     for (const file of filesToProcess) {
-      // Validation type
+      // Type validation
       if (!file.type.startsWith('image/')) {
-        this.errors.images = `"${file.name}" n'est pas une image valide`;
+        this.errors.images = `"${file.name}" is not a valid image`;
         continue;
       }
-      // Validation taille (5 MB)
+      // Size validation (5 MB)
       if (file.size > 5 * 1024 * 1024) {
-        this.errors.images = `"${file.name}" dépasse 5 MB`;
+        this.errors.images = `"${file.name}" exceeds 5 MB`;
         continue;
       }
 
@@ -114,11 +114,11 @@ export class PublicationFormComponent implements OnInit {
       reader.readAsDataURL(file);
     }
 
-    // Réinitialiser l'input pour permettre re-sélection du même fichier
+    // Reset the input to allow re-selection of the same file
     event.target.value = '';
   }
 
-  // ✅ Supprimer une image de la liste
+  // ✅ Remove an image from the list
   removeImage(index: number): void {
     this.imagePreviews.splice(index, 1);
     this.errors.images = '';
@@ -133,26 +133,26 @@ export class PublicationFormComponent implements OnInit {
     this.errors = { titre: '', contenue: '', type: '', images: '' };
 
     if (!this.formData.titre || this.formData.titre.trim().length === 0) {
-      this.errors.titre = 'Le titre est requis';
+      this.errors.titre = 'Title is required';
       isValid = false;
     } else if (this.formData.titre.trim().length < 5) {
-      this.errors.titre = 'Le titre doit contenir au moins 5 caractères';
+      this.errors.titre = 'Title must contain at least 5 characters';
       isValid = false;
     } else if (this.formData.titre.trim().length > 200) {
-      this.errors.titre = 'Le titre ne doit pas dépasser 200 caractères';
+      this.errors.titre = 'Title must not exceed 200 characters';
       isValid = false;
     }
 
     if (!this.formData.contenue || this.formData.contenue.trim().length === 0) {
-      this.errors.contenue = 'Le contenu est requis';
+      this.errors.contenue = 'Content is required';
       isValid = false;
     } else if (this.formData.contenue.trim().length < 10) {
-      this.errors.contenue = 'Le contenu doit contenir au moins 10 caractères';
+      this.errors.contenue = 'Content must contain at least 10 characters';
       isValid = false;
     }
 
     if (!this.formData.type) {
-      this.errors.type = 'Le type est requis';
+      this.errors.type = 'Type is required';
       isValid = false;
     }
 
@@ -171,7 +171,7 @@ export class PublicationFormComponent implements OnInit {
     formData.append('type', this.formData.type);
     formData.append('userId', this.currentUserId.toString());
 
-    // ✅ Ajouter chaque nouveau fichier image sous le même champ "images"
+    // ✅ Append each new image file under the same "images" field
     const newFiles = this.imagePreviews.filter(p => p.file);
     for (const preview of newFiles) {
       formData.append('images', preview.file!);
@@ -180,7 +180,7 @@ export class PublicationFormComponent implements OnInit {
     if (this.mode === 'create') {
       this.createPublication(formData);
     } else {
-      // ✅ En mode édition, envoyer aussi les noms des images à conserver
+      // ✅ In edit mode, also send the names of images to keep
       const imagesToKeep = this.imagePreviews
         .filter(p => p.existingName)
         .map(p => p.existingName!);
@@ -197,8 +197,8 @@ export class PublicationFormComponent implements OnInit {
         this.saved.emit();
       },
       error: (error) => {
-        console.error('Erreur création:', error);
-        this.errorMessage = error.error || 'Erreur lors de la création du post';
+        console.error('Create error:', error);
+        this.errorMessage = error.error || 'Error creating the post';
         this.loading = false;
       }
     });
@@ -211,8 +211,8 @@ export class PublicationFormComponent implements OnInit {
         this.saved.emit();
       },
       error: (error) => {
-        console.error('Erreur mise à jour:', error);
-        this.errorMessage = error.error || 'Erreur lors de la mise à jour du post';
+        console.error('Update error:', error);
+        this.errorMessage = error.error || 'Error updating the post';
         this.loading = false;
       }
     });
@@ -225,6 +225,6 @@ export class PublicationFormComponent implements OnInit {
   }
 
   getTitle(): string {
-    return this.mode === 'create' ? 'Nouveau Post' : 'Modifier le Post';
+    return this.mode === 'create' ? 'New Post' : 'Edit Post';
   }
 }
