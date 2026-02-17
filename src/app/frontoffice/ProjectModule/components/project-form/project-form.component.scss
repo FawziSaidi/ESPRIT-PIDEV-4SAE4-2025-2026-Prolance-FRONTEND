@@ -1,0 +1,416 @@
+/* ==================== MODAL OVERLAY ==================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+  padding: 80px 20px 20px 20px;  /* ← NOUVEAU! */
+  overflow-y: auto;              /* ← NOUVEAU! */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ==================== MODAL CONTENT ==================== */
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 700px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ==================== MODAL HEADER ==================== */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #6c757d;
+  cursor: pointer;
+  transition: color 0.3s;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #a855f7;
+}
+
+/* ==================== MODAL BODY ==================== */
+.modal-body {
+  padding: 2rem;
+}
+
+/* ==================== FORM SECTIONS ==================== */
+.form-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+  text-transform: capitalize;
+}
+
+.section-header .section-title {
+  margin: 0;
+}
+
+/* ==================== FORM GROUPS ==================== */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background: white;
+  color: #2c3e50;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* ==================== FORM ROW ==================== */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==================== TASKS SECTION ==================== */
+.add-task-form {
+  background: #f8f9fa;
+  border: 2px dashed #a855f7;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.add-task-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.task-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-add-task {
+  background: #a855f7;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+}
+
+.btn-add-task:hover {
+  background: #9333ea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+/* ==================== TASKS LIST ==================== */
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.task-item {
+  background: #fafbfc;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 1rem;
+  transition: all 0.3s;
+  border-left: 4px solid #a855f7;
+}
+
+.task-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  background: white;
+}
+
+.task-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-number {
+  display: inline-block;
+  background: #a855f7;
+  color: white;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  min-width: 30px;
+  text-align: center;
+}
+
+.task-name {
+  flex: 1;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.btn-remove-task {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  padding: 0;
+}
+
+.btn-remove-task:hover {
+  transform: scale(1.2);
+}
+
+.task-desc {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin: 0;
+  margin-left: 30px;
+}
+
+.empty-tasks {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 1px dashed #dee2e6;
+}
+
+.empty-tasks p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* ==================== BUTTONS ==================== */
+.btn-cancel,
+.btn-submit-task,
+.btn-cancel-footer,
+.btn-submit-footer {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  font-family: inherit;
+}
+
+.btn-cancel,
+.btn-cancel-footer {
+  background: transparent;
+  color: #6c757d;
+  border: 1px solid #e9ecef;
+}
+
+.btn-cancel:hover,
+.btn-cancel-footer:hover {
+  background: #f8f9fa;
+  border-color: #a855f7;
+  color: #a855f7;
+}
+
+.btn-submit-task,
+.btn-submit-footer {
+  background: #a855f7;
+  color: white;
+  border: none;
+}
+
+.btn-submit-task:hover,
+.btn-submit-footer:hover {
+  background: #9333ea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+.btn-submit-footer:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+/* ==================== MODAL FOOTER ==================== */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e9ecef;
+  background: #fafbfc;
+  border-radius: 0 0 16px 16px;
+}
+
+/* ==================== ERROR MESSAGES ==================== */
+.error {
+  display: block;
+  color: #dc2626;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 600px) {
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .modal-title {
+    font-size: 1.3rem;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    padding: 1rem 1.5rem;
+  }
+
+  .btn-cancel-footer,
+  .btn-submit-footer {
+    width: 100%;
+  }
+
+  .task-header {
+    flex-wrap: wrap;
+  }
+
+  .task-actions {
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-submit-task {
+    width: 100%;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-add-task {
+    margin-top: 1rem;
+    width: 100%;
+  }
+}

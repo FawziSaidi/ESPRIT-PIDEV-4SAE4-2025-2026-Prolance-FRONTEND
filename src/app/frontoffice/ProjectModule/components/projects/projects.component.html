@@ -1,0 +1,112 @@
+<div class="forum-container">
+  <div class="forum-content">
+    <div class="forum-header">
+      <div class="section-info">
+        <h1 class="section-title">Projects</h1>
+      </div>
+      <button *ngIf="isClient" class="btn-add" (click)="openAddModal()">+ Add Project</button>
+    </div>
+
+    <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+
+    <div class="filters-section">
+      <div class="filter-group">
+        <div class="tabs">
+          <button *ngFor="let cat of categoryOptions" [class.active]="selectedCategory === cat.value"
+            (click)="onCategoryChange(cat.value)" class="tab-button">
+            {{ cat.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-group" *ngIf="isClient">
+        <div class="tabs">
+          <button *ngFor="let view of viewOptions" [class.active]="selectedView === view.value"
+            (click)="onViewChange(view.value)" class="tab-button">
+            {{ view.label }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading projects...</p>
+    </div>
+
+    <div *ngIf="!loading && filteredProjects.length > 0" class="publications-grid">
+      <div *ngFor="let project of filteredProjects; let i = index" class="publication-card">
+        
+        <div class="card-header">
+          <div class="user-info">
+            <div class="user-avatar">{{ project.client?.name?.charAt(0)?.toUpperCase() || 'U' }}</div>
+            <div class="user-details">
+              <h3 class="user-name">{{ project.client?.name }} {{ project.client?.lastName }}</h3>
+              <p class="publication-time">{{ project.createdAt | date:'short' }}</p>
+            </div>
+          </div>
+          
+          <div [class]="'type-badge ' + getCategoryBadgeClass(project.category)">
+            <span class="type-icon">{{ getCategoryIcon(project.category) }}</span>
+            <span>{{ project.category }}</span>
+          </div>
+
+          <div class="card-header-actions">
+            <button *ngIf="isMyProject(project)" class="btn-action-small delete" 
+              (click)="deleteProject(project)" title="Delete">
+              🗑️
+            </button>
+            <button class="btn-action-small more-details" (click)="openProjectDetails(project)" 
+              title="More details">
+              ⋮
+            </button>
+          </div>
+        </div>
+
+        <div class="card-content">
+          <h2 class="publication-titre">{{ project.title }}</h2>
+          <p class="publication-contenue">{{ project.description | slice:0:100 }}...</p>
+          
+          <div class="project-details">
+            <div class="detail-item">
+              <span class="detail-label">Budget:</span>
+              <span class="detail-value">${{ project.budget | number:'1.0-0' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Status:</span>
+              <span class="detail-value" [class]="'status-' + (project.status | lowercase)">
+                {{ project.status }}
+              </span>
+            </div>
+          </div>
+
+          <div class="skills-section" *ngIf="project.requiredSkills && project.requiredSkills.length > 0">
+            <p class="skills-label">Required Skills:</p>
+            <div class="skills-list">
+              <span *ngFor="let skill of project.requiredSkills" class="skill-tag">
+                {{ skill.skillName }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer" *ngIf="isFreelancer">
+          <button class="btn-apply-centered" (click)="openApplyModal(project)">
+            ✅ Apply
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="!loading && filteredProjects.length === 0" class="empty-state">
+      <div class="empty-icon">📝</div>
+      <h3>No projects found</h3>
+      <button *ngIf="isClient" class="btn-primary" (click)="openAddModal()">Create first project</button>
+    </div>
+  </div>
+</div>
+
+<app-project-form *ngIf="showAddModal" (close)="closeAddModal()"></app-project-form>
+<app-project-form *ngIf="showEditModal && selectedProject" [project]="selectedProject" (close)="closeEditModal()"></app-project-form>
+<app-project-details *ngIf="showDetailsModal && selectedProject" [project]="selectedProject" (close)="closeDetailsModal()"></app-project-details>
+<app-freelancer-apply *ngIf="showApplyModal && selectedProject" [project]="selectedProject" (close)="closeApplyModal()" (skillsSubmitted)="onSkillsSubmitted($event)"></app-freelancer-apply>

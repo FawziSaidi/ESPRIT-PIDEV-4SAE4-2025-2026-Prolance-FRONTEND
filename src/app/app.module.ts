@@ -10,6 +10,7 @@ import { UserLayoutComponent } from './frontoffice/user-layout/user-layout.compo
 import { LandingModule } from './authentification/landing/landing.module';
 import { AuthModule } from './authentification/auth/auth.module';
 
+
 @NgModule({
   imports: [
     BrowserAnimationsModule,

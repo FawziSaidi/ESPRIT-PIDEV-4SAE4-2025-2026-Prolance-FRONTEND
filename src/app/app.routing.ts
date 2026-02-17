@@ -8,6 +8,7 @@ import { LandingComponent } from './authentification/landing/landing.component';
 import { LoginComponent } from './authentification/auth/login/login.component';
 import { RegisterComponent } from './authentification/auth/register/register.component';
 
+
 const routes: Routes =[
   {
     path: '',
@@ -22,6 +23,7 @@ const routes: Routes =[
     path: 'register',
     component: RegisterComponent,
   },
+
   {
     path: 'app',
     component: UserLayoutComponent,

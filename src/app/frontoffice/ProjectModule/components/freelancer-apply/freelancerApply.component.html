@@ -1,0 +1,90 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    
+    <div class="modal-header">
+      <h2 class="modal-title">Apply to {{ project?.title }}</h2>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- STEP 1: Select Skills -->
+      <div *ngIf="currentStep === 'skills'" class="form-section">
+        <h3>Select Your Skills</h3>
+        <p class="form-hint">Choose at least one skill that matches the project requirements</p>
+        
+        <div class="skills-grid">
+          <button *ngFor="let skill of skillsList" 
+            [class.selected]="isSkillSelected(skill)"
+            (click)="toggleSkill(skill)"
+            class="skill-button">
+            <span class="skill-name">{{ skill.skillName }}</span>
+            <span class="skill-level">{{ skill.level }}</span>
+            <span class="checkmark" *ngIf="isSkillSelected(skill)">✓</span>
+          </button>
+        </div>
+
+        <div class="required-skills" *ngIf="project?.requiredSkills && project?.requiredSkills.length > 0">
+          <h4>Project Required Skills:</h4>
+          <div class="skills-list">
+            <span *ngFor="let skill of project?.requiredSkills" class="required-skill-tag">
+              {{ skill.skillName }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Application Details -->
+      <div *ngIf="currentStep === 'application'" class="form-section">
+        <h3>Application Details</h3>
+        
+        <form [formGroup]="form">
+          <div class="form-group">
+            <label>Proposed Budget (USD)</label>
+            <input 
+              type="number" 
+              formControlName="proposedBudget"
+              class="form-input"
+              placeholder="e.g., 2500"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Cover Letter</label>
+            <textarea 
+              formControlName="coverLetter"
+              class="form-textarea"
+              placeholder="Tell the client why you're the right fit..."
+              rows="5"
+            ></textarea>
+          </div>
+
+          <div class="selected-skills">
+            <h4>Your Selected Skills:</h4>
+            <div class="skills-list">
+              <span *ngFor="let skill of selectedSkills" class="skill-tag">
+                {{ skill.skillName }}
+              </span>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel-footer" (click)="closeModal()">Cancel</button>
+      
+      <button *ngIf="currentStep === 'skills'" 
+        class="btn-submit-footer"
+        (click)="nextStep()">
+        Next: Application Details
+      </button>
+
+      <button *ngIf="currentStep === 'application'"
+        class="btn-submit-footer"
+        (click)="submitApplication()"
+        [disabled]="!form.valid || isSubmitting">
+        {{ isSubmitting ? 'Submitting...' : 'Submit Application' }}
+      </button>
+    </div>
+  </div>
+</div>

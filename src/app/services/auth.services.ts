@@ -4,10 +4,10 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { AuthRequest, AuthResponse, RegisterRequest } from '../authentification/auth/auth.module';
 
 export interface SessionUser {
-  id: number;
   email: string;
   role: 'ADMIN' | 'USER' | 'CLIENT' | 'FREELANCER';
   token: string;
+  userId: number;
 }
 
 @Injectable({
@@ -38,14 +38,18 @@ export class AuthService {
   // ---------- SESSION ----------
   setSession(res: AuthResponse, email: string): void {
     const user: SessionUser = {
-      id: res.id,
       email,
       role: res.role,
-      token: res.token
+      token: res.token,
+      userId: res.userId
     };
 
     localStorage.setItem('sessionUser', JSON.stringify(user));
     this.currentUserSubject.next(user);
+  }
+
+  getCurrentUserId(): number | null {
+    return this.currentUserSubject.value?.userId ?? null;
   }
 
   logout(): void {
@@ -67,6 +71,19 @@ export class AuthService {
 
   private getUserFromStorage(): SessionUser | null {
     const stored = localStorage.getItem('sessionUser');
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+
+    const parsed: SessionUser = JSON.parse(stored);
+
+    // Si la session ne contient pas userId (ancienne session), on la supprime
+    if (!parsed.userId) {
+      localStorage.removeItem('sessionUser');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('role');
+      return null;
+    }
+
+    return parsed;
   }
 }

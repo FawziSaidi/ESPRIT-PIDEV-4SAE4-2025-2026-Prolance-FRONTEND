@@ -7,12 +7,17 @@ import { MatRippleModule } from '@angular/material/core';
 
 import { UserDashboardComponent } from '../../authentification/user-dashboard/user-dashboard.component';
 import { AdCenterComponent } from '../../pages/ads/ad-center.component';
+import { ProjectFormComponent } from '../ProjectModule/components/project-form/project-form.component';
+import { ProjectsComponent } from '../ProjectModule/components/projects/projects.component';
 
 
 const userRoutes: Routes = [
   { path: '',            redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard',   component: UserDashboardComponent },
   { path: 'ads',         component: AdCenterComponent },
+  { path: 'projects', component: ProjectsComponent },
+  { path: 'create-project', component: ProjectFormComponent }
+
 ];
 
 @NgModule({
