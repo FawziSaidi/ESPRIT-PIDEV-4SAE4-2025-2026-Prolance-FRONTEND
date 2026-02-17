@@ -97,6 +97,20 @@
             <h2 class="publication-titre">{{ publication.titre }}</h2>
             <p class="publication-contenue">{{ publication.contenue }}</p>
 
+            <!-- ✅ PDFs: clickable, open in new tab -->
+            <div *ngIf="publication.pdfs && publication.pdfs.length > 0" class="pub-pdfs-list">
+              <a
+                *ngFor="let pdf of publication.pdfs"
+                [href]="getPdfUrl(pdf)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="pub-pdf-link">
+                <span class="pub-pdf-icon">📄</span>
+                <span class="pub-pdf-name">{{ pdf.substring(pdf.indexOf('_') + 1) }}</span>
+                <span class="pub-pdf-open">↗</span>
+              </a>
+            </div>
+
             <!-- ✅ IMAGES : 2 par ligne, taille identique 180x180, badge +N -->
             <div *ngIf="publication.images && publication.images.length > 0" class="pub-images-grid">
               <ng-container *ngFor="let img of publication.images; let i = index">

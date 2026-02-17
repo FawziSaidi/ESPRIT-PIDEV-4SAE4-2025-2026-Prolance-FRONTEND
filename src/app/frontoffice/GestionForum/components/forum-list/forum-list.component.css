@@ -662,3 +662,46 @@
   border-radius: 10px;
   letter-spacing: 1px;
 }
+/* ===== ✅ PDF DISPLAY IN CARD ===== */
+.pub-pdfs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.pub-pdf-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.9rem;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #6d28d9;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.pub-pdf-link:hover {
+  background: #f3e8ff;
+  border-color: #a855f7;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.15);
+  transform: translateX(2px);
+}
+
+.pub-pdf-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+.pub-pdf-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pub-pdf-open {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  flex-shrink: 0;
+}

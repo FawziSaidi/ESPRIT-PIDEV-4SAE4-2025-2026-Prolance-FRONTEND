@@ -65,6 +65,49 @@
         <span *ngIf="errors.contenue" class="error-text">{{ errors.contenue }}</span>
       </div>
 
+      <!-- ✅ PDF Upload (shown ABOVE images) -->
+      <div class="form-group">
+        <label class="form-label">
+          PDF Documents (optional)
+          <span class="images-counter">{{ pdfPreviews.length }}/{{ MAX_PDFS }}</span>
+        </label>
+
+        <!-- PDF error -->
+        <div *ngIf="errors.pdfs" class="alert-error small">{{ errors.pdfs }}</div>
+
+        <!-- PDF list -->
+        <div *ngIf="pdfPreviews.length > 0" class="pdf-list">
+          <div *ngFor="let pdf of pdfPreviews; let i = index" class="pdf-item">
+            <span class="pdf-icon">📄</span>
+            <span class="pdf-name">{{ pdf.fileName }}</span>
+            <button type="button" class="btn-remove-pdf" (click)="removePdf(i)" title="Remove">✕</button>
+          </div>
+        </div>
+
+        <!-- PDF upload area -->
+        <div *ngIf="canAddMorePdfs" class="upload-area" [class.compact]="pdfPreviews.length > 0">
+          <input
+            type="file"
+            id="pdfInput"
+            accept="application/pdf"
+            multiple
+            (change)="onPdfsSelected($event)"
+            class="file-input">
+          <label for="pdfInput" class="upload-label">
+            <div class="upload-icon">{{ pdfPreviews.length > 0 ? '➕' : '📎' }}</div>
+            <p class="upload-text">
+              {{ pdfPreviews.length > 0 ? 'Add more PDFs' : 'Click to upload PDF files' }}
+            </p>
+            <p class="upload-hint">PDF only · Max 20 MB per file · {{ MAX_PDFS - pdfPreviews.length }} remaining</p>
+          </label>
+        </div>
+
+        <!-- Limit reached -->
+        <div *ngIf="!canAddMorePdfs" class="limit-reached">
+          ✅ Limit of {{ MAX_PDFS }} PDFs reached
+        </div>
+      </div>
+
       <!-- ✅ MULTI-IMAGES Upload -->
       <div class="form-group">
         <label class="form-label">
@@ -79,15 +122,13 @@
         <div *ngIf="imagePreviews.length > 0" class="images-grid">
           <div *ngFor="let preview of imagePreviews; let i = index" class="image-thumb">
             <img [src]="preview.previewUrl" [alt]="'Image ' + (i + 1)">
-            <button type="button" class="btn-remove-image" (click)="removeImage(i)" title="Remove">
-              ✕
-            </button>
+            <button type="button" class="btn-remove-image" (click)="removeImage(i)" title="Remove">✕</button>
             <span class="image-badge">{{ i + 1 }}</span>
           </div>
         </div>
 
-        <!-- Upload area (shown if more images can be added) -->
-        <div *ngIf="canAddMore" class="upload-area" [class.compact]="imagePreviews.length > 0">
+        <!-- Upload area -->
+        <div *ngIf="canAddMoreImages" class="upload-area" [class.compact]="imagePreviews.length > 0">
           <input
             type="file"
             id="imageInput"
@@ -104,25 +145,18 @@
           </label>
         </div>
 
-        <!-- Limit reached message -->
-        <div *ngIf="!canAddMore" class="limit-reached">
+        <!-- Limit reached -->
+        <div *ngIf="!canAddMoreImages" class="limit-reached">
           ✅ Limit of {{ MAX_IMAGES }} images reached
         </div>
       </div>
 
       <!-- Actions -->
       <div class="modal-actions">
-        <button
-          type="button"
-          class="btn-cancel"
-          (click)="onClose()"
-          [disabled]="loading">
+        <button type="button" class="btn-cancel" (click)="onClose()" [disabled]="loading">
           Cancel
         </button>
-        <button
-          type="submit"
-          class="btn-submit"
-          [disabled]="loading">
+        <button type="submit" class="btn-submit" [disabled]="loading">
           <span *ngIf="!loading">{{ mode === 'create' ? 'Create' : 'Update' }}</span>
           <span *ngIf="loading" class="loading-text">
             <span class="spinner-small"></span>

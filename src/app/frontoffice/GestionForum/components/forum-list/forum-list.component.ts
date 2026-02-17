@@ -183,6 +183,10 @@ export class ForumListComponent implements OnInit {
     return `http://localhost:8089/pidev/uploads/publications/${imageName}`;
   }
 
+  getPdfUrl(pdfName: string): string {
+    return `http://localhost:8089/pidev/uploads/publications/${pdfName}`;
+  }
+
   onImageError(event: any): void {
     event.target.style.display = 'none';
   }

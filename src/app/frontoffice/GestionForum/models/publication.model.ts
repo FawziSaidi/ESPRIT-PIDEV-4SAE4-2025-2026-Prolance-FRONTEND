@@ -15,8 +15,8 @@ export interface Publication {
   id?: number;
   titre: string;
   contenue: string;
-  // ✅ MULTI-IMAGES : tableau de noms de fichiers
   images?: string[];
+  pdfs?: string[];        // ✅ PDF file names
   createAt?: string;
   likes?: number;
   type: TypePublication;
@@ -24,7 +24,12 @@ export interface Publication {
   commentaires?: any[];
 }
 
-// ✅ Helper pour construire l'URL d'une image
+// ✅ Helper to build an image URL
 export function getImageUrl(imageName: string): string {
   return `http://localhost:8089/pidev/uploads/publications/${imageName}`;
+}
+
+// ✅ Helper to build a PDF URL
+export function getPdfUrl(pdfName: string): string {
+  return `http://localhost:8089/pidev/uploads/publications/${pdfName}`;
 }
