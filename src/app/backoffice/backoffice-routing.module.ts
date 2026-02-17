@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { BackofficeLayoutComponent } from './backoffice-layout.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { AdminAdsComponent } from '../pages/admin/ads/admin-ads.component';
+import { AdminProjectsComponent } from './components/admin-projects/admin-projects.component';
 
 const routes: Routes = [
   {
@@ -21,6 +22,10 @@ const routes: Routes = [
       {
         path: 'ads',
         component: AdminAdsComponent
+      },
+      {
+        path: 'projects',
+        component: AdminProjectsComponent
       }
     ]
   }

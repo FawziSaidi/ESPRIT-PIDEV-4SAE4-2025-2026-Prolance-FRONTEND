@@ -12,7 +12,7 @@ export class SidebarComponent implements OnInit {
     { id: 'dashboard', icon: '📊', label: 'DASHBOARD', link: '#', route: '/admin/dashboard' },
     { id: 'profile', icon: '👤', label: 'PROFILE', link: '#', route: null },
     { id: 'users', icon: '👥', label: 'TABLE DES UTILISATEURS', link: '#', route: null },
-    { id: 'projet', icon: '📋', label: 'PROJET', link: '#', route: null },
+    { id: 'projects', icon: '📋', label: 'PROJET', route: '/admin/projects' },
     { id: 'forum', icon: '💬', label: 'FORUM', link: '#', route: null },
     { id: 'ads', icon: '📷', label: 'ADS', link: '#', route: '/admin/ads' },
     { id: 'evenement', icon: '📅', label: 'ÉVÉNEMENT', link: '#', route: null },

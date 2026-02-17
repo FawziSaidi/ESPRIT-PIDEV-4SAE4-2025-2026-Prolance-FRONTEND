@@ -9,6 +9,7 @@ import { FooterComponent } from './components/footer/footer.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { BackofficeLayoutComponent } from './backoffice-layout.component';
 import { AdminAdsComponent } from '../pages/admin/ads/admin-ads.component';
+import { AdminProjectsComponent } from './components/admin-projects/admin-projects.component';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { AdminAdsComponent } from '../pages/admin/ads/admin-ads.component';
     SidebarComponent,
     FooterComponent,
     DashboardComponent,
-    AdminAdsComponent
+    AdminAdsComponent,
+    AdminProjectsComponent
   ],
   imports: [
     CommonModule,
