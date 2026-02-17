@@ -1,49 +1,66 @@
 <div class="modal-overlay" *ngIf="isVisible && plan" (click)="onOverlayClick($event)">
   <div class="modal-container">
 
-    <!-- Header violet -->
+    <!-- Header -->
     <div class="modal-header">
+      <div class="header-icon">🛒</div>
       <h2>Confirmer votre abonnement</h2>
+      <p class="header-sub">Vérifiez les détails avant de confirmer</p>
     </div>
 
     <!-- Body -->
     <div class="modal-body">
 
-      <!-- Plan sélectionné -->
+      <!-- Plan summary -->
       <div class="plan-summary">
-        <h3 class="plan-title">Plan {{ plan.name }} - {{ getTypeName() }}</h3>
-        <p class="plan-price-info">{{ plan.price }} DT / {{ getDuration() }}</p>
-        <p class="plan-features-summary">{{ getFeaturesSummary() }}</p>
+        <div class="summary-left">
+          <h3 class="summary-name">{{ plan.name }}</h3>
+          <span class="summary-type">{{ getTypeName() }} · {{ getDuration() }}</span>
+        </div>
+        <span class="summary-price">{{ plan.price }} DT</span>
       </div>
 
-      <!-- Calcul du prix -->
+      <!-- Features -->
+      <div class="features-row">
+        <span class="feature-pill" *ngFor="let f of getFeaturesSummary()">{{ f }}</span>
+      </div>
+
+      <!-- Price breakdown -->
       <div class="price-breakdown">
-        <div class="price-row">
-          <span>Sous-total:</span>
+        <div class="price-line">
+          <span>Sous-total</span>
           <span>{{ subtotal }} DT</span>
         </div>
-        <div class="price-row">
-          <span>TVA (19%):</span>
+        <div class="price-line">
+          <span>TVA (19%)</span>
           <span>{{ tva }} DT</span>
         </div>
-        <div class="price-row total">
-          <span>Total:</span>
-          <span class="total-price">{{ total }} DT</span>
+        <div class="price-line total">
+          <span>Total</span>
+          <span class="total-amount">{{ total }} DT</span>
         </div>
       </div>
 
       <!-- Auto-renew checkbox -->
-      <div class="auto-renew">
-        <label>
+      <div class="auto-renew-row">
+        <label class="checkbox-label">
           <input type="checkbox" [(ngModel)]="autoRenew" />
-          Renouvellement automatique
+          <span class="checkbox-custom"></span>
+          <span class="checkbox-text">Renouvellement automatique</span>
         </label>
       </div>
 
-      <!-- Boutons -->
+      <!-- Actions -->
       <div class="modal-actions">
-        <button class="btn-cancel" (click)="onCancel()">Annuler</button>
-        <button class="btn-confirm" (click)="onConfirm()">Confirmer</button>
+        <button class="btn-cancel" (click)="onCancel()" [disabled]="isProcessing">
+          Retour
+        </button>
+        <button class="btn-confirm" (click)="onConfirm()" [disabled]="isProcessing">
+          <span *ngIf="!isProcessing">💳 Payer {{ total }} DT</span>
+          <span *ngIf="isProcessing" class="processing">
+            <span class="mini-spinner"></span> Traitement...
+          </span>
+        </button>
       </div>
 
     </div>

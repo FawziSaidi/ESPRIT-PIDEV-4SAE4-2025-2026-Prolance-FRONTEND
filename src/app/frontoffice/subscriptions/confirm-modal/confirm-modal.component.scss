@@ -1,165 +1,322 @@
+// ═══════════════════════════════════════════
+//  TOKENS
+// ═══════════════════════════════════════════
+$primary: #4f46e5;
+$primary-dark: #3730a3;
+$text-primary: #0f172a;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+$border: #e2e8f0;
+$surface: #ffffff;
+$surface-alt: #f8fafc;
+$radius-md: 14px;
+$radius-lg: 20px;
+$shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.25);
+
+// ═══════════════════════════════════════════
+//  OVERLAY
+// ═══════════════════════════════════════════
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  animation: fadeOverlay 0.2s ease;
 }
 
-.modal-container {
-  background: white;
-  border-radius: 20px;
-  width: 450px;
-  max-width: 90%;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
+@keyframes fadeOverlay {
   from {
     opacity: 0;
-    transform: translateY(30px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
+// ═══════════════════════════════════════════
+//  CONTAINER
+// ═══════════════════════════════════════════
+.modal-container {
+  background: $surface;
+  border-radius: $radius-lg;
+  width: 480px;
+  max-width: 92%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: $shadow-lg;
+  animation: slideModal 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes slideModal {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  HEADER
+// ═══════════════════════════════════════════
 .modal-header {
-  background: linear-gradient(135deg, #7c4dff, #9c27b0);
-  padding: 25px 30px;
+  padding: 28px 28px 20px;
   text-align: center;
+  border-bottom: 1px solid $border;
+
+  .header-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+  }
 
   h2 {
-    color: white;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
+    color: $text-primary;
+    margin: 0 0 4px;
+  }
+
+  .header-sub {
+    font-size: 0.82rem;
+    color: $text-muted;
     margin: 0;
   }
 }
 
+// ═══════════════════════════════════════════
+//  BODY
+// ═══════════════════════════════════════════
 .modal-body {
-  padding: 30px;
+  padding: 24px 28px 28px;
 }
 
+// ═══════════════════════════════════════════
+//  PLAN SUMMARY
+// ═══════════════════════════════════════════
 .plan-summary {
-  background: #f8f9fa;
-  border-left: 4px solid #7c4dff;
-  padding: 15px 20px;
-  border-radius: 0 10px 10px 0;
-  margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: $surface-alt;
+  border-radius: $radius-md;
+  border: 1px solid $border;
+  margin-bottom: 14px;
 
-  .plan-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #333;
-    margin: 0 0 5px;
+  .summary-left {
+    .summary-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: $text-primary;
+      margin: 0 0 2px;
+    }
+    .summary-type {
+      font-size: 0.78rem;
+      color: $text-muted;
+    }
   }
 
-  .plan-price-info {
-    color: #7c4dff;
-    font-size: 0.9rem;
-    margin: 0 0 5px;
-  }
-
-  .plan-features-summary {
-    color: #888;
-    font-size: 0.85rem;
-    margin: 0;
+  .summary-price {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: $primary;
   }
 }
 
-.price-breakdown {
+// ═══════════════════════════════════════════
+//  FEATURES
+// ═══════════════════════════════════════════
+.features-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-bottom: 20px;
+}
 
-  .price-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    font-size: 0.95rem;
-    color: #555;
-    border-bottom: 1px solid #f0f0f0;
+.feature-pill {
+  padding: 4px 12px;
+  background: rgba(79, 70, 229, 0.06);
+  color: $primary;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 100px;
+}
 
-    &.total {
-      border-bottom: none;
-      border-top: 2px solid #e0e0e0;
-      padding-top: 12px;
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #333;
+// ═══════════════════════════════════════════
+//  PRICE BREAKDOWN
+// ═══════════════════════════════════════════
+.price-breakdown {
+  margin-bottom: 18px;
+}
 
-      .total-price {
-        color: #e74c3c;
-        font-size: 1.2rem;
-      }
+.price-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 0.88rem;
+  color: $text-secondary;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+
+  &.total {
+    border-bottom: none;
+    border-top: 2px solid $border;
+    padding-top: 12px;
+    margin-top: 4px;
+    font-weight: 700;
+    color: $text-primary;
+    font-size: 1rem;
+
+    .total-amount {
+      color: $primary;
+      font-size: 1.15rem;
     }
   }
 }
 
-.auto-renew {
-  margin-bottom: 25px;
+// ═══════════════════════════════════════════
+//  AUTO-RENEW CHECKBOX
+// ═══════════════════════════════════════════
+.auto-renew-row {
+  margin-bottom: 22px;
+}
 
-  label {
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: $text-secondary;
+
+  input[type='checkbox'] {
+    display: none;
+  }
+
+  .checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid $border;
+    border-radius: 5px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    font-size: 0.95rem;
-    color: #555;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
 
-    input[type='checkbox'] {
-      width: 18px;
-      height: 18px;
-      accent-color: #7c4dff;
-      cursor: pointer;
+    &::after {
+      content: '✓';
+      font-size: 0.7rem;
+      color: white;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.2s;
+    }
+  }
+
+  input:checked + .checkbox-custom {
+    background: $primary;
+    border-color: $primary;
+
+    &::after {
+      opacity: 1;
+      transform: scale(1);
     }
   }
 }
 
+// ═══════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════
 .modal-actions {
   display: flex;
-  gap: 15px;
+  gap: 12px;
+}
 
-  .btn-cancel {
-    flex: 1;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    background: white;
-    border-radius: 25px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #666;
-    cursor: pointer;
-    transition: all 0.3s ease;
+.btn-cancel {
+  flex: 0 0 auto;
+  padding: 12px 22px;
+  background: transparent;
+  border: 1px solid $border;
+  border-radius: $radius-md;
+  color: $text-secondary;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
 
-    &:hover {
-      border-color: #bbb;
-      background: #f5f5f5;
-    }
+  &:hover {
+    border-color: $text-muted;
+    background: $surface-alt;
+  }
+}
+
+.btn-confirm {
+  flex: 1;
+  padding: 12px;
+  background: $primary;
+  border: none;
+  border-radius: $radius-md;
+  color: white;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+
+  &:hover {
+    background: $primary-dark;
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.25);
   }
 
-  .btn-confirm {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    background: linear-gradient(135deg, #7c4dff, #9c27b0);
-    border-radius: 25px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  &:active {
+    transform: scale(0.98);
+  }
 
-    &:hover {
-      box-shadow: 0 8px 25px rgba(124, 77, 255, 0.4);
-      transform: scale(1.02);
-    }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.processing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mini-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  RESPONSIVE
+// ═══════════════════════════════════════════
+@media (max-width: 500px) {
+  .modal-container {
+    max-width: 96%;
+    border-radius: 16px;
+  }
+
+  .modal-body {
+    padding: 20px;
   }
 }

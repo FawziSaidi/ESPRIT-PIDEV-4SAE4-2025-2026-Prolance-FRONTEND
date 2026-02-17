@@ -1,135 +1,276 @@
-<div class="my-subscription-container">
+<div class="subscription-page">
 
-  <!-- Loading -->
-  <div class="loading" *ngIf="loading">
-    <div class="spinner"></div>
-    <p>Chargement de votre abonnement...</p>
+  <!-- ════════════════════════════ -->
+  <!--  LOADING (skeleton)         -->
+  <!-- ════════════════════════════ -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="skeleton-card"></div>
+    <div class="skeleton-row"></div>
+    <div class="skeleton-row short"></div>
   </div>
 
-  <!-- Erreur -->
-  <div class="error-message" *ngIf="errorMessage">
-    <p>⚠️ {{ errorMessage }}</p>
-    <button class="retry-btn" (click)="loadMySubscription()">Réessayer</button>
+  <!-- ════════════════════════════ -->
+  <!--  ERROR                      -->
+  <!-- ════════════════════════════ -->
+  <div class="error-state" *ngIf="!loading && errorMessage" @fadeIn>
+    <div class="error-card">
+      <span class="error-icon">⚠️</span>
+      <p>{{ errorMessage }}</p>
+      <button class="btn-primary" (click)="loadMySubscription()">Réessayer</button>
+    </div>
   </div>
 
-  <!-- Pas d'abonnement -->
-  <div class="no-subscription" *ngIf="!loading && !errorMessage && !currentSubscription">
-    <h2>Vous n'avez pas d'abonnement actif</h2>
-    <p>Découvrez nos plans et boostez votre carrière !</p>
-    <button class="btn-explore" (click)="onChangePlan()">Voir les plans</button>
-  </div>
-
-  <!-- Abonnement actif -->
-  <div class="subscription-content" *ngIf="!loading && !errorMessage && currentSubscription">
-
-    <!-- Header -->
-    <div class="header-row">
-      <h1>Mon Abonnement</h1>
-      <span class="status-badge" [ngClass]="getStatusClass()">
-        {{ getStatusLabel() }}
-      </span>
-    </div>
-
-    <!-- Plan Info Card -->
-    <div class="plan-info-card">
-      <div class="plan-details">
-        <h2 class="plan-name">{{ getPlanName() }}</h2>
-        <p class="plan-price">{{ getPlanPrice() }}</p>
-        <p class="plan-dates">
-          Début: {{ formatDate(currentSubscription.startDate) }} |
-          Fin: {{ formatDate(currentSubscription.endDate) }}
-        </p>
-        <p class="plan-renew">
-          Renouvellement auto: {{ currentSubscription.autoRenew ? 'Oui' : 'Non' }}
-        </p>
+  <!-- ════════════════════════════ -->
+  <!--  NO SUBSCRIPTION            -->
+  <!-- ════════════════════════════ -->
+  <div class="empty-state" *ngIf="!loading && !errorMessage && !currentSubscription" @fadeIn>
+    <div class="empty-card">
+      <div class="empty-illustration">
+        <span>📋</span>
       </div>
-      <div class="days-remaining">
-        <span class="days-number">{{ getDaysRemaining() }}</span>
-        <span class="days-label">jours restants</span>
-      </div>
-    </div>
-
-    <!-- Utilisation -->
-    <div class="usage-section">
-      <h3>Utilisation</h3>
-
-      <!-- Projets -->
-      <div class="usage-row">
-        <span class="usage-label">
-          Projets: {{ currentSubscription.currentProjects }}/{{ currentSubscription.subscription?.maxProjects }}
-        </span>
-        <div class="progress-bar">
-          <div class="progress-fill progress-purple"
-               [style.width.%]="getProjectsPercentage()"></div>
-        </div>
-        <span class="usage-percent">{{ getProjectsPercentage() }}%</span>
-      </div>
-
-      <!-- Propositions -->
-      <div class="usage-row">
-        <span class="usage-label">
-          Propositions: {{ currentSubscription.currentProposals }}/{{ currentSubscription.subscription?.maxProposals }}
-        </span>
-        <div class="progress-bar">
-          <div class="progress-fill progress-cyan"
-               [style.width.%]="getProposalsPercentage()"></div>
-        </div>
-        <span class="usage-percent">{{ getProposalsPercentage() }}%</span>
-      </div>
-
-      <!-- Jobs actifs -->
-      <div class="usage-row">
-        <span class="usage-label">
-          Jobs actifs: 5/{{ currentSubscription.subscription?.maxActiveJobs }}
-        </span>
-        <div class="progress-bar">
-          <div class="progress-fill progress-orange"
-               [style.width.%]="getJobsPercentage()"></div>
-        </div>
-        <span class="usage-percent">{{ getJobsPercentage() }}%</span>
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="actions-row">
-      <button class="btn-change" (click)="onChangePlan()">Changer de plan</button>
-      <button class="btn-auto-renew" (click)="onToggleAutoRenew()">
-        {{ currentSubscription.autoRenew ? 'Désactiver' : 'Activer' }} auto-renew
+      <h2>Aucun abonnement actif</h2>
+      <p>Découvrez nos plans et boostez votre expérience sur la plateforme.</p>
+      <button class="btn-primary btn-lg" (click)="onChangePlan()">
+        Explorer les plans →
       </button>
-      <button class="btn-cancel-sub" (click)="onCancelSubscription()"
-              *ngIf="currentSubscription.status === 'ACTIVE'">
-        Annuler
+
+      <!-- Renew last subscription if history exists -->
+      <button
+        class="btn-outline btn-renew-cta"
+        *ngIf="subscriptionHistory.length > 0"
+        (click)="onRenewSubscription()"
+        [disabled]="renewLoading">
+        {{ renewLoading ? 'Renouvellement...' : '↻ Renouveler mon dernier abonnement' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════ -->
+  <!--  ACTIVE SUBSCRIPTION        -->
+  <!-- ════════════════════════════ -->
+  <div class="sub-content" *ngIf="!loading && !errorMessage && currentSubscription" @fadeIn>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div class="header-left">
+        <h1>Mon Abonnement</h1>
+        <span class="status-chip" [ngClass]="getStatusClass()">
+          {{ getStatusLabel() }}
+        </span>
+      </div>
+      <button class="btn-outline btn-sm" (click)="onChangePlan()">
+        Changer de plan
       </button>
     </div>
 
-    <!-- Historique -->
-    <div class="history-section">
-      <h3>Historique des abonnements</h3>
-      <table class="history-table">
-        <thead>
-          <tr>
-            <th>Plan</th>
-            <th>Début</th>
-            <th>Fin</th>
-            <th>Montant</th>
-            <th>Statut</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>{{ getPlanName() }}</td>
-            <td>{{ formatDate(currentSubscription.startDate) }}</td>
-            <td>{{ formatDate(currentSubscription.endDate) }}</td>
-            <td>{{ currentSubscription.amountPaid }} DT</td>
-            <td>
-              <span class="table-status" [ngClass]="getStatusClass()">
-                {{ getStatusLabel() }}
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- ════════════════════════════ -->
+    <!--  EXPIRING SOON ALERT        -->
+    <!-- ════════════════════════════ -->
+    <div
+      class="alert-banner alert-warning"
+      *ngIf="isExpiringSoon() && currentSubscription.status === 'ACTIVE'"
+      @fadeIn>
+      <span class="alert-icon">⏰</span>
+      <div class="alert-body">
+        <strong>Votre abonnement expire bientôt !</strong>
+        <p>Il reste {{ getDaysRemaining() }} jours. Pensez à renouveler pour ne pas perdre vos avantages.</p>
+      </div>
+      <button class="btn-accent btn-sm" (click)="onRenewSubscription()" [disabled]="renewLoading">
+        {{ renewLoading ? '...' : 'Renouveler' }}
+      </button>
+    </div>
+
+    <!-- ════════════════════════════ -->
+    <!--  INFO GRID (3 cards)        -->
+    <!-- ════════════════════════════ -->
+    <div class="info-grid">
+
+      <!-- Plan Card -->
+      <div class="info-card plan-card-main">
+        <div class="card-accent-bar"></div>
+        <div class="card-body">
+          <span class="card-label">Plan actuel</span>
+          <h2 class="plan-title">{{ getPlanName() }}</h2>
+          <span class="plan-type-badge">{{ getPlanTypeName() }}</span>
+          <div class="plan-price-display">{{ getPlanPrice() }}</div>
+          <div class="plan-meta">
+            <div class="meta-item">
+              <span class="meta-label">Début</span>
+              <span class="meta-value">{{ formatDate(currentSubscription.startDate) }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Fin</span>
+              <span class="meta-value">{{ formatDate(currentSubscription.endDate) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Time remaining card -->
+      <div class="info-card time-card">
+        <span class="card-label">Temps restant</span>
+        <div class="time-display">
+          <span class="days-count" [class.warning]="getDaysRemaining() <= 14">
+            {{ getDaysRemaining() }}
+          </span>
+          <span class="days-unit">jours</span>
+        </div>
+        <div class="time-bar">
+          <div
+            class="time-fill"
+            [style.width.%]="getTimeProgress()"
+            [class.warning]="getTimeProgress() > 80">
+          </div>
+        </div>
+        <span class="time-detail">{{ getTimeProgress() }}% du temps écoulé</span>
+      </div>
+
+      <!-- Auto-renew card -->
+      <div class="info-card toggle-card">
+        <span class="card-label">Renouvellement auto</span>
+        <div class="toggle-display">
+          <div
+            class="toggle-switch"
+            [class.active]="currentSubscription.autoRenew"
+            (click)="onToggleAutoRenew()">
+            <div class="toggle-knob"></div>
+          </div>
+          <span class="toggle-label">
+            {{ currentSubscription.autoRenew ? 'Activé' : 'Désactivé' }}
+          </span>
+        </div>
+        <p class="toggle-desc">
+          {{ currentSubscription.autoRenew
+            ? 'Votre abonnement sera renouvelé automatiquement à la fin de la période.'
+            : 'Activez le renouvellement pour ne pas perdre vos avantages.' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════ -->
+    <!--  USAGE SECTION              -->
+    <!-- ════════════════════════════ -->
+    <div class="usage-section" @fadeIn>
+      <h3 class="section-title">Utilisation</h3>
+      <div class="usage-cards">
+
+        <!-- Projects -->
+        <div class="usage-card">
+          <div class="usage-header">
+            <span class="usage-icon">📁</span>
+            <span class="usage-name">Projets</span>
+          </div>
+          <div class="usage-bar-wrapper">
+            <div class="usage-bar">
+              <div
+                class="usage-fill fill-indigo"
+                [style.width.%]="getProjectsUsage().percent"
+                [class.danger]="getProjectsUsage().percent >= 90">
+              </div>
+            </div>
+            <span class="usage-count">
+              {{ getProjectsUsage().current }}/{{ getProjectsUsage().max >= 999 ? '∞' : getProjectsUsage().max }}
+            </span>
+          </div>
+          <span class="usage-percent">{{ getProjectsUsage().percent }}% utilisé</span>
+        </div>
+
+        <!-- Proposals -->
+        <div class="usage-card">
+          <div class="usage-header">
+            <span class="usage-icon">📨</span>
+            <span class="usage-name">Propositions</span>
+          </div>
+          <div class="usage-bar-wrapper">
+            <div class="usage-bar">
+              <div
+                class="usage-fill fill-cyan"
+                [style.width.%]="getProposalsUsage().percent"
+                [class.danger]="getProposalsUsage().percent >= 90">
+              </div>
+            </div>
+            <span class="usage-count">
+              {{ getProposalsUsage().current }}/{{ getProposalsUsage().max >= 999 ? '∞' : getProposalsUsage().max }}
+            </span>
+          </div>
+          <span class="usage-percent">{{ getProposalsUsage().percent }}% utilisé</span>
+        </div>
+
+        <!-- Features summary -->
+        <div class="usage-card features-card">
+          <div class="usage-header">
+            <span class="usage-icon">✨</span>
+            <span class="usage-name">Fonctionnalités</span>
+          </div>
+          <div class="feature-tags">
+            <span class="tag" [class.active]="currentSubscription.subscription?.featuredListing">
+              {{ currentSubscription.subscription?.featuredListing ? '✓' : '✗' }}
+              Profil premium
+            </span>
+            <span class="tag" [class.active]="currentSubscription.subscription?.prioritySupport">
+              {{ currentSubscription.subscription?.prioritySupport ? '✓' : '✗' }}
+              Support prioritaire
+            </span>
+            <span class="tag" [class.active]="currentSubscription.subscription?.analyticsAccess">
+              {{ currentSubscription.subscription?.analyticsAccess ? '✓' : '✗' }}
+              Analytics
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════ -->
+    <!--  ACTIONS                    -->
+    <!-- ════════════════════════════ -->
+    <div class="actions-section">
+      <button
+        class="btn-outline btn-danger-outline"
+        (click)="onCancelSubscription()"
+        *ngIf="currentSubscription.status === 'ACTIVE'">
+        Annuler l'abonnement
+      </button>
+    </div>
+
+    <!-- ════════════════════════════ -->
+    <!--  HISTORY                    -->
+    <!-- ════════════════════════════ -->
+    <div class="history-section" *ngIf="subscriptionHistory.length > 0">
+      <h3 class="section-title">Historique</h3>
+      <div class="history-list" @staggerRows>
+        <div class="history-row" *ngFor="let sub of subscriptionHistory">
+          <div class="history-plan">
+            <span class="history-name">{{ getHistoryPlanName(sub) }}</span>
+            <span class="history-dates">
+              {{ formatDate(sub.startDate) }} → {{ formatDate(sub.endDate) }}
+            </span>
+          </div>
+          <div class="history-amount">{{ sub.amountPaid }} DT</div>
+          <span class="status-chip small" [ngClass]="getStatusClass(sub.status)">
+            {{ getStatusLabel(sub.status) }}
+          </span>
+        </div>
+      </div>
     </div>
 
   </div>
+
+  <!-- ════════════════════════════ -->
+  <!--  CANCEL CONFIRMATION        -->
+  <!-- ════════════════════════════ -->
+  <div class="overlay" *ngIf="showCancelConfirm" (click)="dismissCancel()">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()" @fadeIn>
+      <span class="dialog-icon">⚠️</span>
+      <h3>Annuler votre abonnement ?</h3>
+      <p>
+        Cette action est irréversible. Vous perdrez l'accès à toutes les fonctionnalités
+        de votre plan <strong>{{ getPlanName() }}</strong>.
+      </p>
+      <div class="dialog-actions">
+        <button class="btn-outline" (click)="dismissCancel()">Non, garder</button>
+        <button class="btn-danger" (click)="confirmCancel()">Oui, annuler</button>
+      </div>
+    </div>
+  </div>
+
 </div>
