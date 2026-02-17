@@ -17,14 +17,14 @@ export class CommentaireModalComponent implements OnInit {
   commentaires: Commentaire[] = [];
   newCommentaire: string = '';
 
-  // Edition d'un commentaire existant
+  // Editing an existing comment
   editingCommentaireId: number | null = null;
   editingContent: string = '';
 
-  // ✅ NOUVEAU : état pour les réponses
-  replyingToId: number | null = null;   // ID du commentaire auquel on répond
-  replyContent: string = '';            // contenu de la réponse en cours de saisie
-  replyingToName: string = '';          // nom de l'auteur pour l'affichage
+  // ✅ State for replies
+  replyingToId: number | null = null;   // ID of the comment being replied to
+  replyContent: string = '';            // content of the reply being typed
+  replyingToName: string = '';          // author name for display
 
   loading: boolean = false;
   errorMessage: string = '';
@@ -35,18 +35,18 @@ export class CommentaireModalComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // ✅ Toujours lire l'ID depuis AuthService (user connecté réel)
+    // ✅ Always read the ID from AuthService (actual logged-in user)
     const userId = this.authService.getCurrentUserId();
     if (userId) {
       this.currentUserId = userId;
     }
 
     if (!this.publication || !this.publication.id) {
-      this.errorMessage = 'Erreur: ID de publication invalide';
+      this.errorMessage = 'Error: Invalid publication ID';
       return;
     }
     if (!this.currentUserId) {
-      this.errorMessage = 'Erreur: Utilisateur non connecté';
+      this.errorMessage = 'Error: User not logged in';
       return;
     }
     this.loadCommentaires();
@@ -54,7 +54,7 @@ export class CommentaireModalComponent implements OnInit {
 
   loadCommentaires(): void {
     if (!this.publication?.id) {
-      this.errorMessage = 'ID de publication manquant';
+      this.errorMessage = 'Missing publication ID';
       return;
     }
     this.loading = true;
@@ -67,25 +67,25 @@ export class CommentaireModalComponent implements OnInit {
       },
       error: (error) => {
         if (error.status === 0) {
-          this.errorMessage = 'Impossible de contacter le serveur.';
+          this.errorMessage = 'Unable to reach the server.';
         } else if (error.status === 404) {
-          this.errorMessage = 'Publication introuvable.';
+          this.errorMessage = 'Publication not found.';
         } else {
-          this.errorMessage = 'Erreur lors du chargement des commentaires.';
+          this.errorMessage = 'Error loading comments.';
         }
         this.loading = false;
       }
     });
   }
 
-  // ─── Commentaire racine ────────────────────────────────────────
+  // ─── Root comment ────────────────────────────────────────────
   addCommentaire(): void {
     if (!this.newCommentaire || this.newCommentaire.trim().length < 2) {
-      this.errorMessage = 'Le commentaire doit contenir au moins 2 caractères';
+      this.errorMessage = 'The comment must contain at least 2 characters';
       return;
     }
     if (!this.publication?.id) {
-      this.errorMessage = 'Erreur: ID de publication manquant';
+      this.errorMessage = 'Error: Missing publication ID';
       return;
     }
     this.loading = true;
@@ -101,15 +101,15 @@ export class CommentaireModalComponent implements OnInit {
         this.loadCommentaires();
       },
       error: (error) => {
-        this.errorMessage = error.error || 'Erreur lors de l\'ajout du commentaire';
+        this.errorMessage = error.error || 'Error adding the comment';
         this.loading = false;
       }
     });
   }
 
-  // ─── Réponses ─────────────────────────────────────────────────
+  // ─── Replies ─────────────────────────────────────────────────
   startReply(commentaire: Commentaire): void {
-    // Annuler l'édition en cours si nécessaire
+    // Cancel any ongoing edit if necessary
     this.cancelEdit();
     this.replyingToId = commentaire.id!;
     this.replyingToName = `${commentaire.user?.name} ${commentaire.user?.lastName}`;
@@ -124,7 +124,7 @@ export class CommentaireModalComponent implements OnInit {
 
   submitReply(parentCommentaire: Commentaire): void {
     if (!this.replyContent || this.replyContent.trim().length < 2) {
-      this.errorMessage = 'La réponse doit contenir au moins 2 caractères';
+      this.errorMessage = 'The reply must contain at least 2 characters';
       return;
     }
     if (!this.publication?.id) return;
@@ -143,13 +143,13 @@ export class CommentaireModalComponent implements OnInit {
         this.loadCommentaires();
       },
       error: (error) => {
-        this.errorMessage = error.error || 'Erreur lors de l\'envoi de la réponse';
+        this.errorMessage = error.error || 'Error sending the reply';
         this.loading = false;
       }
     });
   }
 
-  // ─── Edition ──────────────────────────────────────────────────
+  // ─── Edit ────────────────────────────────────────────────────
   startEdit(commentaire: Commentaire): void {
     if (commentaire.user?.id === this.currentUserId) {
       this.cancelReply();
@@ -165,7 +165,7 @@ export class CommentaireModalComponent implements OnInit {
 
   saveEdit(commentaire: Commentaire): void {
     if (!this.editingContent || this.editingContent.trim().length < 2) {
-      this.errorMessage = 'Le commentaire doit contenir au moins 2 caractères';
+      this.errorMessage = 'The comment must contain at least 2 characters';
       return;
     }
     this.loading = true;
@@ -181,27 +181,27 @@ export class CommentaireModalComponent implements OnInit {
         this.loadCommentaires();
       },
       error: (error) => {
-        this.errorMessage = error.error || 'Erreur lors de la modification';
+        this.errorMessage = error.error || 'Error updating the comment';
         this.loading = false;
       }
     });
   }
 
-  // ─── Suppression ──────────────────────────────────────────────
+  // ─── Delete ──────────────────────────────────────────────────
   deleteCommentaire(commentaire: Commentaire): void {
     if (commentaire.user?.id !== this.currentUserId) {
-      alert('Vous n\'êtes pas autorisé à supprimer ce commentaire');
+      alert('You are not authorized to delete this comment');
       return;
     }
-    if (confirm('Supprimer ce commentaire ?')) {
+    if (confirm('Delete this comment?')) {
       this.commentaireService.deleteCommentaire(commentaire.id!, this.currentUserId).subscribe({
         next: () => this.loadCommentaires(),
-        error: () => alert('Erreur lors de la suppression')
+        error: () => alert('Error deleting the comment')
       });
     }
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────
+  // ─── Helpers ─────────────────────────────────────────────────
   canModifyCommentaire(commentaire: Commentaire): boolean {
     return commentaire.user?.id === this.currentUserId;
   }
@@ -214,12 +214,12 @@ export class CommentaireModalComponent implements OnInit {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'À l\'instant';
-    if (diffMins < 60) return `Il y a ${diffMins} min`;
-    if (diffHours < 24) return `Il y a ${diffHours}h`;
-    if (diffDays === 1) return 'Hier';
-    if (diffDays < 7) return `Il y a ${diffDays} jours`;
-    return commentDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return commentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   onClose(): void {

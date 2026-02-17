@@ -23,7 +23,7 @@
       </button>
     </div>
 
-    <!-- ✅ BARRE DE RECHERCHE — entre les onglets et les cartes -->
+    <!-- BARRE DE RECHERCHE -->
     <div class="search-bar">
       <div class="search-input-wrapper">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -96,9 +96,27 @@
           <div class="card-content">
             <h2 class="publication-titre">{{ publication.titre }}</h2>
             <p class="publication-contenue">{{ publication.contenue }}</p>
-            <div *ngIf="publication.image" class="publication-image-bottom">
-              <img [src]="getImageUrl(publication.image)" [alt]="publication.titre" (error)="onImageError($event)">
+
+            <!-- ✅ IMAGES : 2 par ligne, taille identique 180x180, badge +N -->
+            <div *ngIf="publication.images && publication.images.length > 0" class="pub-images-grid">
+              <ng-container *ngFor="let img of publication.images; let i = index">
+                <ng-container *ngIf="i < 4">
+
+                  <!-- 4e image avec badge +N si plus de 4 images -->
+                  <div *ngIf="i === 3 && publication.images.length > 4" class="pub-img-wrapper">
+                    <img [src]="getImageUrl(img)" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
+                    <div class="pub-img-more">+{{ publication.images.length - 4 }}</div>
+                  </div>
+
+                  <!-- Image normale -->
+                  <div *ngIf="!(i === 3 && publication.images.length > 4)" class="pub-img-wrapper">
+                    <img [src]="getImageUrl(img)" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
+                  </div>
+
+                </ng-container>
+              </ng-container>
             </div>
+
           </div>
 
           <div class="card-footer">

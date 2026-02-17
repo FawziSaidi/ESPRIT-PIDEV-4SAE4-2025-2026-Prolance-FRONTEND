@@ -1,11 +1,10 @@
 <div class="modal-overlay" (click)="onClose()">
   <div class="modal-container" (click)="$event.stopPropagation()">
+
     <!-- Header -->
     <div class="modal-header">
       <h2 class="modal-title">{{ getTitle() }}</h2>
-      <button class="btn-close" (click)="onClose()" [disabled]="loading">
-        ✕
-      </button>
+      <button class="btn-close" (click)="onClose()" [disabled]="loading">✕</button>
     </div>
 
     <!-- Error Message -->
@@ -15,11 +14,12 @@
 
     <!-- Form -->
     <form (ngSubmit)="onSubmit()" class="publication-form">
+
       <!-- Type Selection -->
       <div class="form-group">
-        <label class="form-label">Post Type *</label>
+        <label class="form-label">Type de post *</label>
         <div class="type-selector">
-          <div 
+          <div
             *ngFor="let typeOption of typeOptions"
             class="type-option"
             [class.selected]="formData.type === typeOption.value"
@@ -33,7 +33,7 @@
 
       <!-- Titre -->
       <div class="form-group">
-        <label class="form-label" for="titre">Title *</label>
+        <label class="form-label" for="titre">Titre *</label>
         <input
           type="text"
           id="titre"
@@ -41,7 +41,7 @@
           [(ngModel)]="formData.titre"
           class="form-input"
           [class.error]="errors.titre"
-          placeholder="Enter your post title..."
+          placeholder="Saisissez le titre de votre post..."
           maxlength="200"
           required>
         <div class="input-helper">
@@ -52,42 +52,61 @@
 
       <!-- Contenu -->
       <div class="form-group">
-        <label class="form-label" for="contenue">Content *</label>
+        <label class="form-label" for="contenue">Contenu *</label>
         <textarea
           id="contenue"
           name="contenue"
           [(ngModel)]="formData.contenue"
           class="form-textarea"
           [class.error]="errors.contenue"
-          placeholder="Write your post content..."
+          placeholder="Rédigez le contenu de votre post..."
           rows="6"
           required></textarea>
         <span *ngIf="errors.contenue" class="error-text">{{ errors.contenue }}</span>
       </div>
 
-      <!-- Image Upload -->
+      <!-- ✅ MULTI-IMAGES Upload -->
       <div class="form-group">
-        <label class="form-label">Image (optional)</label>
-        
-        <div *ngIf="!imagePreview" class="upload-area">
+        <label class="form-label">
+          Images (optionnel)
+          <span class="images-counter">{{ imagePreviews.length }}/{{ MAX_IMAGES }}</span>
+        </label>
+
+        <!-- Erreur images -->
+        <div *ngIf="errors.images" class="alert-error small">{{ errors.images }}</div>
+
+        <!-- Grille des aperçus d'images -->
+        <div *ngIf="imagePreviews.length > 0" class="images-grid">
+          <div *ngFor="let preview of imagePreviews; let i = index" class="image-thumb">
+            <img [src]="preview.previewUrl" [alt]="'Image ' + (i + 1)">
+            <button type="button" class="btn-remove-image" (click)="removeImage(i)" title="Supprimer">
+              ✕
+            </button>
+            <span class="image-badge">{{ i + 1 }}</span>
+          </div>
+        </div>
+
+        <!-- Zone d'upload (affichée si on peut encore ajouter) -->
+        <div *ngIf="canAddMore" class="upload-area" [class.compact]="imagePreviews.length > 0">
           <input
             type="file"
             id="imageInput"
             accept="image/*"
-            (change)="onFileSelected($event)"
+            multiple
+            (change)="onFilesSelected($event)"
             class="file-input">
           <label for="imageInput" class="upload-label">
-            <div class="upload-icon">📷</div>
-            <p class="upload-text">Click to upload an image</p>
-            <p class="upload-hint">PNG, JPG, JPEG up to 5MB</p>
+            <div class="upload-icon">{{ imagePreviews.length > 0 ? '➕' : '📷' }}</div>
+            <p class="upload-text">
+              {{ imagePreviews.length > 0 ? 'Ajouter d\'autres images' : 'Cliquer pour uploader des images' }}
+            </p>
+            <p class="upload-hint">PNG, JPG, JPEG · Max 5 Mo par image · {{ MAX_IMAGES - imagePreviews.length }} restante(s)</p>
           </label>
         </div>
 
-        <div *ngIf="imagePreview" class="image-preview">
-          <img [src]="imagePreview" alt="Preview">
-          <button type="button" class="btn-remove-image" (click)="removeImage()">
-            ✕
-          </button>
+        <!-- Message limite atteinte -->
+        <div *ngIf="!canAddMore" class="limit-reached">
+          ✅ Limite de {{ MAX_IMAGES }} images atteinte
         </div>
       </div>
 
@@ -98,16 +117,16 @@
           class="btn-cancel"
           (click)="onClose()"
           [disabled]="loading">
-          Cancel
+          Annuler
         </button>
         <button
           type="submit"
           class="btn-submit"
           [disabled]="loading">
-          <span *ngIf="!loading">{{ mode === 'create' ? 'Create' : 'Update' }}</span>
+          <span *ngIf="!loading">{{ mode === 'create' ? 'Créer' : 'Mettre à jour' }}</span>
           <span *ngIf="loading" class="loading-text">
             <span class="spinner-small"></span>
-            Processing...
+            Traitement...
           </span>
         </button>
       </div>

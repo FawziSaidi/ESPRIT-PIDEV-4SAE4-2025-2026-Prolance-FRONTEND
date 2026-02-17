@@ -1,7 +1,13 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { Publication, TypePublication } from '../../models/publication.model';
+import { Publication, TypePublication, getImageUrl } from '../../models/publication.model';
 import { PublicationService } from '../../services/publication.service';
 import { AuthService } from '../../../../services/auth.services';
+
+interface ImagePreview {
+  file?: File;           // nouveau fichier à uploader
+  existingName?: string; // nom du fichier existant (mode edit)
+  previewUrl: string;    // URL pour l'aperçu
+}
 
 @Component({
   selector: 'app-publication-form',
@@ -20,9 +26,11 @@ export class PublicationFormComponent implements OnInit {
     type: TypePublication.ARTICLE
   };
 
-  selectedFile: File | null = null;
-  imagePreview: string | null = null;
-  currentUserId: number = 0; // ✅ Sera rempli depuis AuthService
+  // ✅ MULTI-IMAGES : liste d'aperçus
+  imagePreviews: ImagePreview[] = [];
+  readonly MAX_IMAGES = 5;
+
+  currentUserId: number = 0;
 
   typeOptions = [
     { value: TypePublication.QUESTION, label: 'Question', icon: '❓' },
@@ -33,7 +41,8 @@ export class PublicationFormComponent implements OnInit {
   errors = {
     titre: '',
     contenue: '',
-    type: ''
+    type: '',
+    images: ''
   };
 
   loading: boolean = false;
@@ -41,11 +50,10 @@ export class PublicationFormComponent implements OnInit {
 
   constructor(
     private publicationService: PublicationService,
-    private authService: AuthService  // ✅ Injection de AuthService
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
-    // ✅ Toujours lire l'ID depuis AuthService (user connecté réel)
     const userId = this.authService.getCurrentUserId();
     if (userId) {
       this.currentUserId = userId;
@@ -60,67 +68,91 @@ export class PublicationFormComponent implements OnInit {
         type: this.publication.type
       };
 
-      if (this.publication.image) {
-        this.imagePreview = `http://localhost:8089/pidev/uploads/publications/${this.publication.image}`;
+      // ✅ Charger les images existantes en mode édition
+      if (this.publication.images && this.publication.images.length > 0) {
+        this.imagePreviews = this.publication.images.map(name => ({
+          existingName: name,
+          previewUrl: getImageUrl(name)
+        }));
       }
     }
   }
 
-  onFileSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file) {
+  // ✅ Gestion de la sélection de plusieurs fichiers
+  onFilesSelected(event: any): void {
+    const files: FileList = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const remaining = this.MAX_IMAGES - this.imagePreviews.length;
+    if (remaining <= 0) {
+      this.errors.images = `Maximum ${this.MAX_IMAGES} images autorisées`;
+      return;
+    }
+
+    const filesToProcess = Array.from(files).slice(0, remaining);
+    this.errors.images = '';
+
+    for (const file of filesToProcess) {
+      // Validation type
       if (!file.type.startsWith('image/')) {
-        this.errorMessage = 'Veuillez sélectionner une image valide';
-        return;
+        this.errors.images = `"${file.name}" n'est pas une image valide`;
+        continue;
+      }
+      // Validation taille (5 MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.errors.images = `"${file.name}" dépasse 5 MB`;
+        continue;
       }
 
-      if (file.size > 5 * 1024 * 1024) { // 5MB
-        this.errorMessage = 'L\'image ne doit pas dépasser 5MB';
-        return;
-      }
-
-      this.selectedFile = file;
-      this.errorMessage = '';
-
-      // Aperçu de l'image
       const reader = new FileReader();
-      reader.onload = () => {
-        this.imagePreview = reader.result as string;
+      reader.onload = (e: any) => {
+        this.imagePreviews.push({
+          file: file,
+          previewUrl: e.target.result
+        });
       };
       reader.readAsDataURL(file);
     }
+
+    // Réinitialiser l'input pour permettre re-sélection du même fichier
+    event.target.value = '';
   }
 
-  removeImage(): void {
-    this.selectedFile = null;
-    this.imagePreview = null;
+  // ✅ Supprimer une image de la liste
+  removeImage(index: number): void {
+    this.imagePreviews.splice(index, 1);
+    this.errors.images = '';
+  }
+
+  get canAddMore(): boolean {
+    return this.imagePreviews.length < this.MAX_IMAGES;
   }
 
   validateForm(): boolean {
     let isValid = true;
-    this.errors = { titre: '', contenue: '', type: '' };
+    this.errors = { titre: '', contenue: '', type: '', images: '' };
 
     if (!this.formData.titre || this.formData.titre.trim().length === 0) {
-      this.errors.titre = 'Title is required';
+      this.errors.titre = 'Le titre est requis';
       isValid = false;
     } else if (this.formData.titre.trim().length < 5) {
-      this.errors.titre = 'Title must be at least 5 characters';
+      this.errors.titre = 'Le titre doit contenir au moins 5 caractères';
       isValid = false;
     } else if (this.formData.titre.trim().length > 200) {
-      this.errors.titre = 'Title must not exceed 200 characters';
+      this.errors.titre = 'Le titre ne doit pas dépasser 200 caractères';
       isValid = false;
     }
 
     if (!this.formData.contenue || this.formData.contenue.trim().length === 0) {
-      this.errors.contenue = 'Content is required';
+      this.errors.contenue = 'Le contenu est requis';
       isValid = false;
     } else if (this.formData.contenue.trim().length < 10) {
-      this.errors.contenue = 'Content must be at least 10 characters';
+      this.errors.contenue = 'Le contenu doit contenir au moins 10 caractères';
       isValid = false;
     }
 
     if (!this.formData.type) {
-      this.errors.type = 'Type is required';
+      this.errors.type = 'Le type est requis';
       isValid = false;
     }
 
@@ -128,9 +160,7 @@ export class PublicationFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (!this.validateForm()) {
-      return;
-    }
+    if (!this.validateForm()) return;
 
     this.loading = true;
     this.errorMessage = '';
@@ -141,13 +171,21 @@ export class PublicationFormComponent implements OnInit {
     formData.append('type', this.formData.type);
     formData.append('userId', this.currentUserId.toString());
 
-    if (this.selectedFile) {
-      formData.append('image', this.selectedFile);
+    // ✅ Ajouter chaque nouveau fichier image sous le même champ "images"
+    const newFiles = this.imagePreviews.filter(p => p.file);
+    for (const preview of newFiles) {
+      formData.append('images', preview.file!);
     }
 
     if (this.mode === 'create') {
       this.createPublication(formData);
     } else {
+      // ✅ En mode édition, envoyer aussi les noms des images à conserver
+      const imagesToKeep = this.imagePreviews
+        .filter(p => p.existingName)
+        .map(p => p.existingName!);
+      imagesToKeep.forEach(name => formData.append('imagesToKeep', name));
+
       this.updatePublication(formData);
     }
   }
@@ -159,8 +197,8 @@ export class PublicationFormComponent implements OnInit {
         this.saved.emit();
       },
       error: (error) => {
-        console.error('Creation error:', error);
-        this.errorMessage = error.error || 'Error creating post';
+        console.error('Erreur création:', error);
+        this.errorMessage = error.error || 'Erreur lors de la création du post';
         this.loading = false;
       }
     });
@@ -173,8 +211,8 @@ export class PublicationFormComponent implements OnInit {
         this.saved.emit();
       },
       error: (error) => {
-        console.error('Update error:', error);
-        this.errorMessage = error.error || 'Error updating post';
+        console.error('Erreur mise à jour:', error);
+        this.errorMessage = error.error || 'Erreur lors de la mise à jour du post';
         this.loading = false;
       }
     });
@@ -187,6 +225,6 @@ export class PublicationFormComponent implements OnInit {
   }
 
   getTitle(): string {
-    return this.mode === 'create' ? 'New Post' : 'Edit Post';
+    return this.mode === 'create' ? 'Nouveau Post' : 'Modifier le Post';
   }
 }

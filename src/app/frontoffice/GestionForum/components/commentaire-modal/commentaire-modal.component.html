@@ -4,7 +4,7 @@
     <!-- Header -->
     <div class="modal-header">
       <div class="publication-info">
-        <h2 class="modal-title">Commentaires</h2>
+        <h2 class="modal-title">Comments</h2>
         <p class="publication-titre">{{ publication.titre }}</p>
       </div>
       <button class="btn-close" (click)="onClose()" [disabled]="loading">✕</button>
@@ -13,25 +13,25 @@
     <!-- Error -->
     <div *ngIf="errorMessage" class="alert-error">{{ errorMessage }}</div>
 
-    <!-- Liste des commentaires -->
+    <!-- Comments list -->
     <div class="commentaires-section">
 
       <div *ngIf="commentaires.length === 0 && !loading" class="empty-state">
         <div class="empty-icon">💬</div>
-        <p>Pas encore de commentaires</p>
-        <p class="empty-hint">Soyez le premier à commenter !</p>
+        <p>No comments yet</p>
+        <p class="empty-hint">Be the first to comment!</p>
       </div>
 
       <div *ngIf="loading && commentaires.length === 0" class="loading-container">
         <div class="spinner"></div>
-        <p>Chargement...</p>
+        <p>Loading...</p>
       </div>
 
       <div class="commentaires-list">
-        <!-- ── Commentaire racine ─────────────────────────────── -->
+        <!-- ── Root comment ─────────────────────────────── -->
         <div *ngFor="let commentaire of commentaires" class="commentaire-item">
 
-          <!-- En-tête du commentaire -->
+          <!-- Comment header -->
           <div class="commentaire-header">
             <div class="user-info">
               <div class="user-avatar">
@@ -43,65 +43,65 @@
               </div>
             </div>
 
-            <!-- Actions owner (edit / delete) -->
+            <!-- Owner actions (edit / delete) -->
             <div class="comment-actions" *ngIf="canModifyCommentaire(commentaire) && editingCommentaireId !== commentaire.id">
-              <button class="btn-icon-action edit" (click)="startEdit(commentaire)" title="Modifier">✏️</button>
-              <button class="btn-icon-action delete" (click)="deleteCommentaire(commentaire)" title="Supprimer">🗑️</button>
+              <button class="btn-icon-action edit" (click)="startEdit(commentaire)" title="Edit">✏️</button>
+              <button class="btn-icon-action delete" (click)="deleteCommentaire(commentaire)" title="Delete">🗑️</button>
             </div>
           </div>
 
-          <!-- Contenu (lecture) -->
+          <!-- Content (read) -->
           <div *ngIf="editingCommentaireId !== commentaire.id" class="commentaire-content">
             <p>{{ commentaire.contenue }}</p>
           </div>
 
-          <!-- Contenu (édition) -->
+          <!-- Content (edit) -->
           <div *ngIf="editingCommentaireId === commentaire.id" class="edit-mode">
-            <textarea [(ngModel)]="editingContent" class="edit-textarea" rows="3" placeholder="Modifier..."></textarea>
+            <textarea [(ngModel)]="editingContent" class="edit-textarea" rows="3" placeholder="Edit..."></textarea>
             <div class="edit-actions">
-              <button class="btn-cancel-edit" (click)="cancelEdit()">Annuler</button>
-              <button class="btn-save-edit" (click)="saveEdit(commentaire)">Enregistrer</button>
+              <button class="btn-cancel-edit" (click)="cancelEdit()">Cancel</button>
+              <button class="btn-save-edit" (click)="saveEdit(commentaire)">Save</button>
             </div>
           </div>
 
-          <!-- ✅ Bouton Répondre -->
+          <!-- ✅ Reply button -->
           <div class="commentaire-footer" *ngIf="editingCommentaireId !== commentaire.id">
             <button class="btn-reply" (click)="startReply(commentaire)">
-              <span class="reply-icon">↩</span> Répondre
+              <span class="reply-icon">↩</span> Reply
             </button>
             <span class="replies-count" *ngIf="commentaire.replies && commentaire.replies.length > 0">
-              {{ commentaire.replies.length }} réponse{{ commentaire.replies.length > 1 ? 's' : '' }}
+              {{ commentaire.replies.length }} {{ commentaire.replies.length > 1 ? 'replies' : 'reply' }}
             </span>
           </div>
 
-          <!-- ✅ Formulaire de réponse (inline sous le commentaire) -->
+          <!-- ✅ Reply form (inline below the comment) -->
           <div *ngIf="replyingToId === commentaire.id" class="reply-form">
             <div class="reply-to-label">
-              <span class="at-icon">@</span> Réponse à <strong>{{ replyingToName }}</strong>
+              <span class="at-icon">@</span> Replying to <strong>{{ replyingToName }}</strong>
             </div>
             <div class="reply-input-row">
               <textarea
                 [(ngModel)]="replyContent"
                 class="reply-textarea"
                 rows="2"
-                placeholder="Votre réponse..."
+                placeholder="Your reply..."
                 [disabled]="loading"
                 (keydown.enter)="$event.ctrlKey && submitReply(commentaire)">
               </textarea>
               <div class="reply-actions">
-                <button class="btn-cancel-reply" (click)="cancelReply()">Annuler</button>
+                <button class="btn-cancel-reply" (click)="cancelReply()">Cancel</button>
                 <button
                   class="btn-submit-reply"
                   (click)="submitReply(commentaire)"
                   [disabled]="loading || !replyContent.trim()">
-                  <span *ngIf="!loading">Envoyer</span>
+                  <span *ngIf="!loading">Send</span>
                   <span *ngIf="loading" class="spinner-small"></span>
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- ✅ Réponses imbriquées -->
+          <!-- ✅ Nested replies -->
           <div *ngIf="commentaire.replies && commentaire.replies.length > 0" class="replies-list">
             <div *ngFor="let reply of commentaire.replies" class="reply-item">
 
@@ -116,37 +116,37 @@
                   </div>
                 </div>
 
-                <!-- Actions owner pour les réponses -->
+                <!-- Owner actions for replies -->
                 <div class="comment-actions" *ngIf="canModifyCommentaire(reply) && editingCommentaireId !== reply.id">
-                  <button class="btn-icon-action edit" (click)="startEdit(reply)" title="Modifier">✏️</button>
-                  <button class="btn-icon-action delete" (click)="deleteCommentaire(reply)" title="Supprimer">🗑️</button>
+                  <button class="btn-icon-action edit" (click)="startEdit(reply)" title="Edit">✏️</button>
+                  <button class="btn-icon-action delete" (click)="deleteCommentaire(reply)" title="Delete">🗑️</button>
                 </div>
               </div>
 
-              <!-- Contenu réponse (lecture) -->
+              <!-- Reply content (read) -->
               <div *ngIf="editingCommentaireId !== reply.id" class="commentaire-content reply-content">
                 <p>{{ reply.contenue }}</p>
               </div>
 
-              <!-- Contenu réponse (édition) -->
+              <!-- Reply content (edit) -->
               <div *ngIf="editingCommentaireId === reply.id" class="edit-mode">
-                <textarea [(ngModel)]="editingContent" class="edit-textarea" rows="2" placeholder="Modifier..."></textarea>
+                <textarea [(ngModel)]="editingContent" class="edit-textarea" rows="2" placeholder="Edit..."></textarea>
                 <div class="edit-actions">
-                  <button class="btn-cancel-edit" (click)="cancelEdit()">Annuler</button>
-                  <button class="btn-save-edit" (click)="saveEdit(reply)">Enregistrer</button>
+                  <button class="btn-cancel-edit" (click)="cancelEdit()">Cancel</button>
+                  <button class="btn-save-edit" (click)="saveEdit(reply)">Save</button>
                 </div>
               </div>
 
             </div>
           </div>
-          <!-- fin replies -->
+          <!-- end replies -->
 
         </div>
-        <!-- fin commentaire racine -->
+        <!-- end root comment -->
       </div>
     </div>
 
-    <!-- Zone d'ajout de commentaire -->
+    <!-- Add comment section -->
     <div class="add-comment-section">
       <div class="current-user-avatar">
         {{ currentUserId ? 'U' : '?' }}
@@ -155,18 +155,18 @@
         <textarea
           [(ngModel)]="newCommentaire"
           class="comment-input"
-          placeholder="Ajouter un commentaire..."
+          placeholder="Add a comment..."
           rows="3"
           [disabled]="loading"
           (keydown.enter)="$event.ctrlKey && addCommentaire()">
         </textarea>
         <div class="input-footer">
-          <span class="input-hint">Ctrl + Entrée pour envoyer</span>
+          <span class="input-hint"></span>
           <button
             class="btn-send-comment"
             (click)="addCommentaire()"
             [disabled]="loading || !newCommentaire.trim()">
-            <span *ngIf="!loading">Envoyer</span>
+            <span *ngIf="!loading">Send</span>
             <span *ngIf="loading" class="loading-text"><span class="spinner-small"></span></span>
           </button>
         </div>
