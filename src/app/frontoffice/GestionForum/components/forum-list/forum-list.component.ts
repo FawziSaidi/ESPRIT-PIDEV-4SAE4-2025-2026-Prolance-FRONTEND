@@ -1,6 +1,7 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { Publication, TypePublication } from '../../models/publication.model';
 import { PublicationService } from '../../services/publication.service';
+import { AuthService } from '../../../../services/auth.services';
 
 @Component({
   selector: 'app-forum-list',
@@ -15,7 +16,7 @@ export class ForumListComponent implements OnInit {
   showEditModal: boolean = false;
   showCommentModal: boolean = false;
   selectedPublication: Publication | null = null;
-  currentUserId: number = 1; // À récupérer depuis le service d'authentification
+  currentUserId: number = 0; // ✅ Initialisé à 0, sera rempli depuis AuthService
   loading: boolean = false;
   errorMessage: string = '';
   activeMenuId: number | null = null;
@@ -27,7 +28,10 @@ export class ForumListComponent implements OnInit {
     { value: 'REVIEW', label: 'Reviews' }
   ];
 
-  constructor(private publicationService: PublicationService) {}
+  constructor(
+    private publicationService: PublicationService,
+    private authService: AuthService  // ✅ Injection de AuthService
+  ) {}
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
@@ -38,9 +42,18 @@ export class ForumListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // ✅ Récupérer l'ID de l'utilisateur connecté depuis le service d'authentification
+    const userId = this.authService.getCurrentUserId();
+    if (userId) {
+      this.currentUserId = userId;
+    } else {
+      // Fallback : lire depuis localStorage (compatibilité)
+      const stored = localStorage.getItem('userId');
+      if (stored) {
+        this.currentUserId = parseInt(stored, 10);
+      }
+    }
     this.loadPublications();
-    // TODO: Récupérer l'ID de l'utilisateur connecté depuis le service d'authentification
-    // this.currentUserId = this.authService.getCurrentUserId();
   }
 
   loadPublications(): void {
@@ -64,6 +77,11 @@ export class ForumListComponent implements OnInit {
   filterPublications(): void {
     if (this.selectedType === 'TOUS') {
       this.filteredPublications = this.publications;
+    } else if (this.selectedType === 'MYPOSTS') {
+      // ✅ Filtrer uniquement les publications de l'utilisateur connecté
+      this.filteredPublications = this.publications.filter(
+        pub => pub.user?.id === this.currentUserId
+      );
     } else {
       this.filteredPublications = this.publications.filter(
         pub => pub.type === this.selectedType

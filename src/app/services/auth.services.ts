@@ -7,6 +7,7 @@ export interface SessionUser {
   email: string;
   role: 'ADMIN' | 'USER' | 'CLIENT' | 'FREELANCER';
   token: string;
+  userId: number;
 }
 
 @Injectable({
@@ -39,11 +40,16 @@ export class AuthService {
     const user: SessionUser = {
       email,
       role: res.role,
-      token: res.token
+      token: res.token,
+      userId: res.userId
     };
 
     localStorage.setItem('sessionUser', JSON.stringify(user));
     this.currentUserSubject.next(user);
+  }
+
+  getCurrentUserId(): number | null {
+    return this.currentUserSubject.value?.userId ?? null;
   }
 
   logout(): void {
@@ -65,6 +71,19 @@ export class AuthService {
 
   private getUserFromStorage(): SessionUser | null {
     const stored = localStorage.getItem('sessionUser');
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+
+    const parsed: SessionUser = JSON.parse(stored);
+
+    // Si la session ne contient pas userId (ancienne session), on la supprime
+    if (!parsed.userId) {
+      localStorage.removeItem('sessionUser');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('role');
+      return null;
+    }
+
+    return parsed;
   }
 }

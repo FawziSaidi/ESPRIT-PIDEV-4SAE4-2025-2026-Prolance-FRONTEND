@@ -1,24 +1,29 @@
 <div class="forum-container">
   <div class="forum-content">
-    <!-- Header -->
-    <div class="forum-header">
-      <div class="section-info">
-        <h1 class="section-title">Posts</h1>
+
+    <!-- Tabs + Add Post button dans la même barre -->
+    <div class="tabs-bar">
+      <div class="tabs">
+        <button 
+          *ngFor="let type of typeOptions"
+          [class.active]="selectedType === type.value"
+          (click)="onTypeChange(type.value)"
+          class="tab-button">
+          {{ type.label }}
+        </button>
+        <!-- ✅ Onglet My Posts -->
+        <button 
+          [class.active]="selectedType === 'MYPOSTS'"
+          (click)="onTypeChange('MYPOSTS')"
+          class="tab-button">
+          My Posts
+        </button>
       </div>
+
+      <!-- ✅ Bouton Add Post à l'extrémité droite -->
       <button class="btn-add" (click)="openAddModal()">
         <span class="btn-icon">+</span>
         Add Post
-      </button>
-    </div>
-
-    <!-- Type Filter Tabs -->
-    <div class="tabs">
-      <button 
-        *ngFor="let type of typeOptions"
-        [class.active]="selectedType === type.value"
-        (click)="onTypeChange(type.value)"
-        class="tab-button">
-        {{ type.label }}
       </button>
     </div>
 

@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Publication, TypePublication } from '../../models/publication.model';
 import { PublicationService } from '../../services/publication.service';
+import { AuthService } from '../../../../services/auth.services';
 
 @Component({
   selector: 'app-publication-form',
@@ -21,7 +22,7 @@ export class PublicationFormComponent implements OnInit {
 
   selectedFile: File | null = null;
   imagePreview: string | null = null;
-  currentUserId: number = 1; // À récupérer depuis le service d'authentification
+  currentUserId: number = 0; // ✅ Sera rempli depuis AuthService
 
   typeOptions = [
     { value: TypePublication.QUESTION, label: 'Question', icon: '❓' },
@@ -38,9 +39,24 @@ export class PublicationFormComponent implements OnInit {
   loading: boolean = false;
   errorMessage: string = '';
 
-  constructor(private publicationService: PublicationService) {}
+  constructor(
+    private publicationService: PublicationService,
+    private authService: AuthService  // ✅ Injection de AuthService
+  ) {}
 
   ngOnInit(): void {
+    // ✅ Récupérer l'ID de l'utilisateur connecté
+    const userId = this.authService.getCurrentUserId();
+    if (userId) {
+      this.currentUserId = userId;
+    } else {
+      // Fallback : lire depuis localStorage (compatibilité)
+      const stored = localStorage.getItem('userId');
+      if (stored) {
+        this.currentUserId = parseInt(stored, 10);
+      }
+    }
+
     if (this.mode === 'edit' && this.publication) {
       this.formData = {
         titre: this.publication.titre,
@@ -52,8 +68,6 @@ export class PublicationFormComponent implements OnInit {
         this.imagePreview = `http://localhost:8089/pidev/uploads/publications/${this.publication.image}`;
       }
     }
-    // TODO: Récupérer l'ID de l'utilisateur connecté
-    // this.currentUserId = this.authService.getCurrentUserId();
   }
 
   onFileSelected(event: any): void {

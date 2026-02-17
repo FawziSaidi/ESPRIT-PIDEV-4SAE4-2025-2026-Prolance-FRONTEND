@@ -74,6 +74,10 @@ export class LoginComponent implements OnInit, OnDestroy {
         localStorage.setItem('token', res.token);
         localStorage.setItem('userName', authRequest.email);
         localStorage.setItem('role', res.role);
+        localStorage.setItem('userId', res.userId.toString()); // ✅ Sauvegarder l'ID utilisateur
+
+        // ✅ Mettre à jour le BehaviorSubject via setSession
+        this.authService.setSession(res, authRequest.email);
 
         this.user = { email: authRequest.email, role: res.role };
 
