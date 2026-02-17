@@ -1,0 +1,165 @@
+<div class="forum-page">
+
+  <!-- SEARCH BAR -->
+  <div class="search-bar-wrapper">
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        [(ngModel)]="searchUsername"
+        (ngModelChange)="onSearch()"
+        placeholder="Search by username..."
+        class="search-input"
+      />
+      <button *ngIf="searchUsername" (click)="searchUsername=''; onSearch()" class="search-clear">✕</button>
+    </div>
+  </div>
+
+  <!-- LOADING / ERROR -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <div *ngIf="error" class="error-banner">
+    <span>⚠️ {{ error }}</span>
+    <button (click)="loadData()">Retry</button>
+  </div>
+
+  <div *ngIf="!loading && !error">
+
+    <!-- STATS CARDS -->
+    <div class="stats-grid">
+
+      <div class="stat-card stat-total">
+        <div class="stat-icon-box"><span class="stat-icon">📝</span></div>
+        <div class="stat-info">
+          <p class="stat-label">Total Publications</p>
+          <h2 class="stat-value">{{ totalPublications }}</h2>
+        </div>
+        <div class="stat-footer"><span>📋 All publications</span></div>
+      </div>
+
+      <div class="stat-card stat-question">
+        <div class="stat-icon-box"><span class="stat-icon">❓</span></div>
+        <div class="stat-info">
+          <p class="stat-label">Questions</p>
+          <h2 class="stat-value">{{ countQuestion }}</h2>
+        </div>
+        <div class="stat-footer">
+          <span>📊 {{ totalPublications > 0 ? ((countQuestion / totalPublications) * 100).toFixed(0) : 0 }}% of total</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-article">
+        <div class="stat-icon-box"><span class="stat-icon">📰</span></div>
+        <div class="stat-info">
+          <p class="stat-label">Articles</p>
+          <h2 class="stat-value">{{ countArticle }}</h2>
+        </div>
+        <div class="stat-footer">
+          <span>📊 {{ totalPublications > 0 ? ((countArticle / totalPublications) * 100).toFixed(0) : 0 }}% of total</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-review">
+        <div class="stat-icon-box"><span class="stat-icon">⭐</span></div>
+        <div class="stat-info">
+          <p class="stat-label">Reviews</p>
+          <h2 class="stat-value">{{ countReview }}</h2>
+        </div>
+        <div class="stat-footer">
+          <span>📊 {{ totalPublications > 0 ? ((countReview / totalPublications) * 100).toFixed(0) : 0 }}% of total</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TABLE 1 : Publications -->
+    <div class="table-section">
+      <div class="table-header">
+        <h3 class="table-title">
+          <span class="table-title-icon">📝</span>
+          Publications
+        </h3>
+        <span class="table-badge">{{ filteredPubRows.length }} publication(s)</span>
+      </div>
+
+      <div class="table-wrapper">
+        <div *ngIf="filteredPubRows.length === 0" class="empty-state">
+          <p>No results found<span *ngIf="searchUsername"> for "{{ searchUsername }}"</span></p>
+        </div>
+
+        <table *ngIf="filteredPubRows.length > 0" class="data-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Publication Title</th>
+              <th>Created At</th>
+              <th class="center-col">Comments Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredPubRows; let i = index" [class.row-even]="i % 2 === 0">
+              <td class="username-cell">
+                <div class="username-tag">
+                  <span class="avatar">{{ row.username.charAt(0).toUpperCase() }}</span>
+                  {{ row.username }}
+                </div>
+              </td>
+              <td class="pub-title">{{ row.titre }}</td>
+              <td class="date-cell">{{ formatDate(row.createAt) }}</td>
+              <td class="center-col">
+                <span class="comment-count-badge">💬 {{ row.nbCommentaires }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TABLE 2 : Comments -->
+    <div class="table-section">
+      <div class="table-header">
+        <h3 class="table-title">
+          <span class="table-title-icon">💬</span>
+          Comments
+        </h3>
+        <span class="table-badge">{{ filteredComRows.length }} comment(s)</span>
+      </div>
+
+      <div class="table-wrapper">
+        <div *ngIf="filteredComRows.length === 0" class="empty-state">
+          <p>No results found<span *ngIf="searchUsername"> for "{{ searchUsername }}"</span></p>
+        </div>
+
+        <table *ngIf="filteredComRows.length > 0" class="data-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Comment</th>
+              <th>Created At</th>
+              <th>Related Publication</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredComRows; let i = index" [class.row-even]="i % 2 === 0">
+              <td class="username-cell">
+                <div class="username-tag">
+                  <span class="avatar avatar-comment">{{ row.username.charAt(0).toUpperCase() }}</span>
+                  {{ row.username }}
+                </div>
+              </td>
+              <td class="comment-cell">{{ row.contenue }}</td>
+              <td class="date-cell">{{ formatDate(row.createAt) }}</td>
+              <td class="pub-name-cell">
+                <span class="pub-name-tag">📄 {{ row.publicationTitre }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
