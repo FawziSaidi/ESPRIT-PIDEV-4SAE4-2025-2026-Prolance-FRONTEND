@@ -45,16 +45,12 @@ export class PublicationFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // ✅ Récupérer l'ID de l'utilisateur connecté
+    // ✅ Toujours lire l'ID depuis AuthService (user connecté réel)
     const userId = this.authService.getCurrentUserId();
     if (userId) {
       this.currentUserId = userId;
     } else {
-      // Fallback : lire depuis localStorage (compatibilité)
-      const stored = localStorage.getItem('userId');
-      if (stored) {
-        this.currentUserId = parseInt(stored, 10);
-      }
+      console.warn('Aucun utilisateur connecté. Redirection recommandée.');
     }
 
     if (this.mode === 'edit' && this.publication) {

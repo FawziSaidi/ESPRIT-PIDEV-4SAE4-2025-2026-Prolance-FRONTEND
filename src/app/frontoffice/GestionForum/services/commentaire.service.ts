@@ -28,15 +28,22 @@ export class CommentaireService {
       .set('contenue', contenue)
       .set('publicationId', publicationId.toString())
       .set('userId', userId.toString());
-    
     return this.http.post<Commentaire>(this.baseUrl, null, { params });
+  }
+
+  // ✅ NOUVEAU : répondre à un commentaire existant
+  replyToCommentaire(contenue: string, parentId: number, publicationId: number, userId: number): Observable<Commentaire> {
+    const params = new HttpParams()
+      .set('contenue', contenue)
+      .set('publicationId', publicationId.toString())
+      .set('userId', userId.toString());
+    return this.http.post<Commentaire>(`${this.baseUrl}/${parentId}/reply`, null, { params });
   }
 
   updateCommentaire(id: number, contenue: string, userId: number): Observable<Commentaire> {
     const params = new HttpParams()
       .set('contenue', contenue)
       .set('userId', userId.toString());
-    
     return this.http.put<Commentaire>(`${this.baseUrl}/${id}`, null, { params });
   }
 

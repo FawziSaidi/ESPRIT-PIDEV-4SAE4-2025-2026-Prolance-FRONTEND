@@ -16,10 +16,13 @@ export class ForumListComponent implements OnInit {
   showEditModal: boolean = false;
   showCommentModal: boolean = false;
   selectedPublication: Publication | null = null;
-  currentUserId: number = 0; // ✅ Initialisé à 0, sera rempli depuis AuthService
+  currentUserId: number = 0;
   loading: boolean = false;
   errorMessage: string = '';
   activeMenuId: number | null = null;
+
+  // ✅ Recherche en temps réel par nom d'auteur
+  searchQuery: string = '';
 
   typeOptions = [
     { value: 'TOUS', label: 'All' },
@@ -30,7 +33,7 @@ export class ForumListComponent implements OnInit {
 
   constructor(
     private publicationService: PublicationService,
-    private authService: AuthService  // ✅ Injection de AuthService
+    private authService: AuthService
   ) {}
 
   @HostListener('document:click', ['$event'])
@@ -42,32 +45,24 @@ export class ForumListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // ✅ Récupérer l'ID de l'utilisateur connecté depuis le service d'authentification
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUserId = user?.userId ?? 0;
+    });
     const userId = this.authService.getCurrentUserId();
-    if (userId) {
-      this.currentUserId = userId;
-    } else {
-      // Fallback : lire depuis localStorage (compatibilité)
-      const stored = localStorage.getItem('userId');
-      if (stored) {
-        this.currentUserId = parseInt(stored, 10);
-      }
-    }
+    if (userId) this.currentUserId = userId;
     this.loadPublications();
   }
 
   loadPublications(): void {
     this.loading = true;
     this.errorMessage = '';
-    
     this.publicationService.getAllPublications().subscribe({
       next: (data) => {
         this.publications = data;
         this.filterPublications();
         this.loading = false;
       },
-      error: (error) => {
-        console.error('Error loading posts:', error);
+      error: () => {
         this.errorMessage = 'Error loading posts';
         this.loading = false;
       }
@@ -75,18 +70,25 @@ export class ForumListComponent implements OnInit {
   }
 
   filterPublications(): void {
-    if (this.selectedType === 'TOUS') {
-      this.filteredPublications = this.publications;
-    } else if (this.selectedType === 'MYPOSTS') {
-      // ✅ Filtrer uniquement les publications de l'utilisateur connecté
-      this.filteredPublications = this.publications.filter(
-        pub => pub.user?.id === this.currentUserId
-      );
-    } else {
-      this.filteredPublications = this.publications.filter(
-        pub => pub.type === this.selectedType
-      );
+    let result = this.publications;
+
+    // Filtre par onglet
+    if (this.selectedType === 'MYPOSTS') {
+      result = result.filter(pub => pub.user?.id === this.currentUserId);
+    } else if (this.selectedType !== 'TOUS') {
+      result = result.filter(pub => pub.type === this.selectedType);
     }
+
+    // ✅ Filtre en temps réel par nom d'auteur
+    const q = this.searchQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter(pub => {
+        const fullName = `${pub.user?.name ?? ''} ${pub.user?.lastName ?? ''}`.toLowerCase();
+        return fullName.includes(q);
+      });
+    }
+
+    this.filteredPublications = result;
   }
 
   onTypeChange(type: string): void {
@@ -94,13 +96,18 @@ export class ForumListComponent implements OnInit {
     this.filterPublications();
   }
 
-  openAddModal(): void {
-    this.showAddModal = true;
+  // ✅ Appelé à chaque frappe dans la barre de recherche
+  onSearchChange(): void {
+    this.filterPublications();
   }
 
-  closeAddModal(): void {
-    this.showAddModal = false;
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.filterPublications();
   }
+
+  openAddModal(): void { this.showAddModal = true; }
+  closeAddModal(): void { this.showAddModal = false; }
 
   openEditModal(publication: Publication): void {
     if (publication.user?.id === this.currentUserId) {
@@ -108,7 +115,6 @@ export class ForumListComponent implements OnInit {
       this.showEditModal = true;
     }
   }
-
   closeEditModal(): void {
     this.showEditModal = false;
     this.selectedPublication = null;
@@ -118,38 +124,23 @@ export class ForumListComponent implements OnInit {
     this.selectedPublication = publication;
     this.showCommentModal = true;
   }
-
   closeCommentModal(): void {
     this.showCommentModal = false;
     this.selectedPublication = null;
   }
 
-  onPublicationCreated(): void {
-    this.closeAddModal();
-    this.loadPublications();
-  }
-
-  onPublicationUpdated(): void {
-    this.closeEditModal();
-    this.loadPublications();
-  }
-  
+  onPublicationCreated(): void { this.closeAddModal(); this.loadPublications(); }
+  onPublicationUpdated(): void { this.closeEditModal(); this.loadPublications(); }
 
   deletePublication(publication: Publication): void {
     if (publication.user?.id !== this.currentUserId) {
       alert('You are not authorized to delete this post');
       return;
     }
-
     if (confirm('Are you sure you want to delete this post?')) {
       this.publicationService.deletePublication(publication.id!, this.currentUserId).subscribe({
-        next: () => {
-          this.loadPublications();
-        },
-        error: (error) => {
-          console.error('Delete error:', error);
-          alert('Error deleting post');
-        }
+        next: () => this.loadPublications(),
+        error: () => alert('Error deleting post')
       });
     }
   }
@@ -159,69 +150,48 @@ export class ForumListComponent implements OnInit {
   }
 
   toggleActionMenu(publicationId: number): void {
-    if (this.activeMenuId === publicationId) {
-      this.activeMenuId = null;
-    } else {
-      this.activeMenuId = publicationId;
-    }
+    this.activeMenuId = this.activeMenuId === publicationId ? null : publicationId;
   }
-
-  closeActionMenu(): void {
-    this.activeMenuId = null;
-  }
+  closeActionMenu(): void { this.activeMenuId = null; }
 
   getTimeAgo(date: string): string {
     const now = new Date();
-    const publicationDate = new Date(date);
-    const diffMs = now.getTime() - publicationDate.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    
-    return publicationDate.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    const d = new Date(date);
+    const diffMs = now.getTime() - d.getTime();
+    const mins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMs / 3600000);
+    const days = Math.floor(diffMs / 86400000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins} min ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   getTypeLabel(type: string): string {
-    switch (type) {
-      case 'QUESTION': return 'Question';
-      case 'ARTICLE': return 'Article';
-      case 'REVIEW': return 'Review';
-      default: return type;
-    }
+    const map: Record<string, string> = { QUESTION: 'Question', ARTICLE: 'Article', REVIEW: 'Review' };
+    return map[type] ?? type;
   }
 
   getTypeIcon(type: string): string {
-    switch (type) {
-      case 'QUESTION': return '❓';
-      case 'ARTICLE': return '📝';
-      case 'REVIEW': return '⭐';
-      default: return '📄';
-    }
+    const map: Record<string, string> = { QUESTION: '❓', ARTICLE: '📝', REVIEW: '⭐' };
+    return map[type] ?? '📄';
   }
 
   getImageUrl(imageName: string): string {
-    // Le nom de l'image peut avoir des underscores ou des tirets
-    // On essaie d'abord avec le nom tel quel
     return `http://localhost:8089/pidev/uploads/publications/${imageName}`;
   }
 
   onImageError(event: any): void {
-    // Si l'image ne charge pas, on peut essayer un fallback ou cacher l'élément
-    console.error('Erreur de chargement de l\'image:', event.target.src);
-    // Option 1: Cacher l'image
     event.target.style.display = 'none';
-    
-    // Option 2: Afficher une image de placeholder
-    // event.target.src = 'assets/img/placeholder.png';
+  }
+
+  // ✅ Surligne la partie du nom qui correspond à la recherche
+  highlightName(fullName: string): string {
+    const q = this.searchQuery.trim();
+    if (!q) return fullName;
+    const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return fullName.replace(regex, '<mark class="search-highlight">$1</mark>');
   }
 }

@@ -488,3 +488,179 @@
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   REPLIES — Nouvelles règles pour les réponses
+   ═══════════════════════════════════════════════ */
+
+/* Pied de commentaire : bouton Répondre + compteur */
+.commentaire-footer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+
+.btn-reply {
+  background: none;
+  border: none;
+  color: #a855f7;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.btn-reply:hover {
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.reply-icon {
+  font-size: 1rem;
+}
+
+.replies-count {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+/* Formulaire de réponse inline */
+.reply-form {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: #f5f0ff;
+  border-left: 3px solid #a855f7;
+  border-radius: 0 10px 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.reply-to-label {
+  font-size: 0.82rem;
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.at-icon {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.reply-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reply-textarea {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 70px;
+  transition: border-color 0.2s;
+}
+
+.reply-textarea:focus {
+  outline: none;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+}
+
+.reply-textarea:disabled {
+  opacity: 0.6;
+}
+
+.reply-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.btn-cancel-reply {
+  padding: 0.45rem 0.9rem;
+  border-radius: 7px;
+  border: 2px solid #e9ecef;
+  background: white;
+  color: #6c757d;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-cancel-reply:hover {
+  background: #f8f9fa;
+}
+
+.btn-submit-reply {
+  padding: 0.45rem 1rem;
+  border-radius: 7px;
+  border: none;
+  background: #a855f7;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(168, 85, 247, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-submit-reply:hover:not(:disabled) {
+  background: #9333ea;
+  transform: translateY(-1px);
+}
+
+.btn-submit-reply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Réponses imbriquées ── */
+.replies-list {
+  margin-top: 0.75rem;
+  margin-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  border-left: 2px solid #e9d5ff;
+  padding-left: 1rem;
+}
+
+.reply-item {
+  background: #fdf8ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 10px;
+  padding: 1rem;
+  transition: box-shadow 0.2s;
+}
+
+.reply-item:hover {
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.1);
+}
+
+.reply-avatar {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 0.75rem !important;
+}
+
+.reply-content p {
+  font-size: 0.9rem;
+}

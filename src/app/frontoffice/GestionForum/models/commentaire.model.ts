@@ -7,4 +7,6 @@ export interface Commentaire {
   likes?: number;
   user?: User;
   publicationId?: number;
+  parent?: Commentaire;           // ✅ commentaire parent (null si racine)
+  replies?: Commentaire[];        // ✅ liste des réponses directes
 }

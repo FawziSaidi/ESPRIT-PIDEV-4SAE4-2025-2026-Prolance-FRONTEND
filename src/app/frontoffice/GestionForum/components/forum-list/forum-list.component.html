@@ -1,36 +1,56 @@
 <div class="forum-container">
   <div class="forum-content">
 
-    <!-- Tabs + Add Post button dans la même barre -->
+    <!-- Tabs + Add Post -->
     <div class="tabs-bar">
       <div class="tabs">
-        <button 
+        <button
           *ngFor="let type of typeOptions"
           [class.active]="selectedType === type.value"
           (click)="onTypeChange(type.value)"
           class="tab-button">
           {{ type.label }}
         </button>
-        <!-- ✅ Onglet My Posts -->
-        <button 
+        <button
           [class.active]="selectedType === 'MYPOSTS'"
           (click)="onTypeChange('MYPOSTS')"
           class="tab-button">
           My Posts
         </button>
       </div>
-
-      <!-- ✅ Bouton Add Post à l'extrémité droite -->
       <button class="btn-add" (click)="openAddModal()">
-        <span class="btn-icon">+</span>
-        Add Post
+        <span class="btn-icon">+</span> Add Post
       </button>
     </div>
 
-    <!-- Error Message -->
-    <div *ngIf="errorMessage" class="error-message">
-      {{ errorMessage }}
+    <!-- ✅ BARRE DE RECHERCHE — entre les onglets et les cartes -->
+    <div class="search-bar">
+      <div class="search-input-wrapper">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearchChange()"
+          class="search-input"
+          placeholder="Search by author name..."
+          autocomplete="off" />
+        <button *ngIf="searchQuery" class="btn-clear" (click)="clearSearch()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <span class="search-results" *ngIf="searchQuery.trim()">
+        <strong>{{ filteredPublications.length }}</strong>
+        result{{ filteredPublications.length !== 1 ? 's' : '' }} for
+        <em>« {{ searchQuery.trim() }} »</em>
+      </span>
     </div>
+
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
 
     <!-- Loading -->
     <div *ngIf="loading" class="loading-container">
@@ -38,111 +58,79 @@
       <p>Loading posts...</p>
     </div>
 
-  <!-- Publications Grid -->
-  <div *ngIf="!loading && filteredPublications.length > 0" class="publications-grid">
-    <div *ngFor="let publication of filteredPublications" class="publication-card">
-      <!-- Card Main Content -->
-      <div class="card-main">
-        <!-- Card Header -->
-        <div class="card-header">
-          <div class="user-info">
-            <div class="user-avatar">
-              {{ publication.user?.name?.charAt(0) }}{{ publication.user?.lastName?.charAt(0) }}
+    <!-- Publications Grid -->
+    <div *ngIf="!loading && filteredPublications.length > 0" class="publications-grid">
+      <div *ngFor="let publication of filteredPublications" class="publication-card">
+        <div class="card-main">
+          <div class="card-header">
+            <div class="user-info">
+              <div class="user-avatar">
+                {{ publication.user?.name?.charAt(0) }}{{ publication.user?.lastName?.charAt(0) }}
+              </div>
+              <div class="user-details">
+                <h3 class="user-name"
+                    [innerHTML]="highlightName((publication.user?.name ?? '') + ' ' + (publication.user?.lastName ?? ''))">
+                </h3>
+                <p class="publication-time">{{ getTimeAgo(publication.createAt!) }}</p>
+              </div>
             </div>
-            <div class="user-details">
-              <h3 class="user-name">{{ publication.user?.name }} {{ publication.user?.lastName }}</h3>
-              <p class="publication-time">{{ getTimeAgo(publication.createAt!) }}</p>
-            </div>
-          </div>
-          <div class="header-right">
-            <div class="type-badge" [attr.data-type]="publication.type">
-              <span class="type-icon">{{ getTypeIcon(publication.type) }}</span>
-              {{ getTypeLabel(publication.type) }}
-            </div>
-            <div class="actions-right" *ngIf="canModifyPublication(publication)">
-              <button class="btn-menu" (click)="toggleActionMenu(publication.id!)">
-                ⋮
-              </button>
-              <div class="actions-dropdown" *ngIf="activeMenuId === publication.id">
-                <button class="dropdown-item edit" (click)="openEditModal(publication); closeActionMenu()">
-                  <span class="icon">✏️</span>
-                  Edit
-                </button>
-                <button class="dropdown-item delete" (click)="deletePublication(publication); closeActionMenu()">
-                  <span class="icon">🗑️</span>
-                  Delete
-                </button>
+            <div class="header-right">
+              <div class="type-badge" [attr.data-type]="publication.type">
+                <span class="type-icon">{{ getTypeIcon(publication.type) }}</span>
+                {{ getTypeLabel(publication.type) }}
+              </div>
+              <div class="actions-right" *ngIf="canModifyPublication(publication)">
+                <button class="btn-menu" (click)="toggleActionMenu(publication.id!)">⋮</button>
+                <div class="actions-dropdown" *ngIf="activeMenuId === publication.id">
+                  <button class="dropdown-item edit" (click)="openEditModal(publication); closeActionMenu()">
+                    <span class="icon">✏️</span> Edit
+                  </button>
+                  <button class="dropdown-item delete" (click)="deletePublication(publication); closeActionMenu()">
+                    <span class="icon">🗑️</span> Delete
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Card Content -->
-        <div class="card-content">
-          <h2 class="publication-titre">{{ publication.titre }}</h2>
-          <p class="publication-contenue">{{ publication.contenue }}</p>
-          
-          <!-- Image after content -->
-          <div *ngIf="publication.image" class="publication-image-bottom">
-            <img [src]="getImageUrl(publication.image)" 
-                 [alt]="publication.titre"
-                 (error)="onImageError($event)">
+          <div class="card-content">
+            <h2 class="publication-titre">{{ publication.titre }}</h2>
+            <p class="publication-contenue">{{ publication.contenue }}</p>
+            <div *ngIf="publication.image" class="publication-image-bottom">
+              <img [src]="getImageUrl(publication.image)" [alt]="publication.titre" (error)="onImageError($event)">
+            </div>
           </div>
-        </div>
 
-        <!-- Card Footer -->
-        <div class="card-footer">
-          <div class="actions-left">
-            <button class="btn-action" (click)="openCommentModal(publication)">
-              <span class="icon">💬</span>
-              Comments
-              <span class="count" *ngIf="publication.commentaires?.length">
-                ({{ publication.commentaires.length }})
-              </span>
-            </button>
-            <div class="likes-info">
-              <span class="icon">👍</span>
-              <span class="count">{{ publication.likes || 0 }}</span>
+          <div class="card-footer">
+            <div class="actions-left">
+              <button class="btn-action" (click)="openCommentModal(publication)">
+                <span class="icon">💬</span> Comments
+                <span class="count" *ngIf="publication.commentaires?.length">({{ publication.commentaires.length }})</span>
+              </button>
+              <div class="likes-info">
+                <span class="icon">👍</span>
+                <span class="count">{{ publication.likes || 0 }}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Empty State -->
-  <div *ngIf="!loading && filteredPublications.length === 0" class="empty-state">
-    <div class="empty-icon">📝</div>
-    <h3>No posts</h3>
-    <p>There are no posts in this category yet.</p>
-    <button class="btn-primary" (click)="openAddModal()">
-      Create first post
-    </button>
-  </div>
+    <!-- Empty State -->
+    <div *ngIf="!loading && filteredPublications.length === 0" class="empty-state">
+      <div class="empty-icon">{{ searchQuery.trim() ? '🔍' : '📝' }}</div>
+      <h3>{{ searchQuery.trim() ? 'No results found' : 'No posts' }}</h3>
+      <p *ngIf="searchQuery.trim()">No author matches <strong>« {{ searchQuery.trim() }} »</strong></p>
+      <p *ngIf="!searchQuery.trim()">There are no posts in this category yet.</p>
+      <button *ngIf="searchQuery.trim()" class="btn-primary" (click)="clearSearch()">Clear search</button>
+      <button *ngIf="!searchQuery.trim()" class="btn-primary" (click)="openAddModal()">Create first post</button>
+    </div>
+
   </div>
 </div>
 
-<!-- Add Modal -->
-<app-publication-form
-  *ngIf="showAddModal"
-  [mode]="'create'"
-  (close)="closeAddModal()"
-  (saved)="onPublicationCreated()">
-</app-publication-form>
-
-<!-- Edit Modal -->
-<app-publication-form
-  *ngIf="showEditModal && selectedPublication"
-  [mode]="'edit'"
-  [publication]="selectedPublication"
-  (close)="closeEditModal()"
-  (saved)="onPublicationUpdated()">
-</app-publication-form>
-
-<!-- Comment Modal -->
-<app-commentaire-modal
-  *ngIf="showCommentModal && selectedPublication"
-  [publication]="selectedPublication"
-  [currentUserId]="currentUserId"
-  (close)="closeCommentModal()">
-</app-commentaire-modal>
+<!-- Modals -->
+<app-publication-form *ngIf="showAddModal" [mode]="'create'" (close)="closeAddModal()" (saved)="onPublicationCreated()"></app-publication-form>
+<app-publication-form *ngIf="showEditModal && selectedPublication" [mode]="'edit'" [publication]="selectedPublication" (close)="closeEditModal()" (saved)="onPublicationUpdated()"></app-publication-form>
+<app-commentaire-modal *ngIf="showCommentModal && selectedPublication" [publication]="selectedPublication" [currentUserId]="currentUserId" (close)="closeCommentModal()"></app-commentaire-modal>
