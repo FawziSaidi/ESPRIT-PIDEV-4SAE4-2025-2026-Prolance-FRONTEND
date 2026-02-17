@@ -40,8 +40,8 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
     document.body.classList.remove('user-portal');
   }
 
-  toggleRole(role: 'freelancer' | 'client'): void {
-    this.roleService.setRole(role);
+  toggleRole(role: string): void {
+    this.roleService.setRole(role as any);
   }
 
   toggleProfileDropdown(): void {
@@ -52,8 +52,21 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
     this.mobileMenuOpen = !this.mobileMenuOpen;
   }
 
+  // ✅ Navigation vers les pages abonnements
+  goToPlans(): void {
+    this.router.navigate(['/app/subscription/plans']);
+    this.mobileMenuOpen = false;
+    this.profileDropdownOpen = false;
+  }
+
+  goToMySubscription(): void {
+    this.router.navigate(['/app/subscription/my-subscription']);
+    this.mobileMenuOpen = false;
+    this.profileDropdownOpen = false;
+  }
+
   goToAdmin(): void {
-    this.router.navigate(['/dashboard']);
+    this.router.navigate(['/admin/dashboard']);
   }
 
   logout(): void {

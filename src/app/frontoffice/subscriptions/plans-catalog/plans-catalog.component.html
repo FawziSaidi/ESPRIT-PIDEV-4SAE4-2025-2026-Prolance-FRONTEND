@@ -1,40 +1,53 @@
 <div class="plans-container">
 
+  <!-- ======================== -->
+  <!-- HEADER -->
+  <!-- ======================== -->
   <div class="plans-header">
-    <h1>Choisissez votre plan
-      <span class="highlight">{{ selectedType === 'freelancer' ? 'Freelancer' : 'Client' }}</span>
+    <h1>Choisissez votre plan 
+      <span class="highlight">{{ selectedType === 'FREELANCER' ? 'Freelancer' : 'Client' }}</span>
     </h1>
     <p class="subtitle">
-      {{ selectedType === 'freelancer'
+      {{ selectedType === 'FREELANCER'
         ? 'Boostez votre carrière avec le plan adapté à vos besoins'
         : 'Trouvez les meilleurs freelancers pour vos projets' }}
     </p>
 
+    <!-- Toggle Semestriel / Annuel -->
     <div class="billing-toggle">
       <button
         [class.active]="billingCycle === 'SEMESTRIELLE'"
         (click)="setBillingCycle('SEMESTRIELLE')">
-        Semestriel
+        Semestriel (6 mois)
       </button>
       <button
         [class.active]="billingCycle === 'ANNUELLE'"
         (click)="setBillingCycle('ANNUELLE')">
-        Annuel
+        Annuel (12 mois)
       </button>
     </div>
   </div>
 
+  <!-- ======================== -->
+  <!-- LOADING -->
+  <!-- ======================== -->
   <div class="loading" *ngIf="loading">
     <div class="spinner"></div>
     <p>Chargement des plans...</p>
   </div>
 
+  <!-- ======================== -->
+  <!-- ERREUR -->
+  <!-- ======================== -->
   <div class="error-message" *ngIf="errorMessage">
     <div class="error-icon">⚠️</div>
     <p>{{ errorMessage }}</p>
     <button class="retry-btn" (click)="loadPlans()">Réessayer</button>
   </div>
 
+  <!-- ======================== -->
+  <!-- PLANS GRID -->
+  <!-- ======================== -->
   <div class="plans-grid" *ngIf="!loading && !errorMessage">
     <div
       class="plan-card"
@@ -45,10 +58,12 @@
         'elite': plan.name === 'Elite' || plan.name === 'Enterprise'
       }">
 
+      <!-- Badge Populaire -->
       <div class="popular-badge" *ngIf="isPopular(plan)">
         POPULAIRE
       </div>
 
+      <!-- Nom du plan -->
       <div class="plan-name" [ngClass]="{
         'bg-cyan': plan.name === 'Starter',
         'bg-orange': plan.name === 'Pro' || plan.name === 'Business',
@@ -57,15 +72,18 @@
         {{ plan.name }}
       </div>
 
+      <!-- Prix -->
       <div class="plan-price">
         <span class="price">{{ plan.price }} DT</span>
         <span class="duration">/ {{ getDuration(plan) }}</span>
       </div>
 
+      <!-- Description -->
       <p class="plan-description" *ngIf="plan.description">
         {{ plan.description }}
       </p>
 
+      <!-- Features -->
       <ul class="plan-features">
         <li *ngFor="let feature of getFeatures(plan)">
           <span class="check-icon" [ngClass]="{
@@ -77,6 +95,7 @@
         </li>
       </ul>
 
+      <!-- Bouton S'abonner -->
       <button
         class="subscribe-btn"
         [ngClass]="{
@@ -90,11 +109,14 @@
     </div>
   </div>
 
+  <!-- Aucun plan -->
   <div class="no-plans" *ngIf="!loading && !errorMessage && filteredPlans.length === 0">
     <p>Aucun plan disponible pour cette sélection.</p>
   </div>
 
-  <!-- Modal de confirmation -->
+  <!-- ======================== -->
+  <!-- MODAL DE CONFIRMATION -->
+  <!-- ======================== -->
   <app-confirm-modal
     [plan]="selectedPlan"
     [selectedType]="selectedType"

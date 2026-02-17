@@ -15,12 +15,12 @@ import { BackofficeLayoutComponent } from './backoffice-layout.component';
     HeaderComponent,
     SidebarComponent,
     FooterComponent,
-    DashboardComponent
+    DashboardComponent,
   ],
   imports: [
     CommonModule,
     FormsModule,
-    BackofficeRoutingModule
-  ]
+    BackofficeRoutingModule, // ✅ contient RouterModule.forChild() → fournit <router-outlet>
+  ],
 })
-export class BackofficeModule { }
+export class BackofficeModule {}

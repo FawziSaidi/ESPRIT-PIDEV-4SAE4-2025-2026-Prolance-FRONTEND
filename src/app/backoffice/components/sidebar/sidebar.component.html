@@ -7,13 +7,14 @@
   </div>
 
   <nav class="menu">
-    <a *ngFor="let item of menuItems" 
-       [href]="item.link"
-       [class.active]="activeMenu === item.id"
-       (click)="setActiveMenu(item.id)"
-       class="menu-item">
+    <div
+      *ngFor="let item of menuItems"
+      [routerLink]="item.link"
+      [class.active]="activeMenu === item.id"
+      (click)="setActiveMenu(item.id)"
+      class="menu-item">
       <span class="menu-icon">{{ item.icon }}</span>
       <span class="menu-label">{{ item.label }}</span>
-    </a>
+    </div>
   </nav>
 </aside>

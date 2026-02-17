@@ -14,7 +14,7 @@ import { SubscriptionStatsComponent } from './subscription-stats/subscription-st
   ],
   imports: [
     CommonModule,
-    FormsModule,
+    FormsModule,       // ✅ nécessaire pour [(ngModel)] dans subscription-list.component.html
     SubscriptionsRoutingModule,
   ],
 })

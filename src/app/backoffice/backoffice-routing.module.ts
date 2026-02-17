@@ -8,21 +8,28 @@ const routes: Routes = [
     path: '',
     component: BackofficeLayoutComponent,
     children: [
-      { 
-        path: '', 
-        redirectTo: 'dashboard', 
-        pathMatch: 'full' 
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
       },
-      { 
-        path: 'dashboard', 
-        component: DashboardComponent 
-      }
-    ]
-  }
+      {
+        path: 'dashboard',
+        component: DashboardComponent,
+      },
+      {
+        path: 'subscription',
+        loadChildren: () =>
+          import('./subscriptions/subscriptions.module').then(
+            (m) => m.SubscriptionsModule
+          ),
+      },
+    ],
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule], // ✅ exporte RouterModule pour que <router-outlet> soit dispo dans BackofficeLayoutComponent
 })
-export class BackofficeRoutingModule { }
+export class BackofficeRoutingModule {}

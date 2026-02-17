@@ -2,83 +2,135 @@
 
   <!-- Header -->
   <div class="list-header">
-    <h1>Gestion des Abonnements</h1>
-    <button class="btn-new" (click)="onCreate()">+ Nouveau Plan</button>
+    <div class="header-left">
+      <span class="header-icon">⚡</span>
+      <div>
+        <h1>Gestion des Abonnements</h1>
+        <p class="header-subtitle">{{ getTotalFiltered() }} plans disponibles</p>
+      </div>
+    </div>
+    <button class="btn-new" (click)="onCreate()">
+      <span class="btn-icon">+</span>
+      Nouveau Plan
+    </button>
   </div>
 
   <!-- Filtres -->
   <div class="filters-row">
-    <input
-      type="text"
-      class="search-input"
-      placeholder="Rechercher un plan..."
-      [(ngModel)]="searchTerm"
-      (input)="onSearch()" />
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Rechercher un plan..."
+        [(ngModel)]="searchTerm"
+        (input)="onSearch()" />
+    </div>
 
-    <select class="filter-select" [(ngModel)]="filterType" (change)="onFilterType(filterType)">
-      <option value="ALL">Type: Tous</option>
-      <option value="FREELANCER">Freelancer</option>
-      <option value="CLIENT">Client</option>
-    </select>
+    <div class="filter-group">
+      <button
+        class="filter-btn"
+        [class.active]="filterType === 'ALL'"
+        (click)="onFilterType('ALL')">Tous</button>
+      <button
+        class="filter-btn freelancer"
+        [class.active]="filterType === 'FREELANCER'"
+        (click)="onFilterType('FREELANCER')">Freelancer</button>
+      <button
+        class="filter-btn client"
+        [class.active]="filterType === 'CLIENT'"
+        (click)="onFilterType('CLIENT')">Client</button>
+    </div>
 
     <select class="sort-select" [(ngModel)]="sortBy" (change)="onSort(sortBy)">
-      <option value="price_asc">Tri: Prix asc</option>
-      <option value="price_desc">Tri: Prix desc</option>
-      <option value="name_asc">Tri: Nom A-Z</option>
-      <option value="name_desc">Tri: Nom Z-A</option>
+      <option value="price_asc">Prix ↑</option>
+      <option value="price_desc">Prix ↓</option>
+      <option value="name_asc">Nom A-Z</option>
+      <option value="name_desc">Nom Z-A</option>
     </select>
   </div>
 
   <!-- Loading -->
   <div class="loading" *ngIf="loading">
-    <p>Chargement...</p>
+    <div class="spinner"></div>
+    <p>Chargement des plans...</p>
   </div>
 
   <!-- Table -->
-  <table class="sub-table" *ngIf="!loading && !errorMessage">
-    <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Type</th>
-        <th>Prix</th>
-        <th>Cycle</th>
-        <th>Actif</th>
-        <th>Abonnés</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let sub of filteredSubscriptions">
-        <td>{{ sub.name }}</td>
-        <td>
-          <span class="type-badge" [ngClass]="{
-            'type-freelancer': sub.type === 'FREELANCER',
-            'type-client': sub.type === 'CLIENT'
-          }">
-            {{ sub.type }}
-          </span>
-        </td>
-        <td>{{ sub.price }} DT</td>
-        <td>{{ getCycleLabel(sub.billingCycle) }}</td>
-        <td>
-          <label class="toggle-switch">
-            <input type="checkbox" [checked]="sub.isActive" (change)="onToggleActive(sub)" />
-            <span class="toggle-slider"></span>
-          </label>
-        </td>
-        <td>{{ sub.activeSubscribersCount || 0 }}</td>
-        <td class="actions-cell">
-          <button class="btn-edit" (click)="onEdit(sub.id!)">Edit</button>
-          <button class="btn-delete" (click)="onDelete(sub)">Del</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="table-wrapper" *ngIf="!loading && !errorMessage">
+    <table class="sub-table">
+      <thead>
+        <tr>
+          <th>Nom du plan</th>
+          <th>Type</th>
+          <th>Prix</th>
+          <th>Cycle</th>
+          <th>Statut</th>
+          <th>Abonnés</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let sub of filteredSubscriptions" class="table-row">
+          <td class="name-cell">
+            <span class="plan-name">{{ sub.name }}</span>
+          </td>
+          <td>
+            <span class="type-badge" [ngClass]="{
+              'type-freelancer': sub.type === 'FREELANCER',
+              'type-client': sub.type === 'CLIENT'
+            }">
+              {{ sub.type === 'FREELANCER' ? '🧑‍💻 Freelancer' : '🏢 Client' }}
+            </span>
+          </td>
+          <td class="price-cell">
+            <span class="price-amount">{{ sub.price }}</span>
+            <span class="price-currency">DT</span>
+          </td>
+          <td>
+            <span class="cycle-badge" [ngClass]="{
+              'cycle-sem': sub.billingCycle === 'SEMESTRIELLE',
+              'cycle-ann': sub.billingCycle === 'ANNUELLE'
+            }">
+              {{ getCycleLabel(sub.billingCycle) }}
+            </span>
+          </td>
+          <td>
+            <label class="toggle-switch">
+              <input type="checkbox" [checked]="sub.isActive" (change)="onToggleActive(sub)" />
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
+              <span class="toggle-label">{{ sub.isActive ? 'Actif' : 'Inactif' }}</span>
+            </label>
+          </td>
+          <td class="subscribers-cell">
+            <span class="sub-count">{{ sub.activeSubscribersCount || 0 }}</span>
+          </td>
+          <td class="actions-cell">
+            <button class="btn-edit" (click)="onEdit(sub.id!)">
+              ✏️ Éditer
+            </button>
+            <button class="btn-delete" (click)="onDelete(sub)">
+              🗑️
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="filteredSubscriptions.length === 0">
+      <span class="empty-icon">📭</span>
+      <p>Aucun plan trouvé</p>
+    </div>
+  </div>
 
   <!-- Pagination -->
-  <div class="pagination-row" *ngIf="!loading && totalPages > 0">
+  <div class="pagination-row" *ngIf="!loading && totalPages > 1">
     <span class="pagination-info">
-      Affichage {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ currentPage * itemsPerPage > getTotalFiltered() ? getTotalFiltered() : currentPage * itemsPerPage }} sur {{ getTotalFiltered() }} plans
+      {{ (currentPage - 1) * itemsPerPage + 1 }}–{{ currentPage * itemsPerPage > getTotalFiltered() ? getTotalFiltered() : currentPage * itemsPerPage }}
+      <span class="pagination-total">sur {{ getTotalFiltered() }} plans</span>
     </span>
     <div class="pagination-buttons">
       <button
@@ -93,7 +145,9 @@
 
   <!-- Erreur -->
   <div class="error-message" *ngIf="errorMessage">
-    <p>⚠️ {{ errorMessage }}</p>
-    <button (click)="loadSubscriptions()">Réessayer</button>
+    <span class="error-icon">⚠️</span>
+    <p>{{ errorMessage }}</p>
+    <button class="btn-retry" (click)="loadSubscriptions()">Réessayer</button>
   </div>
+
 </div>

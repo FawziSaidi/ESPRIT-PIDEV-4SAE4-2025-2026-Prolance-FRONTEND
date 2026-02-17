@@ -5,11 +5,11 @@ import { SubscriptionFormComponent } from './subscription-form/subscription-form
 import { SubscriptionStatsComponent } from './subscription-stats/subscription-stats.component';
 
 const routes: Routes = [
-  { path: 'list', component: SubscriptionListComponent },
-  { path: 'create', component: SubscriptionFormComponent },
-  { path: 'edit/:id', component: SubscriptionFormComponent },
-  { path: 'stats', component: SubscriptionStatsComponent },
-  { path: '', redirectTo: 'list', pathMatch: 'full' },
+  { path: 'list',      component: SubscriptionListComponent },
+  { path: 'create',    component: SubscriptionFormComponent },
+  { path: 'edit/:id',  component: SubscriptionFormComponent },
+  { path: 'stats',     component: SubscriptionStatsComponent },
+  { path: '',          redirectTo: 'list', pathMatch: 'full' },
 ];
 
 @NgModule({

@@ -3,91 +3,120 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Subscription } from '../models/subscription.model';
 import { UserSubscription } from '../models/user-subscription.model';
-import { environment } from '../../environments/environment';
+import { AuthService } from './auth.services';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SubscriptionService {
 
-  private apiUrl = 'http://localhost:8089/pidev/api/subscriptions';
+  private apiUrl     = 'http://localhost:8089/pidev/api/subscriptions';
   private userSubUrl = 'http://localhost:8089/pidev/api/user-subscriptions';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) {}
 
-  // ========================
-  // PLANS (Subscription) — ADMIN + FRONT
-  // ========================
+  // ================================================
+  // 📋 PLANS (Subscription) — ADMIN + FRONT
+  // ================================================
 
-  // GET all plans
   getAllSubscriptions(): Observable<Subscription[]> {
     return this.http.get<Subscription[]>(this.apiUrl);
   }
 
-  // GET active plans only
   getActiveSubscriptions(): Observable<Subscription[]> {
     return this.http.get<Subscription[]>(`${this.apiUrl}/active`);
   }
 
-  // GET plans by type (FREELANCER or CLIENT)
   getSubscriptionsByType(type: string): Observable<Subscription[]> {
     return this.http.get<Subscription[]>(`${this.apiUrl}/type/${type}`);
   }
 
-  // GET one plan by ID
   getSubscriptionById(id: number): Observable<Subscription> {
     return this.http.get<Subscription>(`${this.apiUrl}/${id}`);
   }
 
-  // POST create new plan (Admin)
   createSubscription(subscription: Subscription): Observable<Subscription> {
     return this.http.post<Subscription>(this.apiUrl, subscription);
   }
 
-  // PUT update plan (Admin)
   updateSubscription(id: number, subscription: Partial<Subscription>): Observable<Subscription> {
     return this.http.put<Subscription>(`${this.apiUrl}/${id}`, subscription);
   }
 
-  // DELETE plan (Admin)
   deleteSubscription(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // PATCH activate plan
   activateSubscription(id: number): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/${id}/activate`, {});
   }
 
-  // PATCH deactivate plan
   deactivateSubscription(id: number): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/${id}/deactivate`, {});
   }
 
-  // ========================
-  // USER SUBSCRIPTIONS — FRONT (Freelancer/Client)
-  // ========================
+  // ================================================
+  // 👤 USER SUBSCRIPTIONS — FRONT
+  // ================================================
 
-  // POST — S'abonner à un plan
-  subscribe(subscriptionId: number, paymentMethod: string): Observable<UserSubscription> {
+  /** Returns the authenticated user's numeric ID, throws if not logged in. */
+  private getUserId(): number {
+    const userId = this.authService.getCurrentUserId();
+    if (userId === null || userId === 0) throw new Error('Utilisateur non connecté');
+    return userId;
+  }
+
+  // POST /api/user-subscriptions/subscribe
+  subscribe(subscriptionId: number, autoRenew: boolean = true): Observable<UserSubscription> {
+    const userId = this.getUserId();
     return this.http.post<UserSubscription>(`${this.userSubUrl}/subscribe`, {
+      userId,
       subscriptionId,
-      paymentMethod,
+      autoRenew,
+      paymentMethod: 'CREDIT_CARD',
+      transactionId: 'TXN-' + Date.now()
     });
   }
 
-  // GET — Mon abonnement actuel
+  // GET /api/user-subscriptions/user/:userId/active
   getMySubscription(): Observable<UserSubscription> {
-    return this.http.get<UserSubscription>(`${this.userSubUrl}/my-subscription`);
+    const userId = this.getUserId();
+    return this.http.get<UserSubscription>(`${this.userSubUrl}/user/${userId}/active`);
   }
 
-  // PUT — Annuler mon abonnement
-  cancelSubscription(id: number): Observable<UserSubscription> {
-    return this.http.put<UserSubscription>(`${this.userSubUrl}/${id}/cancel`, {});
+  // GET /api/user-subscriptions/user/:userId/history
+  getMySubscriptionHistory(): Observable<UserSubscription[]> {
+    const userId = this.getUserId();
+    return this.http.get<UserSubscription[]>(`${this.userSubUrl}/user/${userId}/history`);
   }
 
-  // PUT — Activer/Désactiver le renouvellement auto
-  toggleAutoRenew(id: number): Observable<UserSubscription> {
-    return this.http.put<UserSubscription>(`${this.userSubUrl}/${id}/toggle-auto-renew`, {});
+  // PATCH /api/user-subscriptions/user/:userId/cancel
+  cancelSubscription(): Observable<void> {
+    const userId = this.getUserId();
+    return this.http.patch<void>(`${this.userSubUrl}/user/${userId}/cancel`, {});
+  }
+
+  // POST /api/user-subscriptions/user/:userId/renew
+  renewSubscription(): Observable<UserSubscription> {
+    const userId = this.getUserId();
+    return this.http.post<UserSubscription>(`${this.userSubUrl}/user/${userId}/renew`, {});
+  }
+
+  // PATCH /api/user-subscriptions/user/:userId/auto-renew?autoRenew=true/false
+  setAutoRenew(autoRenew: boolean): Observable<void> {
+    const userId = this.getUserId();
+    return this.http.patch<void>(
+      `${this.userSubUrl}/user/${userId}/auto-renew`,
+      {},
+      { params: { autoRenew: String(autoRenew) } }
+    );
+  }
+
+  /** @deprecated Use setAutoRenew(boolean) instead */
+  toggleAutoRenew(userSubscriptionId: number): Observable<void> {
+    return this.setAutoRenew(false);
   }
 }

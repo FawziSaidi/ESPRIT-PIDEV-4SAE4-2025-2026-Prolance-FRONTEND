@@ -2,7 +2,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
-import { RouterModule } from '@angular/router';
 import { AppRoutingModule } from './app.routing';
 import { ComponentsModule } from './frontoffice/components.module';
 import { AppComponent } from './app.component';
@@ -15,12 +14,12 @@ import { AuthModule } from './authentification/auth/auth.module';
     BrowserAnimationsModule,
     FormsModule,
     ReactiveFormsModule,
-    HttpClientModule,
+    HttpClientModule,   // ✅ nécessaire pour les appels HTTP du SubscriptionService
     ComponentsModule,
-    RouterModule,
-    AppRoutingModule,
+    AppRoutingModule,   // ✅ fournit RouterModule via exports: [RouterModule]
     LandingModule,
     AuthModule,
+    // RouterModule retiré ici — déjà exporté par AppRoutingModule, inutile en double
   ],
   declarations: [
     AppComponent,

@@ -23,15 +23,15 @@ import { RegisterComponent } from './register/register.component';
   ]
 })
 export class AuthModule {}
+
 export interface RegisterRequest {
   name: string;
   lastName: string;
   email: string;
   password: string;
-  role: string;       // e.g., "ADMIN" or "USER"
-  birthDate?: string; // optional, format "YYYY-MM-DD"
+  role: string;
+  birthDate?: string;
 }
-
 
 export interface AuthRequest {
   email: string;
@@ -41,6 +41,5 @@ export interface AuthRequest {
 export interface AuthResponse {
   token: string;
   role: 'ADMIN' | 'USER' | 'CLIENT' | 'FREELANCER';
+  userId: number; // ✅ ajouté — correspond au Integer userId du backend
 }
-
-

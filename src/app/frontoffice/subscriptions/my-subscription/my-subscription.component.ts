@@ -119,14 +119,19 @@ export class MySubscriptionComponent implements OnInit {
     this.router.navigate(['/app/subscription/plans']);
   }
 
+  // ✅ FIX: toggleAutoRenew returns Observable<void> — toggle state locally instead of reading from response
   onToggleAutoRenew(): void {
-    if (!this.currentSubscription?.id) return;
-    this.subscriptionService.toggleAutoRenew(this.currentSubscription.id).subscribe(
-      (updated) => {
+    if (!this.currentSubscription) return;
+
+    const newValue = !this.currentSubscription.autoRenew;
+
+    this.subscriptionService.setAutoRenew(newValue).subscribe(
+      () => {
+        // void response — update local state directly
         if (this.currentSubscription) {
-          this.currentSubscription.autoRenew = updated.autoRenew;
+          this.currentSubscription.autoRenew = newValue;                  // ✅ Line 127 fix
         }
-        alert(updated.autoRenew ? '✅ Renouvellement auto activé' : '✅ Renouvellement auto désactivé');
+        alert(newValue ? '✅ Renouvellement auto activé' : '✅ Renouvellement auto désactivé'); // ✅ Line 129 fix
       },
       (error) => {
         alert('❌ Erreur : ' + (error.error?.message || 'Impossible de modifier'));
@@ -134,13 +139,15 @@ export class MySubscriptionComponent implements OnInit {
     );
   }
 
+  // ✅ FIX: cancelSubscription() takes 0 args and returns void — reload subscription after cancel
   onCancelSubscription(): void {
-    if (!this.currentSubscription?.id) return;
+    if (!this.currentSubscription) return;
     if (confirm('Êtes-vous sûr de vouloir annuler votre abonnement ?')) {
-      this.subscriptionService.cancelSubscription(this.currentSubscription.id).subscribe(
-        (updated) => {
-          this.currentSubscription = updated;
+      this.subscriptionService.cancelSubscription().subscribe(  // ✅ Line 140 fix: no argument
+        () => {
+          // void response — reload fresh data from backend instead of assigning void
           alert('✅ Abonnement annulé');
+          this.loadMySubscription();                            // ✅ Line 142 fix: no assignment
         },
         (error) => {
           alert('❌ Erreur : ' + (error.error?.message || 'Impossible d\'annuler'));

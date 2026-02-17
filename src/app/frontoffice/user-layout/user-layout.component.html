@@ -2,68 +2,106 @@
 <nav class="user-navbar" [class.scrolled]="navbarScrolled">
   <div class="container navbar-inner">
 
-    <!-- Brand -->
     <a class="navbar-brand" routerLink="/app/dashboard">
       <i class="material-icons brand-icon">hub</i>
       <span class="brand-text">Prolance</span>
     </a>
 
-    <!-- Mobile Toggle -->
     <button class="navbar-toggler" (click)="toggleMobileMenu()">
       <i class="material-icons">{{ mobileMenuOpen ? 'close' : 'menu' }}</i>
     </button>
 
-    <!-- Nav Links -->
     <div class="navbar-links" [class.open]="mobileMenuOpen">
-          <a class="dropdown-item" routerLink="/app/dashboard" (click)="profileDropdownOpen = false">
-            <i class="material-icons">dashboard</i> Dashboard
-          </a>
-           <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-            <i class="material-icons">folder_shared</i> Projects
-          </a>
-          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-            <i class="material-icons">forum</i> Forum
-          </a>
-          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-            <i class="material-icons">campaign</i> Publicité
-          </a>
-          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-            <i class="material-icons">event</i> Événement
-          </a>
+      <a class="nav-link" routerLink="/app/dashboard"
+         routerLinkActive="active"
+         (click)="mobileMenuOpen = false">
+        <i class="material-icons">dashboard</i> Dashboard
+      </a>
+      <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+        <i class="material-icons">folder_shared</i> Projects
+      </a>
+      <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+        <i class="material-icons">forum</i> Forum
+      </a>
+      <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+        <i class="material-icons">campaign</i> Publicité
+      </a>
+      <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+        <i class="material-icons">event</i> Événement
+      </a>
+
+      <!-- ✅ Nos Plans -->
+      <a class="nav-link nav-link-plans"
+         routerLink="/app/subscription/plans"
+         routerLinkActive="active"
+         (click)="mobileMenuOpen = false">
+        <i class="material-icons">workspace_premium</i> Nos Plans
+      </a>
+
+      <!-- ✅ Mon Abonnement -->
+      <a class="nav-link nav-link-mysub"
+         routerLink="/app/subscription/my-subscription"
+         routerLinkActive="active"
+         (click)="mobileMenuOpen = false">
+        <i class="material-icons">credit_card</i> Mon Abonnement
+      </a>
     </div>
 
-    <!-- Right Section -->
     <div class="navbar-right">
-      <!-- Role Switcher (compact) -->
       <div class="role-chip-group">
-        <button class="role-chip" [class.active]="currentRole === 'freelancer'" (click)="toggleRole('freelancer')">
+        <button class="role-chip"
+                [class.active]="currentRole === 'FREELANCER'"
+                (click)="toggleRole('FREELANCER')">
           Freelancer
         </button>
-        <button class="role-chip" [class.active]="currentRole === 'client'" (click)="toggleRole('client')">
+        <button class="role-chip"
+                [class.active]="currentRole === 'CLIENT'"
+                (click)="toggleRole('CLIENT')">
           Client
         </button>
       </div>
 
-      <!-- Profile Dropdown -->
       <div class="profile-dropdown-wrapper">
         <button class="profile-avatar" (click)="toggleProfileDropdown()">
           <i class="material-icons">person</i>
         </button>
+
         <div class="profile-dropdown" [class.open]="profileDropdownOpen">
           <div class="dropdown-header">
-            <span class="dropdown-name">Alex Johnson</span>
-            <span class="dropdown-role">{{ currentRole | titlecase }}</span>
+            <span class="dropdown-name">Mon Compte</span>
+            <span class="dropdown-role">
+              {{ currentRole === 'FREELANCER' ? 'Freelancer' : 'Client' }}
+            </span>
           </div>
+          <div class="dropdown-divider"></div>
+
+          <a class="dropdown-item" href="#"
+             (click)="profileDropdownOpen = false">
+            <i class="material-icons">person</i> Profil
+          </a>
+
+          <!-- ✅ Dans le dropdown aussi -->
+          <a class="dropdown-item"
+             routerLink="/app/subscription/plans"
+             (click)="profileDropdownOpen = false">
+            <i class="material-icons">workspace_premium</i> Nos Plans
+          </a>
+
+          <a class="dropdown-item"
+             routerLink="/app/subscription/my-subscription"
+             (click)="profileDropdownOpen = false">
+            <i class="material-icons">credit_card</i> Mon Abonnement
+          </a>
+
+          <a class="dropdown-item" href="#"
+             (click)="profileDropdownOpen = false">
+            <i class="material-icons">track_changes</i> Suivi projets
+          </a>
 
           <div class="dropdown-divider"></div>
-            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-              <i class="material-icons">person</i> Profil
-            </a>
-            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-              <i class="material-icons">track_changes</i> Suivie projets
-            </a>
-          <div class="dropdown-divider"></div>
-          <a class="dropdown-item logout-item" (click)="logout(); profileDropdownOpen = false">
+
+          <a class="dropdown-item logout-item"
+             (click)="logout(); profileDropdownOpen = false">
             <i class="material-icons">logout</i> Logout
           </a>
         </div>
@@ -73,21 +111,19 @@
   </div>
 </nav>
 
-<!-- ════════ MAIN CONTENT ════════ -->
 <main class="user-main">
   <router-outlet></router-outlet>
 </main>
 
-<!-- ════════ FOOTER ════════ -->
 <footer class="user-footer">
   <div class="container">
     <div class="footer-inner">
       <span class="footer-brand">&copy; {{ currentYear }} <strong>Prolance</strong></span>
-      <span class="footer-links">
+      <div class="footer-links">
         <a href="javascript:void(0)">Terms</a>
         <a href="javascript:void(0)">Privacy</a>
         <a href="javascript:void(0)">Support</a>
-      </span>
+      </div>
     </div>
   </div>
 </footer>

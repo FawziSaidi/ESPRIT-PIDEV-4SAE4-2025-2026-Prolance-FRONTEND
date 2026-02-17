@@ -59,6 +59,6 @@ const routes: Routes = [
       useHash: true,
     }),
   ],
-  exports: [],
+  exports: [RouterModule], // ✅ FIX: était [] — sans ça <router-outlet> n'est pas reconnu
 })
 export class AppRoutingModule {}
