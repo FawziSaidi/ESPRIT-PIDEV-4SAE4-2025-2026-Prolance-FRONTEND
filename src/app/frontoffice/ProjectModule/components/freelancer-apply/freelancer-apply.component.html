@@ -1,0 +1,129 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    
+    <div class="modal-header">
+      <h2 class="modal-title">Apply to {{ project?.title }}</h2>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- STEP 1: Skills -->
+      <div *ngIf="currentStep === 'skills'">
+        
+        <div class="section">
+          <h3 class="section-title">Select Your Skills</h3>
+          <div class="section-divider"></div>
+          <p class="section-hint">Choose at least one skill that matches the project requirements</p>
+
+          <!-- Skills grid -->
+          <div *ngIf="skillsList.length > 0; else noSkills" class="skills-grid">
+            <button
+              *ngFor="let skill of skillsList"
+              class="skill-button"
+              [class.selected]="isSkillSelected(skill)"
+              (click)="toggleSkill(skill)">
+              <span class="skill-name">{{ skill.skillName }}</span>
+              <span class="skill-level">{{ skill.level }}</span>
+              <span *ngIf="isSkillSelected(skill)" class="checkmark">✓</span>
+            </button>
+          </div>
+
+          <ng-template #noSkills>
+            <div class="empty-skills">
+              <p>No skills available. Please add skills to your profile first.</p>
+            </div>
+          </ng-template>
+        </div>
+
+        <!-- Required skills reminder -->
+        <div class="required-skills" *ngIf="project?.requiredSkills?.length">
+          <h4>📌 Project requires:</h4>
+          <div class="skills-tags">
+            <span *ngFor="let s of project?.requiredSkills" class="skill-tag">{{ s.skillName }}</span>
+          </div>
+        </div>
+
+        <!-- Selected summary -->
+        <div class="selected-skills" *ngIf="selectedSkills.length > 0">
+          <h4>✅ Selected ({{ selectedSkills.length }})</h4>
+          <div class="skills-tags">
+            <span *ngFor="let s of selectedSkills" class="skill-tag selected">{{ s.skillName }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Application Details -->
+      <div *ngIf="currentStep === 'application'">
+
+        <div class="section">
+          <h3 class="section-title">Application Details</h3>
+          <div class="section-divider"></div>
+        </div>
+
+        <form [formGroup]="form">
+          <div class="info-grid">
+            
+            <div class="info-block">
+              <label class="info-label">PROPOSED BUDGET</label>
+              <input
+                formControlName="proposedBudget"
+                type="number"
+                class="form-input"
+                placeholder="e.g. 5000" />
+              <small *ngIf="form.get('proposedBudget')?.invalid && form.get('proposedBudget')?.touched"
+                class="error-hint">Please enter a valid budget</small>
+            </div>
+
+            <div class="info-block">
+              <label class="info-label">PROJECT BUDGET</label>
+              <p class="info-value">${{ project?.budget | number:'1.0-0' }}</p>
+            </div>
+
+          </div>
+
+          <div class="info-block full-width">
+            <label class="info-label">COVER LETTER</label>
+            <textarea
+              formControlName="coverLetter"
+              class="form-textarea"
+              rows="5"
+              placeholder="Describe why you're the best fit for this project..."></textarea>
+            <small *ngIf="form.get('coverLetter')?.invalid && form.get('coverLetter')?.touched"
+              class="error-hint">Minimum 20 characters required</small>
+          </div>
+
+          <!-- Selected skills recap -->
+          <div class="selected-skills">
+            <h4>SKILLS</h4>
+            <div class="skills-tags">
+              <span *ngFor="let s of selectedSkills" class="skill-tag selected">{{ s.skillName }}</span>
+            </div>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="btn-cancel-footer" (click)="currentStep === 'application' ? currentStep = 'skills' : closeModal()">
+        {{ currentStep === 'application' ? '← Back' : 'Cancel' }}
+      </button>
+      <button
+        *ngIf="currentStep === 'skills'"
+        class="btn-submit-footer"
+        (click)="nextStep()">
+        Next: Application Details →
+      </button>
+      <button
+        *ngIf="currentStep === 'application'"
+        class="btn-submit-footer"
+        (click)="submitApplication()"
+        [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Submitting...' : 'Submit Application' }}
+      </button>
+    </div>
+
+  </div>
+</div>

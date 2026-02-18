@@ -5,8 +5,8 @@ import { FreelancerService } from '../../services/freelancer.service';
 
 @Component({
   selector: 'app-freelancer-apply',
-  templateUrl: './freelancerApply.component.html',
-  styleUrls: ['./freelancerApply.component.scss']
+  templateUrl: './freelancer-apply.component.html',
+  styleUrls: ['./freelancer-apply.component.scss']
 })
 export class FreelancerApplyComponent implements OnInit {
   @Input() project?: Project;
@@ -61,34 +61,35 @@ export class FreelancerApplyComponent implements OnInit {
   }
 
   submitApplication(): void {
-    if (this.form.invalid) {
-      alert('Please fill all fields');
-      return;
-    }
-
-    this.isSubmitting = true;
-
-    const applicationData = {
-      projectId: this.project?.id,
-      proposedBudget: this.form.value.proposedBudget,
-      coverLetter: this.form.value.coverLetter,
-      skillIds: this.selectedSkills.map(s => s.id)
-    };
-
-    this.freelancerService.submitApplication(applicationData).subscribe({
-      next: () => {
-        this.skillsSubmitted.emit(this.selectedSkills);
-        this.closeModal();
-        this.isSubmitting = false;
-      },
-      error: (err) => {
-        console.error('Error:', err);
-        alert('Error submitting application');
-        this.isSubmitting = false;
-      }
-    });
+  if (this.form.invalid) {
+    alert('Please fill all fields');
+    return;
   }
 
+  this.isSubmitting = true;
+
+  const applicationData = {
+    projectId: this.project?.id,
+    proposedBudget: this.form.value.proposedBudget,
+    coverLetter: this.form.value.coverLetter,
+    skillIds: this.selectedSkills.map(s => s.id)
+  };
+
+  console.log('Sending:', JSON.stringify(applicationData)); // ← ajoutez ceci
+
+  this.freelancerService.submitApplication(applicationData).subscribe({
+    next: () => {
+      this.skillsSubmitted.emit(this.selectedSkills);
+      this.closeModal();
+      this.isSubmitting = false;
+    },
+    error: (err) => {
+      console.error('Full error:', err); // ← et ceci
+      alert(`Error: ${err.status} - ${err.error?.message || err.message}`);
+      this.isSubmitting = false;
+    }
+  });
+}
   closeModal(): void {
     this.close.emit();
   }

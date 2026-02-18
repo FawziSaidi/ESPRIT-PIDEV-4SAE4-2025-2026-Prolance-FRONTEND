@@ -1,15 +1,11 @@
 <div class="forum-container">
   <div class="forum-content">
     <div class="forum-header">
-      <div class="section-info">
-        <h1 class="section-title">Projects</h1>
-      </div>
-      <button *ngIf="isClient" class="btn-add" (click)="openAddModal()">+ Add Project</button>
     </div>
 
     <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
 
-    <div class="filters-section">
+    <div class="filters-card">
       <div class="filter-group">
         <div class="tabs">
           <button *ngFor="let cat of categoryOptions" [class.active]="selectedCategory === cat.value"
@@ -20,13 +16,14 @@
       </div>
 
       <div class="filter-group" *ngIf="isClient">
-        <div class="tabs">
-          <button *ngFor="let view of viewOptions" [class.active]="selectedView === view.value"
-            (click)="onViewChange(view.value)" class="tab-button">
-            {{ view.label }}
-          </button>
-        </div>
+        <button [class.active]="selectedView === 'MY_PROJECTS'"
+          (click)="onViewChange(selectedView === 'MY_PROJECTS' ? 'ALL' : 'MY_PROJECTS')"
+          class="tab-button">
+          My Projects
+        </button>
       </div>
+
+      <button *ngIf="isClient" class="btn-add-inline" (click)="openAddModal()">+ Add Project</button>
     </div>
 
     <div *ngIf="loading" class="loading-container">
@@ -35,7 +32,7 @@
     </div>
 
     <div *ngIf="!loading && filteredProjects.length > 0" class="publications-grid">
-      <div *ngFor="let project of filteredProjects; let i = index" class="publication-card">
+      <div *ngFor="let project of filteredProjects" class="publication-card">
         
         <div class="card-header">
           <div class="user-info">
@@ -53,13 +50,9 @@
 
           <div class="card-header-actions">
             <button *ngIf="isMyProject(project)" class="btn-action-small delete" 
-              (click)="deleteProject(project)" title="Delete">
-              🗑️
-            </button>
+              (click)="deleteProject(project)" title="Delete">🗑️</button>
             <button class="btn-action-small more-details" (click)="openProjectDetails(project)" 
-              title="More details">
-              ⋮
-            </button>
+              title="More details">⋮</button>
           </div>
         </div>
 
@@ -91,9 +84,7 @@
         </div>
 
         <div class="card-footer" *ngIf="isFreelancer">
-          <button class="btn-apply-centered" (click)="openApplyModal(project)">
-            ✅ Apply
-          </button>
+          <button class="btn-apply-centered" (click)="openApplyModal(project)">✅ Apply</button>
         </div>
       </div>
     </div>
@@ -110,3 +101,9 @@
 <app-project-form *ngIf="showEditModal && selectedProject" [project]="selectedProject" (close)="closeEditModal()"></app-project-form>
 <app-project-details *ngIf="showDetailsModal && selectedProject" [project]="selectedProject" (close)="closeDetailsModal()"></app-project-details>
 <app-freelancer-apply *ngIf="showApplyModal && selectedProject" [project]="selectedProject" (close)="closeApplyModal()" (skillsSubmitted)="onSkillsSubmitted($event)"></app-freelancer-apply>
+<app-freelancer-skills-setup 
+  *ngIf="showSkillsSetupModal"
+  [freelancerId]="currentUserId"
+  (close)="closeSkillsSetupModal()"
+  (skillsSaved)="onSkillsSetupDone()">
+</app-freelancer-skills-setup>

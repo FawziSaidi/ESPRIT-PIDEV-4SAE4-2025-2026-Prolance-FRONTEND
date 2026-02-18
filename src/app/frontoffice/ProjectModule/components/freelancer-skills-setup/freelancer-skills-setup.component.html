@@ -1,0 +1,96 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Complete Your Profile</h2>
+        <p class="modal-subtitle">Add your skills before applying to projects — one-time setup</p>
+      </div>
+      <button class="modal-close" (click)="close.emit()">×</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Form to add a skill -->
+      <div class="section">
+        <h3 class="section-title">Add a Skill</h3>
+        <div class="section-divider"></div>
+      </div>
+
+      <div *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</div>
+
+      <form [formGroup]="skillForm" class="skill-form">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>SKILL NAME <span class="required">*</span></label>
+            <input formControlName="skillName" class="form-input" placeholder="e.g. Angular, Figma..." />
+            <small *ngIf="skillForm.get('skillName')?.invalid && skillForm.get('skillName')?.touched">Required</small>
+          </div>
+
+          <div class="form-group">
+            <label>LEVEL <span class="required">*</span></label>
+            <select formControlName="level" class="form-input">
+              <option value="">Select level</option>
+              <option *ngFor="let l of skillLevels" [value]="l">{{ l }}</option>
+            </select>
+            <small *ngIf="skillForm.get('level')?.invalid && skillForm.get('level')?.touched">Required</small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>YEARS OF EXPERIENCE <span class="required">*</span></label>
+            <input formControlName="yearsExperience" type="number" class="form-input" min="0" />
+            <small *ngIf="skillForm.get('yearsExperience')?.invalid && skillForm.get('yearsExperience')?.touched">Required</small>
+          </div>
+
+          <div class="form-group">
+            <label>AVAILABILITY <span class="required">*</span></label>
+            <select formControlName="availability" class="form-input">
+              <option value="">Select availability</option>
+              <option *ngFor="let a of availabilities" [value]="a">{{ a }}</option>
+            </select>
+            <small *ngIf="skillForm.get('availability')?.invalid && skillForm.get('availability')?.touched">Required</small>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label>DESCRIPTION <span class="required">*</span></label>
+          <textarea formControlName="description" class="form-textarea" rows="3"
+            placeholder="Describe your experience with this skill..."></textarea>
+          <small *ngIf="skillForm.get('description')?.invalid && skillForm.get('description')?.touched">Required</small>
+        </div>
+
+        <div class="form-group full">
+          <label>RESUME / PORTFOLIO URL</label>
+          <input formControlName="resumeUrl" class="form-input" placeholder="https://..." />
+        </div>
+
+        <button type="button" class="btn-add-skill" (click)="addSkill()">+ Add Skill</button>
+
+      </form>
+
+      <!-- Added skills list -->
+      <div class="added-skills" *ngIf="addedSkills.length > 0">
+        <h4>SKILLS TO SAVE ({{ addedSkills.length }})</h4>
+        <div class="skill-chip" *ngFor="let skill of addedSkills; let i = index">
+          <div class="chip-info">
+            <span class="chip-name">{{ skill.skillName }}</span>
+            <span class="chip-meta">{{ skill.level }} · {{ skill.yearsExperience }} yr(s) · {{ skill.availability }}</span>
+          </div>
+          <button class="chip-remove" (click)="removeSkill(i)">×</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="close.emit()">Cancel</button>
+      <button class="btn-save" (click)="save()" [disabled]="isSubmitting || addedSkills.length === 0">
+        {{ isSubmitting ? 'Saving...' : 'Save & Continue →' }}
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ProjectsService } from '../../services/projects.service';
 import { AuthService } from '../../../../services/auth.services';
 import { Project } from '../../models/project.model';
+import { FreelancerService } from '../../services/freelancer.service';
 
 @Component({
   selector: 'app-projects',
@@ -30,15 +31,19 @@ export class ProjectsComponent implements OnInit {
   categoryOptions = [{ label: 'All', value: 'ALL' }, { label: 'Dev', value: 'DEV' }, { label: 'Design', value: 'DESIGN' }];
   selectedCategory = 'ALL';
   
-  viewOptions = [{ label: 'All Projects', value: 'ALL' }, { label: 'My Projects', value: 'MY_PROJECTS' }];
+  viewOptions = [ { label: 'My Projects', value: 'MY_PROJECTS' }];
   selectedView = 'ALL';
 
-  constructor(private projectsService: ProjectsService, private authService: AuthService) {}
+  showSkillsSetupModal = false;
+
+  constructor(private projectsService: ProjectsService, private authService: AuthService,private freelancerService: FreelancerService) {}
 
   ngOnInit(): void {
-    this.determineUserRole();
-    this.loadProjects();
+   this.determineUserRole();
+  this.loadProjects();
+  if (this.isFreelancer) {
     this.checkIfSkillsFilled();
+  }
   }
 
   determineUserRole(): void {
@@ -51,12 +56,16 @@ export class ProjectsComponent implements OnInit {
     }
   }
 
-  checkIfSkillsFilled(): void {
-    if (this.isFreelancer && this.currentUserId) {
-      // TODO: Check if freelancer has already filled skills
-      // This would require a backend endpoint to check
-    }
+ checkIfSkillsFilled(): void {
+  if (this.currentUserId) {
+    this.freelancerService.getFreelancerSkills(this.currentUserId).subscribe({
+      next: (skills) => {
+        this.hasFilledSkills = skills && skills.length > 0;
+      },
+      error: () => this.hasFilledSkills = false
+    });
   }
+}
 
   loadProjects(): void {
     this.loading = true;
@@ -98,9 +107,15 @@ export class ProjectsComponent implements OnInit {
   }
 
   onViewChange(view: string): void {
-    this.selectedView = view;
-    this.applyFilters();
+  this.selectedView = view;
+  
+  // Reset category filter when switching to My Projects
+  if (view === 'MY_PROJECTS') {
+    this.selectedCategory = 'ALL';
   }
+  
+  this.applyFilters();
+}
 
   openAddModal(): void {
     if (!this.isClient) {
@@ -140,10 +155,14 @@ export class ProjectsComponent implements OnInit {
     this.selectedProject = undefined;
   }
 
-  openApplyModal(project: Project): void {
-    this.selectedProject = project;
+ openApplyModal(project: Project): void {
+  this.selectedProject = project;
+  if (!this.hasFilledSkills) {
+    this.showSkillsSetupModal = true; // nouveau flag
+  } else {
     this.showApplyModal = true;
   }
+}
 
   closeApplyModal(): void {
     this.showApplyModal = false;
@@ -155,7 +174,17 @@ export class ProjectsComponent implements OnInit {
     this.hasFilledSkills = true;
     this.closeApplyModal();
   }
+closeSkillsSetupModal(): void {
+  this.showSkillsSetupModal = false;
+  this.selectedProject = undefined;
+}
 
+onSkillsSetupDone(): void {
+  this.hasFilledSkills = true;
+  this.showSkillsSetupModal = false;
+  // Ouvre directement la modal apply après avoir ajouté les skills
+  this.showApplyModal = true;
+}
   deleteProject(project: Project): void {
     if (!this.isMyProject(project)) {
       this.errorMessage = 'Vous ne pouvez supprimer que vos propres projets.';

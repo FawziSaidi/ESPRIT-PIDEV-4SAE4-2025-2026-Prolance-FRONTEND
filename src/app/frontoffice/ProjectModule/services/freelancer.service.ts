@@ -16,7 +16,9 @@ export class FreelancerService {
   getAllSkills(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/skills`);
   }
-
+createSkill(skill: any): Observable<any> {
+  return this.http.post(`${this.apiUrl}/skills`, skill);
+}
   /**
    * Get freelancer skills by freelancer ID
    */
