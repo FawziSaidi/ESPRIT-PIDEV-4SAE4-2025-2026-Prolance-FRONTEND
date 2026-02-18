@@ -103,7 +103,6 @@
 
           <div class="project-meta">
             <span class="meta-item">👤 {{ getUserLabel(pub.user) }}</span>
-            <span class="meta-item">❤️ {{ pub.likes }} likes</span>
             <span class="meta-item">💬 {{ pub.commentaires?.length || 0 }} comments</span>
             <span class="meta-item">📅 {{ formatDate(pub.createAt) }}</span>
           </div>
@@ -156,7 +155,6 @@
               </div>
               <div class="info-item">
                 <span class="info-label">Likes</span>
-                <span class="info-value">❤️ {{ selectedPublication.likes }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Comments</span>
@@ -205,7 +203,6 @@
               </div>
               <p class="task-description">{{ com.contenue }}</p>
               <div class="task-dates">
-                <span>❤️ {{ com.likes }} likes</span>
                 <span style="margin-left:1rem">💬 {{ com.replies?.length || 0 }} replies</span>
               </div>
             </div>

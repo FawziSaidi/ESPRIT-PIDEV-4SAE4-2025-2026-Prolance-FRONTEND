@@ -432,17 +432,7 @@
   box-shadow: 0 2px 8px rgba(168, 85, 247, 0.2);
 }
 
-.likes-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #6c757d;
-  font-size: 0.9rem;
-  padding: 0.6rem 1rem;
-  background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-}
+
 
 .icon {
   font-size: 1.1rem;

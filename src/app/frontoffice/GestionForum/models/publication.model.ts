@@ -18,7 +18,6 @@ export interface Publication {
   images?: string[];
   pdfs?: string[];        // ✅ PDF file names
   createAt?: string;
-  likes?: number;
   type: TypePublication;
   user?: User;
   commentaires?: any[];

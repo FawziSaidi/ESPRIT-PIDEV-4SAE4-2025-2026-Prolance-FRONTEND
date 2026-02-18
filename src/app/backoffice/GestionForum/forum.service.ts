@@ -7,7 +7,6 @@ export interface Publication {
   titre: string;
   contenue: string;
   type: 'QUESTION' | 'ARTICLE' | 'REVIEW';
-  likes: number;
   createAt: string;
   images: string[];
   pdfs: string[];
@@ -19,7 +18,6 @@ export interface Commentaire {
   id: number;
   contenue: string;
   createAt: string;
-  likes: number;
   user: { id: number; name: string; lastName: string; email: string; };
   publication: { id: number; titre: string; };
   parent?: { id: number; };

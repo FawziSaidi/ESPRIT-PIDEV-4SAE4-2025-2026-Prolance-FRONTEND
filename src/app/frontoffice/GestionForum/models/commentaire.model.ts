@@ -4,7 +4,6 @@ export interface Commentaire {
   id?: number;
   contenue: string;
   createAt?: string;
-  likes?: number;
   user?: User;
   publicationId?: number;
   parent?: Commentaire;           // ✅ commentaire parent (null si racine)
