@@ -41,7 +41,7 @@ export interface AuthRequest {
 export interface AuthResponse {
   token: string;
   role: 'ADMIN' | 'USER' | 'CLIENT' | 'FREELANCER';
-  id: number;
+  userId: number;
 }
 
 

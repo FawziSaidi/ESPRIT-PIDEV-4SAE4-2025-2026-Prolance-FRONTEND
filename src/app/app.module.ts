@@ -9,6 +9,7 @@ import { AppComponent } from './app.component';
 import { UserLayoutComponent } from './frontoffice/user-layout/user-layout.component';
 import { LandingModule } from './authentification/landing/landing.module';
 import { AuthModule } from './authentification/auth/auth.module';
+import { AdminEventsComponent } from './backoffice/components/admin-evenement/admin-event.component';
 
 @NgModule({
   imports: [
@@ -25,8 +26,11 @@ import { AuthModule } from './authentification/auth/auth.module';
   declarations: [
     AppComponent,
     UserLayoutComponent,
+     AdminEventsComponent,
   ],
-  providers: [],
+  providers: [
+    
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

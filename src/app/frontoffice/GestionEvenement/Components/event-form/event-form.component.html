@@ -1,0 +1,146 @@
+<div class="event-form-page">
+  <div class="container">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <button class="btn-back" (click)="cancel()">
+        <i class="material-icons">arrow_back</i>
+      </button>
+      <div>
+        <h2 class="page-title">{{ isEditMode ? 'Modifier l\'événement' : 'Créer un événement' }}</h2>
+        <p class="page-subtitle">{{ isEditMode ? 'Mettez à jour les informations et les activités' : 'Remplissez le formulaire et ajoutez les activités' }}</p>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="alert alert-success" *ngIf="successMsg">
+      <i class="material-icons">check_circle</i> {{ successMsg }}
+    </div>
+    <div class="alert alert-danger" *ngIf="errorMsg">
+      <i class="material-icons">error</i> {{ errorMsg }}
+    </div>
+
+    <form [formGroup]="eventForm" (ngSubmit)="onSubmit()">
+
+      <!-- ── INFOS ÉVÉNEMENT ── -->
+      <div class="form-card">
+        <div class="form-card-header purple">
+          <i class="material-icons">event</i>
+          <span>Informations de l'événement</span>
+        </div>
+        <div class="form-card-body">
+
+          <div class="form-row">
+            <div class="form-group col-md-8">
+              <label class="form-label">Titre *</label>
+              <input type="text" class="form-control" formControlName="title"
+                placeholder="Ex: Hackathon IA 2025"
+                [class.is-invalid]="isFieldInvalid('title')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">Le titre est requis (min. 3 caractères).</div>
+            </div>
+            <div class="form-group col-md-4">
+              <label class="form-label">Catégorie *</label>
+              <select class="form-control" formControlName="category">
+                <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description *</label>
+            <textarea class="form-control" formControlName="description" rows="3"
+              placeholder="Décrivez votre événement..."
+              [class.is-invalid]="isFieldInvalid('description')"></textarea>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">La description est requise.</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label class="form-label">Date de début *</label>
+              <input type="datetime-local" class="form-control" formControlName="startDate"
+                [class.is-invalid]="isFieldInvalid('startDate')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('startDate')">Requis.</div>
+            </div>
+            <div class="form-group col-md-6">
+              <label class="form-label">Date de fin *</label>
+              <input type="datetime-local" class="form-control" formControlName="endDate"
+                [class.is-invalid]="isFieldInvalid('endDate')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('endDate')">Requis.</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-5">
+              <label class="form-label">Lieu *</label>
+              <input type="text" class="form-control" formControlName="location"
+                placeholder="Ex: Tunis, Esprit..."
+                [class.is-invalid]="isFieldInvalid('location')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('location')">Requis.</div>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="form-label">Capacité *</label>
+              <input type="number" class="form-control" formControlName="capacity" min="1"
+                [class.is-invalid]="isFieldInvalid('capacity')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('capacity')">Valeur invalide.</div>
+            </div>
+            <div class="form-group col-md-4">
+              <label class="form-label">Statut *</label>
+              <select class="form-control" formControlName="eventStatus">
+                <option *ngFor="let s of eventStatuses" [value]="s">{{ s }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">URL de l'image</label>
+            <input type="text" class="form-control" formControlName="imageUrl" placeholder="https://...">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── ACTIVITÉS ── -->
+      <div class="form-card">
+        <div class="form-card-header teal">
+          <i class="material-icons">local_activity</i>
+          <span>Activités ({{ activities.length }})</span>
+          <button type="button" class="btn-add-activity" (click)="addActivity()">
+            <i class="material-icons">add</i> Ajouter une activité
+          </button>
+        </div>
+        <div class="form-card-body">
+
+          <div class="no-activities" *ngIf="activities.length === 0">
+            <i class="material-icons">event_note</i>
+            <p>Aucune activité. Cliquez sur "Ajouter une activité" pour commencer.</p>
+          </div>
+
+          <div formArrayName="activities">
+            <ng-container *ngFor="let actCtrl of activities.controls; let i = index">
+              <ng-container *ngIf="getActivityGroup(i) as actGroup">
+                <app-activity-form
+                  [activityForm]="actGroup"
+                  [index]="i"
+                  (removeActivity)="removeActivity($event)">
+                </app-activity-form>
+              </ng-container>
+            </ng-container>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── ACTIONS ── -->
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" (click)="cancel()">
+          <i class="material-icons">close</i> Annuler
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="loading">
+          <i class="material-icons">{{ loading ? 'hourglass_empty' : (isEditMode ? 'save' : 'add_circle') }}</i>
+          {{ loading ? 'En cours...' : (isEditMode ? 'Modifier l\'événement' : 'Créer l\'événement') }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

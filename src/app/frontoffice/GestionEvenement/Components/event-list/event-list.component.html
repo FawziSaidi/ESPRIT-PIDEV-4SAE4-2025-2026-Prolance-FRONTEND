@@ -1,0 +1,118 @@
+<div class="event-list-page">
+  <div class="container">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">Gestion des Événements</h2>
+        <p class="page-subtitle">Créez et gérez vos événements et leurs activités</p>
+      </div>
+      <button class="btn-create" (click)="goToCreate()">
+        <i class="material-icons">add_circle</i>
+        Créer un événement
+      </button>
+    </div>
+
+    <!-- Alerts -->
+    <div class="alert alert-success" *ngIf="successMsg">
+      <i class="material-icons">check_circle</i> {{ successMsg }}
+    </div>
+    <div class="alert alert-danger" *ngIf="errorMsg">
+      <i class="material-icons">error</i> {{ errorMsg }}
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-state" *ngIf="loading">
+      <i class="material-icons spin">autorenew</i>
+      <p>Chargement des événements...</p>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="!loading && events.length === 0">
+      <i class="material-icons">event_busy</i>
+      <h3>Aucun événement trouvé</h3>
+      <p>Commencez par créer votre premier événement !</p>
+    </div>
+
+    <!-- Events Grid -->
+    <div class="events-grid" *ngIf="!loading && events.length > 0">
+      <div class="event-card" *ngFor="let event of events">
+
+        <!-- Card Top Image/Banner -->
+        <div class="event-card-banner" [style.background-image]="event.imageUrl ? 'url(' + event.imageUrl + ')' : 'none'">
+          <div class="event-card-banner-overlay">
+            <span class="event-category">{{ event.category }}</span>
+            <span class="event-status" [class]="getStatusClass(event.eventStatus)">{{ event.eventStatus }}</span>
+          </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="event-card-body">
+          <h3 class="event-title">{{ event.title }}</h3>
+          <p class="event-description">{{ event.description }}</p>
+
+          <div class="event-meta">
+            <div class="meta-item">
+              <i class="material-icons">place</i>
+              <span>{{ event.location }}</span>
+            </div>
+            <div class="meta-item">
+              <i class="material-icons">schedule</i>
+              <span>{{ formatDate(event.startDate) }}</span>
+            </div>
+            <div class="meta-item">
+              <i class="material-icons">group</i>
+              <span>{{ event.currentParticipants || 0 }} / {{ event.capacity }} participants</span>
+            </div>
+          </div>
+
+          <!-- Capacity Bar -->
+          <div class="capacity-bar">
+            <div class="capacity-fill"
+              [style.width.%]="(event.currentParticipants || 0) / event.capacity * 100">
+            </div>
+          </div>
+
+          <!-- Activities Toggle -->
+          <button class="btn-activities" (click)="toggleActivities(event.idEvent!)"
+            *ngIf="event.activities && event.activities.length > 0">
+            <i class="material-icons">{{ expandedEventId === event.idEvent ? 'expand_less' : 'expand_more' }}</i>
+            {{ event.activities.length }} activité(s)
+          </button>
+          <span class="no-activities-badge" *ngIf="!event.activities || event.activities.length === 0">
+            <i class="material-icons">event_note</i> Aucune activité
+          </span>
+
+          <!-- Activities List (expanded) -->
+          <div class="activities-list" *ngIf="expandedEventId === event.idEvent && event.activities">
+            <div class="activity-item" *ngFor="let act of event.activities">
+              <div class="activity-dot"></div>
+              <div class="activity-info">
+                <strong>{{ act.name }}</strong>
+                <span>{{ act.description }}</span>
+                <div class="activity-meta">
+                  <i class="material-icons">info_outline</i>
+                  {{ act.requirements || 'Aucun prérequis' }}
+                  
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Card Actions -->
+        <div class="event-card-actions">
+          <button class="btn-edit" (click)="goToEdit(event.idEvent!)">
+            <i class="material-icons">edit</i> Modifier
+          </button>
+          <button class="btn-delete" (click)="deleteEvent(event.idEvent!)">
+            <i class="material-icons">delete</i> Supprimer
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

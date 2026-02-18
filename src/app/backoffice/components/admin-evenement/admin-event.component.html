@@ -1,0 +1,202 @@
+<div class="admin-container">
+  <!-- HEADER -->
+  <div class="admin-header">
+    <div class="header-content">
+      <h1 class="header-title">Events Management</h1>
+      <p class="header-subtitle">Review, manage and monitor all events on the platform</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-card">
+        <span class="stat-icon">📅</span>
+        <div class="stat-info">
+          <p class="stat-label">Total Events</p>
+          <p class="stat-value">{{ events.length }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">✅</span>
+        <div class="stat-info">
+          <p class="stat-label">Published</p>
+          <p class="stat-value">{{ getEventCountByStatus('PUBLISHED') }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">⏳</span>
+        <div class="stat-info">
+          <p class="stat-label">Pending</p>
+          <p class="stat-value">{{ getEventCountByStatus('PENDING') }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">❌</span>
+        <div class="stat-info">
+          <p class="stat-label">Cancelled</p>
+          <p class="stat-value">{{ getEventCountByStatus('CANCELLED') }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="admin-content">
+    <!-- LEFT SIDE -->
+    <div class="events-panel">
+      <div class="filters-bar">
+        <div class="search-box">
+          <input
+            type="text"
+            placeholder="Search events..."
+            [value]="searchQuery"
+            (input)="onSearchChange($any($event.target).value)"
+            class="search-input">
+          <span class="search-icon">🔍</span>
+        </div>
+        <div class="filter-chips">
+          <select (change)="onStatusChange($any($event.target).value)" [value]="statusFilter" class="filter-select">
+            <option *ngFor="let status of statusOptions" [value]="status">
+              {{ status === 'ALL' ? 'All Status' : status }}
+            </option>
+          </select>
+          <select (change)="onCategoryChange($any($event.target).value)" [value]="categoryFilter" class="filter-select">
+            <option *ngFor="let cat of categoryOptions" [value]="cat">
+              {{ cat === 'ALL' ? 'All Categories' : cat }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading events...</p>
+      </div>
+
+      <div *ngIf="!loading && filteredEvents.length > 0" class="events-list">
+        <div
+          *ngFor="let event of filteredEvents"
+          class="event-item"
+          [class.active]="selectedEvent?.idEvent === event.idEvent"
+          (click)="selectEvent(event)">
+
+          <div class="event-header">
+            <div class="event-title-group">
+              <span class="category-badge">{{ getCategoryIcon(event.category) }} {{ event.category }}</span>
+              <h3 class="event-title">{{ event.title }}</h3>
+            </div>
+            <span class="status-badge" [style.background-color]="getStatusColor(event.eventStatus)">
+              {{ event.eventStatus }}
+            </span>
+          </div>
+
+          <p class="event-description">{{ event.description | slice:0:80 }}...</p>
+
+          <div class="event-meta">
+            <span class="meta-item">📍 {{ event.location }}</span>
+            <span class="meta-item">👥 {{ event.currentParticipants || 0 }}/{{ event.capacity }}</span>
+            <span class="meta-item">🎯 {{ event.activities?.length || 0 }} activities</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && filteredEvents.length === 0" class="empty-state">
+        <p>No events found</p>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="details-panel" *ngIf="selectedEvent; else noSelection">
+      <div class="details-header">
+        <h2 class="details-title">{{ selectedEvent.title }}</h2>
+        <button class="close-btn" (click)="closeEvent()">✕</button>
+      </div>
+
+      <div class="details-content">
+        <div class="detail-section">
+          <h4 class="section-title">Event Information</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Category</span>
+              <span class="info-value">{{ getCategoryIcon(selectedEvent.category) }} {{ selectedEvent.category }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Status</span>
+              <span class="info-value" [style.color]="getStatusColor(selectedEvent.eventStatus)">
+                {{ selectedEvent.eventStatus }}
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Location</span>
+              <span class="info-value">📍 {{ selectedEvent.location }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Capacity</span>
+              <span class="info-value">{{ selectedEvent.currentParticipants || 0 }} / {{ selectedEvent.capacity }} participants</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Start Date</span>
+              <span class="info-value">{{ selectedEvent.startDate | date:'short' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">End Date</span>
+              <span class="info-value">{{ selectedEvent.endDate | date:'short' }}</span>
+            </div>
+          </div>
+          <div class="capacity-bar-wrapper">
+            <span class="capacity-label">Capacity</span>
+            <div class="capacity-bar">
+              <div class="capacity-fill"
+                [style.width.%]="(selectedEvent.currentParticipants || 0) / selectedEvent.capacity * 100">
+              </div>
+            </div>
+            <span class="capacity-percent">
+              {{ ((selectedEvent.currentParticipants || 0) / selectedEvent.capacity * 100) | number:'1.0-0' }}%
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4 class="section-title">Description</h4>
+          <p class="description-text">{{ selectedEvent.description }}</p>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedEvent.activities && selectedEvent.activities.length > 0">
+          <h4 class="section-title">Activities ({{ selectedEvent.activities.length }})</h4>
+          <div class="activities-list">
+            <div *ngFor="let act of selectedEvent.activities" class="activity-card">
+              <div class="activity-header">
+                <h5 class="activity-name">🎯 {{ act.name }}</h5>
+                <span class="activity-participants">👥 {{ act.maxParticipants }} max</span>
+              </div>
+              <p class="activity-description">{{ act.description || 'No description' }}</p>
+              <div class="activity-requirements" *ngIf="act.requirements">
+                <span>📋 {{ act.requirements }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section" *ngIf="!selectedEvent.activities || selectedEvent.activities.length === 0">
+          <h4 class="section-title">Activities</h4>
+          <p class="no-activities">No activities for this event.</p>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedEvent.imageUrl">
+          <h4 class="section-title">Image</h4>
+          <img [src]="selectedEvent.imageUrl" alt="Event image" class="event-image">
+        </div>
+
+        <div class="detail-actions">
+          <button class="btn-delete" (click)="deleteEvent(selectedEvent)">🗑️ Delete Event</button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noSelection>
+      <div class="details-panel empty">
+        <div class="empty-placeholder">
+          <p class="empty-icon">👈</p>
+          <p class="empty-text">Select an event to view details</p>
+        </div>
+      </div>
+    </ng-template>
+  </div>
+</div>
