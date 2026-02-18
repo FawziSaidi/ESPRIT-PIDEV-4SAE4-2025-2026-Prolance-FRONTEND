@@ -1,165 +1,229 @@
-<div class="forum-page">
+<div class="admin-container">
 
-  <!-- SEARCH BAR -->
-  <div class="search-bar-wrapper">
-    <div class="search-bar">
-      <span class="search-icon">🔍</span>
-      <input
-        type="text"
-        [(ngModel)]="searchUsername"
-        (ngModelChange)="onSearch()"
-        placeholder="Search by username..."
-        class="search-input"
-      />
-      <button *ngIf="searchUsername" (click)="searchUsername=''; onSearch()" class="search-clear">✕</button>
+  <!-- HEADER -->
+  <div class="admin-header">
+    <div class="header-content">
+      <h1 class="header-title">Forum Management</h1>
+      <p class="header-subtitle">Review, manage and monitor all publications on the platform</p>
     </div>
-  </div>
-
-  <!-- LOADING / ERROR -->
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div>
-    <p>Loading...</p>
-  </div>
-
-  <div *ngIf="error" class="error-banner">
-    <span>⚠️ {{ error }}</span>
-    <button (click)="loadData()">Retry</button>
-  </div>
-
-  <div *ngIf="!loading && !error">
-
-    <!-- STATS CARDS -->
-    <div class="stats-grid">
-
-      <div class="stat-card stat-total">
-        <div class="stat-icon-box"><span class="stat-icon">📝</span></div>
+    <div class="header-stats">
+      <div class="stat-card">
+        <span class="stat-icon">📝</span>
         <div class="stat-info">
           <p class="stat-label">Total Publications</p>
-          <h2 class="stat-value">{{ totalPublications }}</h2>
+          <p class="stat-value">{{ publications.length }}</p>
+          <p class="stat-percent">100%</p>
         </div>
-        <div class="stat-footer"><span>📋 All publications</span></div>
       </div>
-
-      <div class="stat-card stat-question">
-        <div class="stat-icon-box"><span class="stat-icon">❓</span></div>
+      <div class="stat-card">
+        <span class="stat-icon">❓</span>
         <div class="stat-info">
           <p class="stat-label">Questions</p>
-          <h2 class="stat-value">{{ countQuestion }}</h2>
-        </div>
-        <div class="stat-footer">
-          <span>📊 {{ totalPublications > 0 ? ((countQuestion / totalPublications) * 100).toFixed(0) : 0 }}% of total</span>
+          <p class="stat-value">{{ getCountByType('QUESTION') }}</p>
+          <p class="stat-percent">{{ publications.length > 0 ? ((getCountByType('QUESTION') / publications.length) * 100).toFixed(0) : 0 }}%</p>
         </div>
       </div>
-
-      <div class="stat-card stat-article">
-        <div class="stat-icon-box"><span class="stat-icon">📰</span></div>
+      <div class="stat-card">
+        <span class="stat-icon">📰</span>
         <div class="stat-info">
           <p class="stat-label">Articles</p>
-          <h2 class="stat-value">{{ countArticle }}</h2>
-        </div>
-        <div class="stat-footer">
-          <span>📊 {{ totalPublications > 0 ? ((countArticle / totalPublications) * 100).toFixed(0) : 0 }}% of total</span>
+          <p class="stat-value">{{ getCountByType('ARTICLE') }}</p>
+          <p class="stat-percent">{{ publications.length > 0 ? ((getCountByType('ARTICLE') / publications.length) * 100).toFixed(0) : 0 }}%</p>
         </div>
       </div>
-
-      <div class="stat-card stat-review">
-        <div class="stat-icon-box"><span class="stat-icon">⭐</span></div>
+      <div class="stat-card">
+        <span class="stat-icon">⭐</span>
         <div class="stat-info">
           <p class="stat-label">Reviews</p>
-          <h2 class="stat-value">{{ countReview }}</h2>
+          <p class="stat-value">{{ getCountByType('REVIEW') }}</p>
+          <p class="stat-percent">{{ publications.length > 0 ? ((getCountByType('REVIEW') / publications.length) * 100).toFixed(0) : 0 }}%</p>
         </div>
-        <div class="stat-footer">
-          <span>📊 {{ totalPublications > 0 ? ((countReview / totalPublications) * 100).toFixed(0) : 0 }}% of total</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="admin-content">
+
+    <!-- LEFT PANEL: Publications list -->
+    <div class="projects-panel">
+
+      <!-- FILTERS -->
+      <div class="filters-bar">
+        <div class="search-box">
+          <input
+            type="text"
+            placeholder="Search by title or user..."
+            [value]="searchQuery"
+            (input)="onSearchChange($any($event.target).value)"
+            class="search-input"
+          />
+          <span class="search-icon">🔍</span>
+        </div>
+        <div class="filter-chips">
+          <select (change)="onTypeChange($any($event.target).value)" [value]="typeFilter" class="filter-select">
+            <option *ngFor="let t of typeOptions" [value]="t">
+              {{ t === 'ALL' ? 'All Types' : t }}
+            </option>
+          </select>
         </div>
       </div>
 
+      <!-- LOADING -->
+      <div *ngIf="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading publications...</p>
+      </div>
+
+      <!-- ERROR -->
+      <div *ngIf="error && !loading" class="loading">
+        <p style="color:#ef4444">⚠️ {{ error }}</p>
+        <button class="btn-retry" (click)="loadData()">Retry</button>
+      </div>
+
+      <!-- LIST -->
+      <div *ngIf="!loading && !error && filteredPublications.length > 0" class="projects-list">
+        <div
+          *ngFor="let pub of filteredPublications"
+          class="project-item"
+          [class.active]="selectedPublication?.id === pub.id"
+          (click)="selectPublication(pub)">
+
+          <div class="project-header">
+            <div class="project-title-group">
+              <span class="category-badge">{{ getTypeIcon(pub.type) }} {{ pub.type }}</span>
+              <h3 class="project-title">{{ pub.titre }}</h3>
+            </div>
+            <span class="status-badge" [style.background-color]="getTypeColor(pub.type)">
+              {{ pub.type }}
+            </span>
+          </div>
+
+          <p class="project-description">{{ pub.contenue | slice:0:80 }}...</p>
+
+          <div class="project-meta">
+            <span class="meta-item">👤 {{ getUserLabel(pub.user) }}</span>
+            <span class="meta-item">❤️ {{ pub.likes }} likes</span>
+            <span class="meta-item">💬 {{ pub.commentaires?.length || 0 }} comments</span>
+            <span class="meta-item">📅 {{ formatDate(pub.createAt) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMPTY -->
+      <div *ngIf="!loading && !error && filteredPublications.length === 0" class="empty-state">
+        <p>No publications found</p>
+      </div>
     </div>
 
-    <!-- TABLE 1 : Publications -->
-    <div class="table-section">
-      <div class="table-header">
-        <h3 class="table-title">
-          <span class="table-title-icon">📝</span>
-          Publications
-        </h3>
-        <span class="table-badge">{{ filteredPubRows.length }} publication(s)</span>
+    <!-- RIGHT PANEL: Publication details -->
+    <div class="details-panel" *ngIf="selectedPublication; else noSelection">
+
+      <div class="details-header">
+        <h2 class="details-title">{{ selectedPublication.titre }}</h2>
+        <button class="close-btn" (click)="closePublication()">✕</button>
       </div>
 
-      <div class="table-wrapper">
-        <div *ngIf="filteredPubRows.length === 0" class="empty-state">
-          <p>No results found<span *ngIf="searchUsername"> for "{{ searchUsername }}"</span></p>
-        </div>
+      <!-- TABS -->
+      <div class="tabs-bar">
+        <button class="tab-btn" [class.active]="activeTab === 'details'" (click)="activeTab = 'details'">
+          📄 Details
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'comments'" (click)="activeTab = 'comments'">
+          💬 Comments ({{ selectedCommentaires.length }})
+        </button>
+      </div>
 
-        <table *ngIf="filteredPubRows.length > 0" class="data-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Publication Title</th>
-              <th>Created At</th>
-              <th class="center-col">Comments Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of filteredPubRows; let i = index" [class.row-even]="i % 2 === 0">
-              <td class="username-cell">
-                <div class="username-tag">
-                  <span class="avatar">{{ row.username.charAt(0).toUpperCase() }}</span>
-                  {{ row.username }}
+      <div class="details-content">
+
+        <!-- TAB: DETAILS -->
+        <ng-container *ngIf="activeTab === 'details'">
+          <div class="detail-section">
+            <h4 class="section-title">Publication Information</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Author</span>
+                <span class="info-value">
+                  <span class="avatar-inline">{{ getInitials(selectedPublication.user) }}</span>
+                  {{ getUserLabel(selectedPublication.user) }}
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Type</span>
+                <span class="info-value" [style.color]="getTypeColor(selectedPublication.type)">
+                  {{ getTypeIcon(selectedPublication.type) }} {{ selectedPublication.type }}
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Likes</span>
+                <span class="info-value">❤️ {{ selectedPublication.likes }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Comments</span>
+                <span class="info-value">💬 {{ selectedPublication.commentaires?.length || 0 }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Created At</span>
+                <span class="info-value">{{ formatDate(selectedPublication.createAt) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Images</span>
+                <span class="info-value">🖼️ {{ selectedPublication.images?.length || 0 }} file(s)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4 class="section-title">Content</h4>
+            <p class="description-text">{{ selectedPublication.contenue }}</p>
+          </div>
+
+          <div class="detail-actions">
+            <button class="btn-delete" (click)="deletePublication(selectedPublication)">🗑️ Delete Publication</button>
+          </div>
+        </ng-container>
+
+        <!-- TAB: COMMENTS -->
+        <ng-container *ngIf="activeTab === 'comments'">
+          <div *ngIf="loadingComments" class="loading">
+            <div class="spinner"></div>
+            <p>Loading comments...</p>
+          </div>
+
+          <div *ngIf="!loadingComments && selectedCommentaires.length === 0" class="empty-state">
+            <p>No comments for this publication</p>
+          </div>
+
+          <div *ngIf="!loadingComments && selectedCommentaires.length > 0" class="tasks-list">
+            <div *ngFor="let com of selectedCommentaires" class="task-card">
+              <div class="task-header">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span class="avatar-small">{{ getInitials(com.user) }}</span>
+                  <h5 class="task-name">{{ getUserLabel(com.user) }}</h5>
                 </div>
-              </td>
-              <td class="pub-title">{{ row.titre }}</td>
-              <td class="date-cell">{{ formatDate(row.createAt) }}</td>
-              <td class="center-col">
-                <span class="comment-count-badge">💬 {{ row.nbCommentaires }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                <span class="comment-date">{{ formatDate(com.createAt) }}</span>
+              </div>
+              <p class="task-description">{{ com.contenue }}</p>
+              <div class="task-dates">
+                <span>❤️ {{ com.likes }} likes</span>
+                <span style="margin-left:1rem">💬 {{ com.replies?.length || 0 }} replies</span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
       </div>
     </div>
 
-    <!-- TABLE 2 : Comments -->
-    <div class="table-section">
-      <div class="table-header">
-        <h3 class="table-title">
-          <span class="table-title-icon">💬</span>
-          Comments
-        </h3>
-        <span class="table-badge">{{ filteredComRows.length }} comment(s)</span>
-      </div>
-
-      <div class="table-wrapper">
-        <div *ngIf="filteredComRows.length === 0" class="empty-state">
-          <p>No results found<span *ngIf="searchUsername"> for "{{ searchUsername }}"</span></p>
+    <!-- NO SELECTION -->
+    <ng-template #noSelection>
+      <div class="details-panel empty">
+        <div class="empty-placeholder">
+          <p class="empty-icon">👈</p>
+          <p class="empty-text">Select a publication to view details</p>
         </div>
-
-        <table *ngIf="filteredComRows.length > 0" class="data-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Comment</th>
-              <th>Created At</th>
-              <th>Related Publication</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of filteredComRows; let i = index" [class.row-even]="i % 2 === 0">
-              <td class="username-cell">
-                <div class="username-tag">
-                  <span class="avatar avatar-comment">{{ row.username.charAt(0).toUpperCase() }}</span>
-                  {{ row.username }}
-                </div>
-              </td>
-              <td class="comment-cell">{{ row.contenue }}</td>
-              <td class="date-cell">{{ formatDate(row.createAt) }}</td>
-              <td class="pub-name-cell">
-                <span class="pub-name-tag">📄 {{ row.publicationTitre }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
-    </div>
+    </ng-template>
 
   </div>
 </div>

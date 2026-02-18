@@ -42,11 +42,16 @@ export class ForumService {
     return this.http.get<Commentaire[]>(`${this.apiBase}/commentaires`);
   }
 
+  // Admin delete — no userId required
+  adminDeletePublication(id: number): Observable<any> {
+    return this.http.delete(`${this.apiBase}/publications/admin/${id}`, { responseType: 'text' });
+  }
+
   deletePublication(id: number, userId: number): Observable<any> {
-    return this.http.delete(`${this.apiBase}/publications/${id}?userId=${userId}`);
+    return this.http.delete(`${this.apiBase}/publications/${id}?userId=${userId}`, { responseType: 'text' });
   }
 
   deleteCommentaire(id: number, userId: number): Observable<any> {
-    return this.http.delete(`${this.apiBase}/commentaires/${id}?userId=${userId}`);
+    return this.http.delete(`${this.apiBase}/commentaires/${id}?userId=${userId}`, { responseType: 'text' });
   }
 }
