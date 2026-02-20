@@ -1,12 +1,29 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, HostListener, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
+import { trigger, state, style, transition, animate } from '@angular/animations';
+import { Subscription } from 'rxjs';
 import { AdsService } from '../../services/ads.service';
+import { AdPlacementManagerService } from '../../services/ad-placement-manager.service';
 import { AdCampaign } from '../../pages/ads/models/ad.models';
 
 @Component({
   selector: 'app-landing',
   templateUrl: './landing.component.html',
-  styleUrls: ['./landing.component.scss']
+  styleUrls: ['./landing.component.scss'],
+  animations: [
+    trigger('fadeInOut', [
+      state('void', style({ opacity: 0, transform: 'translateY(10px)' })),
+      state('*', style({ opacity: 1, transform: 'translateY(0)' })),
+      transition('void => *', animate('600ms cubic-bezier(0.4, 0.0, 0.2, 1)')),
+      transition('* => void', animate('400ms cubic-bezier(0.4, 0.0, 0.2, 1)'))
+    ]),
+    trigger('slideVertical', [
+      state('void', style({ opacity: 0, transform: 'translateY(20px)' })),
+      state('*', style({ opacity: 1, transform: 'translateY(0)' })),
+      transition('void => *', animate('700ms cubic-bezier(0.22, 1, 0.36, 1)')),
+      transition('* => void', animate('500ms cubic-bezier(0.22, 1, 0.36, 1)'))
+    ])
+  ]
 })
 export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   navbarTransparent = true;
@@ -42,10 +59,25 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   sidebarShowcase: AdCampaign[] = [];      // Plan 3: SEARCH_SIDEBAR
   adsLoading = true;
 
+  // High-conversion ad placements (managed by AdPlacementManager)
+  leftSideRailAd: AdCampaign | null = null;   // Type 3: SEARCH_SIDEBAR
+  rightSideRailAd: AdCampaign | null = null;  // Type 5: JOB_FEED BANNER
+  bottomLeftPopup: AdCampaign | null = null;  // Type 1: Profile Spotlight
+  bottomRightPopup: AdCampaign | null = null; // Type 2: Landing Page Banner
+  showBottomLeftPopup = false;
+  showBottomRightPopup = false;
+
+  private adSubscriptions: Subscription[] = [];
+
   private observer!: IntersectionObserver;
   private testimonialInterval: any;
 
-  constructor(private router: Router, private el: ElementRef, private adsService: AdsService) {}
+  constructor(
+    private router: Router,
+    private el: ElementRef,
+    private adsService: AdsService,
+    private adPlacementManager: AdPlacementManagerService
+  ) {}
 
   ngOnInit(): void {
     document.body.classList.add('landing-page');
@@ -71,6 +103,18 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
         this.sidebarShowcase = ads
           .filter(a => a.planLocation === 'SEARCH_SIDEBAR');
 
+        // Initialize Ad Placement Manager with unique placement logic
+        const profileSpotlights = ads.filter(a => a.planType === 'FEATURED_PROFILE');
+        this.adPlacementManager.initializeSlots(
+          this.sidebarShowcase,
+          this.jobFeedBanners,
+          profileSpotlights,
+          this.landingPageBanners
+        );
+
+        // Subscribe to slot observables for smooth rotation
+        this.subscribeToAdSlots();
+
         this.adsLoading = false;
         // Re-scan DOM for new .reveal elements after Angular renders the ads
         setTimeout(() => this.initScrollReveal(), 100);
@@ -83,6 +127,60 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
         this.adsLoading = false;
       }
     });
+  }
+
+  private subscribeToAdSlots(): void {
+    // Left Rail subscription
+    this.adSubscriptions.push(
+      this.adPlacementManager.leftRail$.subscribe(ad => {
+        this.leftSideRailAd = ad;
+      })
+    );
+
+    // Right Rail subscription
+    this.adSubscriptions.push(
+      this.adPlacementManager.rightRail$.subscribe(ad => {
+        this.rightSideRailAd = ad;
+      })
+    );
+
+    // Bottom-Left Popup subscription
+    this.adSubscriptions.push(
+      this.adPlacementManager.bottomLeftPopup$.subscribe(ad => {
+        this.bottomLeftPopup = ad;
+        if (ad && !this.adPlacementManager.isPopupClosed('bottomLeftPopup')) {
+          setTimeout(() => {
+            this.showBottomLeftPopup = true;
+          }, 3000);
+        } else {
+          this.showBottomLeftPopup = false;
+        }
+      })
+    );
+
+    // Bottom-Right Popup subscription
+    this.adSubscriptions.push(
+      this.adPlacementManager.bottomRightPopup$.subscribe(ad => {
+        this.bottomRightPopup = ad;
+        if (ad && !this.adPlacementManager.isPopupClosed('bottomRightPopup')) {
+          setTimeout(() => {
+            this.showBottomRightPopup = true;
+          }, 3500);
+        } else {
+          this.showBottomRightPopup = false;
+        }
+      })
+    );
+  }
+
+  closeBottomLeftPopup(): void {
+    this.showBottomLeftPopup = false;
+    this.adPlacementManager.closePopup('bottomLeftPopup');
+  }
+
+  closeBottomRightPopup(): void {
+    this.showBottomRightPopup = false;
+    this.adPlacementManager.closePopup('bottomRightPopup');
   }
 
   getAdImage(ad: AdCampaign): string {
@@ -122,16 +220,6 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   ngAfterViewInit(): void {
     this.initScrollReveal();
     this.startTestimonialRotation();
-  }
-
-  ngOnDestroy(): void {
-    document.body.classList.remove('landing-page');
-    if (this.observer) {
-      this.observer.disconnect();
-    }
-    if (this.testimonialInterval) {
-      clearInterval(this.testimonialInterval);
-    }
   }
 
   @HostListener('window:scroll')
@@ -175,5 +263,20 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
     this.testimonialInterval = setInterval(() => {
       this.activeTestimonial = (this.activeTestimonial + 1) % this.testimonials.length;
     }, 6000);
+  }
+
+  ngOnDestroy(): void {
+    // Cleanup ad subscriptions
+    this.adSubscriptions.forEach(sub => sub.unsubscribe());
+    this.adPlacementManager.cleanup();
+
+    // Cleanup existing observers and intervals
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+    if (this.testimonialInterval) {
+      clearInterval(this.testimonialInterval);
+    }
+    document.body.classList.remove('landing-page');
   }
 }

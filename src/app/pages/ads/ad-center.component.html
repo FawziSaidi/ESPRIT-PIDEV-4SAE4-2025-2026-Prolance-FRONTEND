@@ -76,6 +76,8 @@
   </div>
 
   <!-- ════════ PERFORMANCE CHART ════════ -->
+  <!-- COMMENTED OUT: Graph visualization removed per UI refactor -->
+  <!--
   <div class="row">
     <div class="col-12">
       <div class="card ad-card">
@@ -89,6 +91,7 @@
       </div>
     </div>
   </div>
+  -->
 
   <!-- ════════ MY CAMPAIGNS TABLE ════════ -->
   <div class="row">
@@ -280,11 +283,34 @@
               <button type="button" class="btn-clear-url" *ngIf="formImageUrl" (click)="clearImageUrl()" title="Clear URL">
                 <i class="material-icons">close</i>
               </button>
-              <span class="url-verified" *ngIf="isValidImageUrl" title="Link Verified">
-                <i class="material-icons">check_circle</i>
-              </span>
             </div>
-            <small class="url-hint">Leave blank to use a default placeholder based on your role.</small>
+            
+            <!-- Image Scanning States -->
+            <!-- Scanning Spinner -->
+            <div class="validation-state validation-scanning" *ngIf="isScanning">
+              <div class="spinner-small"></div>
+              <span>Scanning image for content safety...</span>
+            </div>
+            
+            <!-- State A: SAFE -->
+            <div class="validation-state validation-safe" *ngIf="!isScanning && imageValidationState === 'SAFE'">
+              <i class="material-icons">check_circle</i>
+              <span>{{ imageValidationMessage }}</span>
+            </div>
+            
+            <!-- State B: UNSAFE -->
+            <div class="validation-state validation-unsafe" *ngIf="!isScanning && imageValidationState === 'UNSAFE'">
+              <i class="material-icons">error</i>
+              <span>{{ imageValidationMessage }}</span>
+            </div>
+            
+            <!-- State C: UNCERTAIN -->
+            <div class="validation-state validation-uncertain" *ngIf="!isScanning && imageValidationState === 'UNCERTAIN'">
+              <i class="material-icons">warning</i>
+              <span>{{ imageValidationMessage }}</span>
+            </div>
+            
+            <small class="url-hint" *ngIf="!imageValidationState">Leave blank to use a default placeholder based on your role.</small>
           </div>
           <div class="form-group-custom">
             <label>Target URL</label>
@@ -384,11 +410,15 @@
       <button class="btn-primary-custom"
               *ngIf="modalStep < 3"
               [ngStyle]="{'background': roleColors.gradient}"
-              [disabled]="(modalStep === 1 && !selectedPlanId) || (modalStep === 2 && (!formTitle.trim() || !formDescription.trim()))"
+              [disabled]="(modalStep === 1 && !selectedPlanId) || (modalStep === 2 && (!formTitle.trim() || !formDescription.trim() || !canSubmitCampaign || isScanning))"
               (click)="nextStep()">
         Next
       </button>
-      <button class="btn-primary-custom" *ngIf="modalStep === 3" [ngStyle]="{'background': roleColors.gradient}" (click)="submitCampaign()">
+      <button class="btn-primary-custom" 
+              *ngIf="modalStep === 3" 
+              [ngStyle]="{'background': roleColors.gradient}" 
+              [disabled]="!canSubmitCampaign || isScanning"
+              (click)="submitCampaign()">
         <i class="material-icons">rocket_launch</i>
         {{ isEditing ? 'Update Campaign' : 'Launch Campaign' }}
       </button>
@@ -423,15 +453,15 @@
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
-<!-- MARKET INSIGHTS SECTION                         -->
-<!-- ════════════════════════════════════════════════ -->
+<!-- MARKET INSIGHTS SECTION (2 compact charts side-by-side) -->
+<!-- COMMENTED OUT: Graph visualizations removed per UI refactor -->
+<!--
 <div class="row mt-4 market-insights-section">
   <div class="col-12">
     <h4 class="section-title-insights">Market Insights</h4>
     <p class="card-category">{{ marketInsightsSubtitle }}</p>
   </div>
 
-  <!-- Reach Statistics Card -->
   <div class="col-md-6">
     <div class="card card-chart compact-card">
       <div class="card-header" [ngClass]="roleCardHeaderClass">
@@ -447,7 +477,6 @@
     </div>
   </div>
 
-  <!-- Conversion Statistics Card -->
   <div class="col-md-6">
     <div class="card card-chart compact-card">
       <div class="card-header" [ngClass]="roleCardHeaderClass">
@@ -463,3 +492,5 @@
     </div>
   </div>
 </div>
+-->
+<!-- ════════════════════════════════════════════════ -->

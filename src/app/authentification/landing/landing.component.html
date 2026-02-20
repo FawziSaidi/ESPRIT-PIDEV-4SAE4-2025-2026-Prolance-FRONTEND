@@ -683,3 +683,95 @@
     </div>
   </div>
 </footer>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- SPORTS-BETTING STYLE SIDE RAILS (Fixed Sticky)  -->
+<!-- ════════════════════════════════════════════════ -->
+<!-- Left Side Rail: Type 3 (SEARCH_SIDEBAR) -->
+<aside class="side-rail side-rail-left" *ngIf="leftSideRailAd" [@fadeInOut]>
+  <a [href]="leftSideRailAd.targetUrl" target="_blank" rel="noopener noreferrer" 
+     class="side-rail-content" (click)="onAdClick(leftSideRailAd)"
+     [class.rail-freelancer]="leftSideRailAd.roleType === 'FREELANCER'"
+     [class.rail-client]="leftSideRailAd.roleType === 'CLIENT'">
+    <img [src]="getAdImage(leftSideRailAd)" [alt]="leftSideRailAd.title" 
+         class="side-rail-img" loading="lazy" (error)="onImgError($event, leftSideRailAd)">
+    <div class="side-rail-overlay">
+      <span class="side-rail-badge">Sponsored</span>
+      <h5>{{ leftSideRailAd.title }}</h5>
+      <p>{{ leftSideRailAd.description | slice:0:60 }}...</p>
+    </div>
+  </a>
+</aside>
+
+<!-- Right Side Rail: Type 5 (JOB_FEED BANNER) -->
+<aside class="side-rail side-rail-right" *ngIf="rightSideRailAd" [@fadeInOut]>
+  <a [href]="rightSideRailAd.targetUrl" target="_blank" rel="noopener noreferrer" 
+     class="side-rail-content" (click)="onAdClick(rightSideRailAd)"
+     [class.rail-freelancer]="rightSideRailAd.roleType === 'FREELANCER'"
+     [class.rail-client]="rightSideRailAd.roleType === 'CLIENT'">
+    <img [src]="getAdImage(rightSideRailAd)" [alt]="rightSideRailAd.title" 
+         class="side-rail-img" loading="lazy" (error)="onImgError($event, rightSideRailAd)">
+    <div class="side-rail-overlay">
+      <span class="side-rail-badge">Featured</span>
+      <h5>{{ rightSideRailAd.title }}</h5>
+      <p>{{ rightSideRailAd.description | slice:0:60 }}...</p>
+    </div>
+  </a>
+</aside>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- COMPELLING BOTTOM CORNER POPUPS (Slide-in)      -->
+<!-- ════════════════════════════════════════════════ -->
+<!-- Bottom-Left Popup: Type 1 (Profile Spotlight) -->
+<div class="corner-popup corner-popup-left" *ngIf="bottomLeftPopup && showBottomLeftPopup"
+     [@slideVertical]
+     [class.popup-freelancer]="bottomLeftPopup.roleType === 'FREELANCER'"
+     [class.popup-client]="bottomLeftPopup.roleType === 'CLIENT'">
+  <button class="popup-close" (click)="closeBottomLeftPopup()" aria-label="Close">
+    <i class="material-icons">close</i>
+  </button>
+  <a [href]="bottomLeftPopup.targetUrl" target="_blank" rel="noopener noreferrer" 
+     class="popup-content" (click)="onAdClick(bottomLeftPopup)">
+    <div class="popup-img-wrap">
+      <img [src]="getAdImage(bottomLeftPopup)" [alt]="bottomLeftPopup.title" 
+           class="popup-img" loading="lazy" (error)="onImgError($event, bottomLeftPopup)">
+    </div>
+    <div class="popup-body">
+      <span class="popup-badge">
+        <i class="material-icons">person_pin</i> Profile Spotlight
+      </span>
+      <h5 class="popup-title">{{ bottomLeftPopup.title }}</h5>
+      <p class="popup-desc">{{ bottomLeftPopup.description | slice:0:80 }}</p>
+      <button class="popup-cta">
+        View Profile <i class="material-icons">arrow_forward</i>
+      </button>
+    </div>
+  </a>
+</div>
+
+<!-- Bottom-Right Popup: Type 2 (Landing Page Banner) -->
+<div class="corner-popup corner-popup-right" *ngIf="bottomRightPopup && showBottomRightPopup"
+     [@slideVertical]
+     [class.popup-freelancer]="bottomRightPopup.roleType === 'FREELANCER'"
+     [class.popup-client]="bottomRightPopup.roleType === 'CLIENT'">
+  <button class="popup-close" (click)="closeBottomRightPopup()" aria-label="Close">
+    <i class="material-icons">close</i>
+  </button>
+  <a [href]="bottomRightPopup.targetUrl" target="_blank" rel="noopener noreferrer" 
+     class="popup-content" (click)="onAdClick(bottomRightPopup)">
+    <div class="popup-img-wrap">
+      <img [src]="getAdImage(bottomRightPopup)" [alt]="bottomRightPopup.title" 
+           class="popup-img" loading="lazy" (error)="onImgError($event, bottomRightPopup)">
+    </div>
+    <div class="popup-body">
+      <span class="popup-badge">
+        <i class="material-icons">panorama</i> Premium Offer
+      </span>
+      <h5 class="popup-title">{{ bottomRightPopup.title }}</h5>
+      <p class="popup-desc">{{ bottomRightPopup.description | slice:0:80 }}</p>
+      <button class="popup-cta">
+        Learn More <i class="material-icons">arrow_forward</i>
+      </button>
+    </div>
+  </a>
+</div>

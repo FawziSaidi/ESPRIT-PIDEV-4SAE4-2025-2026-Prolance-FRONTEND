@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { AuthService } from '../../services/auth.services';
 import { AdsService } from '../../services/ads.service';
+import { ImageGuardService, ValidationResult } from '../../services/image-guard.service';
 import { AdPlan, AdCampaign, CampaignStatus, AdType, RoleType, CreateCampaignRequest } from './models/ad.models';
 
 declare var Chart: any;
@@ -14,26 +15,26 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   // ── Role (auto-detected from JWT) ──
   currentRole: RoleType = 'FREELANCER';
 
-  // ── Role-Based Color Palette ──
+  // ── Role-Based Color Palette (Purple-Centric) ──
   readonly ROLE_COLORS: Record<RoleType, any> = {
     FREELANCER: {
-      primary: '#9c27b0',
-      primaryLight: '#ab47bc',
-      primaryDark: '#8e24aa',
-      gradient: 'linear-gradient(135deg, #ab47bc, #8e24aa)',
-      rgbaFill: 'rgba(156, 39, 176, 0.10)',
-      rgbaFillLight: 'rgba(156, 39, 176, 0.04)',
-      secondary: '#7b1fa2',
+      primary: '#7B68EE',        // Vibrant Purple (Medium Slate Blue)
+      primaryLight: '#9370DB',   // Medium Purple
+      primaryDark: '#6A5ACD',    // Slate Blue
+      gradient: 'linear-gradient(135deg, #7B68EE, #6A5ACD)',
+      rgbaFill: 'rgba(123, 104, 238, 0.10)',
+      rgbaFillLight: 'rgba(123, 104, 238, 0.04)',
+      secondary: '#8A2BE2',      // Blue Violet
       cardHeaderClass: 'card-header-primary'
     },
     CLIENT: {
-      primary: '#00897b',
-      primaryLight: '#26a69a',
-      primaryDark: '#00796b',
-      gradient: 'linear-gradient(135deg, #26a69a, #00796b)',
-      rgbaFill: 'rgba(0, 137, 123, 0.10)',
-      rgbaFillLight: 'rgba(0, 137, 123, 0.04)',
-      secondary: '#00695c',
+      primary: '#483D8B',        // Deep Purple (Dark Slate Blue)
+      primaryLight: '#6A5ACD',   // Slate Blue
+      primaryDark: '#2F2A5C',    // Darker Deep Purple
+      gradient: 'linear-gradient(135deg, #483D8B, #2F2A5C)',
+      rgbaFill: 'rgba(72, 61, 139, 0.10)',
+      rgbaFillLight: 'rgba(72, 61, 139, 0.04)',
+      secondary: '#5D4E99',      // Mid-tone Purple
       cardHeaderClass: 'card-header-info'
     }
   };
@@ -64,6 +65,11 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   formImageUrl = '';
   formTargetUrl = '';
   isValidImageUrl = false;
+  
+  // ── Image Validation State ──
+  imageValidationState: ValidationResult | null = null;
+  imageValidationMessage = '';
+  isScanning = false;
 
   // ── KPI Stats ──
   stats = {
@@ -89,7 +95,11 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   private reachChartInstance: any = null;
   private conversionChartInstance: any = null;
 
-  constructor(private authService: AuthService, private adsService: AdsService) {}
+  constructor(
+    private authService: AuthService, 
+    private adsService: AdsService,
+    private imageGuard: ImageGuardService
+  ) {}
 
   ngOnInit(): void {
     // Auto-detect role from JWT — no manual toggle
@@ -237,25 +247,59 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.adPlans.find(p => p.id === this.selectedPlanId);
   }
 
-  // ── Image URL Validation ──
-  validateImageUrl(): void {
+  // ── Image URL Validation with AI Scanning ──
+  async validateImageUrl(): Promise<void> {
     const url = this.formImageUrl?.trim();
+    
+    // Reset validation state
+    this.imageValidationState = null;
+    this.imageValidationMessage = '';
+    this.isValidImageUrl = false;
+    
     if (!url) {
-      this.isValidImageUrl = false;
       return;
     }
+    
     // Basic URL validation
     try {
       const urlObj = new URL(url);
-      this.isValidImageUrl = ['http:', 'https:'].includes(urlObj.protocol);
+      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+        this.imageValidationState = null;
+        return;
+      }
+      this.isValidImageUrl = true;
     } catch {
-      this.isValidImageUrl = false;
+      this.imageValidationState = null;
+      return;
+    }
+    
+    // Start AI scanning
+    this.isScanning = true;
+    
+    try {
+      const validation = await this.imageGuard.validateLink(url);
+      this.imageValidationState = validation.result;
+      this.imageValidationMessage = validation.message;
+    } catch (error) {
+      console.error('Image validation error:', error);
+      this.imageValidationState = 'UNCERTAIN';
+      this.imageValidationMessage = 'Your picture could not be scanned. You can post your ad, but it will go through our backend AI model for deeper analysis; your post may be flagged if it violates terms.';
+    } finally {
+      this.isScanning = false;
     }
   }
 
   clearImageUrl(): void {
     this.formImageUrl = '';
     this.isValidImageUrl = false;
+    this.imageValidationState = null;
+    this.imageValidationMessage = '';
+    this.isScanning = false;
+  }
+  
+  // Disable submit if image is UNSAFE
+  get canSubmitCampaign(): boolean {
+    return this.imageValidationState !== 'UNSAFE';
   }
 
   submitCampaign(): void {

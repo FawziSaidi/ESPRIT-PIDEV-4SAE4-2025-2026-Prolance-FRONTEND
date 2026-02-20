@@ -2,6 +2,31 @@
 @import '../../../assets/scss/core/mixins';
 
 // ═══════════════════════════════════════════════
+// PURPLE-CENTRIC THEMING (Role-Based)
+// ═══════════════════════════════════════════════
+.role-theme {
+  // Freelancer: Vibrant Purple (#7B68EE)
+  &.theme-freelancer {
+    --role-primary: #7B68EE;
+    --role-primary-light: #9370DB;
+    --role-primary-dark: #6A5ACD;
+    --role-gradient: linear-gradient(135deg, #7B68EE, #6A5ACD);
+    --role-rgba-fill: rgba(123, 104, 238, 0.10);
+    --role-shadow: rgba(123, 104, 238, 0.3);
+  }
+
+  // Client: Deep Purple (#483D8B)
+  &.theme-client {
+    --role-primary: #483D8B;
+    --role-primary-light: #6A5ACD;
+    --role-primary-dark: #2F2A5C;
+    --role-gradient: linear-gradient(135deg, #483D8B, #2F2A5C);
+    --role-rgba-fill: rgba(72, 61, 139, 0.10);
+    --role-shadow: rgba(72, 61, 139, 0.3);
+  }
+}
+
+// ═══════════════════════════════════════════════
 // AD CENTER CONTAINER
 // ═══════════════════════════════════════════════
 .ad-container {
@@ -661,6 +686,95 @@
   color: rgba($gray-color, 0.7);
   margin-top: 4px;
   font-style: italic;
+}
+
+// ═══════════════════════════════════════════════
+// IMAGE VALIDATION STATES (AI Scanning)
+// ═══════════════════════════════════════════════
+.validation-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 8px;
+  animation: slideDown 0.3s ease;
+
+  i {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  span {
+    line-height: 1.4;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Scanning State (Spinner)
+.validation-scanning {
+  background: rgba(158, 158, 158, 0.1);
+  border: 2px solid rgba(158, 158, 158, 0.2);
+  color: #616161;
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(158, 158, 158, 0.2);
+  border-top-color: #616161;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// State A: SAFE (Green)
+.validation-safe {
+  background: rgba(76, 175, 80, 0.1);
+  border: 2px solid rgba(76, 175, 80, 0.3);
+  color: #2e7d32;
+
+  i {
+    color: #4caf50;
+  }
+}
+
+// State B: UNSAFE (Red)
+.validation-unsafe {
+  background: rgba(244, 67, 54, 0.1);
+  border: 2px solid rgba(244, 67, 54, 0.3);
+  color: #c62828;
+
+  i {
+    color: #f44336;
+  }
+}
+
+// State C: UNCERTAIN (Yellow/Orange)
+.validation-uncertain {
+  background: rgba(255, 152, 0, 0.1);
+  border: 2px solid rgba(255, 152, 0, 0.3);
+  color: #e65100;
+
+  i {
+    color: #ff9800;
+  }
 }
 
 // ═══════════════════════════════════════════════
