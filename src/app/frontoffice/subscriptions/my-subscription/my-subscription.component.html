@@ -205,6 +205,17 @@
       </div>
     </div>
 
+    <!-- AI RECOMMENDATION -->
+    <app-ai-recommendation
+      *ngIf="currentSubscription"
+      [currentPlanName]="getPlanName()"
+      [userType]="currentSubscription.subscription?.type === 'FREELANCER' ? 'FREELANCER' : 'CLIENT'"
+      [currentProjects]="getProjectsUsage().current"
+      [maxProjects]="getProjectsUsage().max"
+      [currentProposals]="getProposalsUsage().current"
+      [maxProposals]="getProposalsUsage().max">
+    </app-ai-recommendation>
+
     <!-- ACTIONS -->
     <div class="actions-section">
       <button class="btn-invoice" (click)="onDownloadInvoice()">

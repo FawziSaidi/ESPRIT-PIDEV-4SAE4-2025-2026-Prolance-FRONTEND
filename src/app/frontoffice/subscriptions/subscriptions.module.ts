@@ -8,6 +8,7 @@ import { MySubscriptionComponent } from './my-subscription/my-subscription.compo
 import { ConfirmModalComponent } from './confirm-modal/confirm-modal.component';
 import { SuccessModalComponent } from './success-modal/success-modal.component';
 import { SubscriptionStatsComponent } from './subscription-stats/subscription-stats.component';
+import { AiRecommendationComponent } from './ai-recommendation/ai-recommendation.component';
 
 @NgModule({
   declarations: [
@@ -16,6 +17,7 @@ import { SubscriptionStatsComponent } from './subscription-stats/subscription-st
     ConfirmModalComponent,
     SuccessModalComponent,
     SubscriptionStatsComponent,
+    AiRecommendationComponent,
   ],
   imports: [
     CommonModule,
