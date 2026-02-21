@@ -2,15 +2,12 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PlansCatalogComponent } from './plans-catalog/plans-catalog.component';
 import { MySubscriptionComponent } from './my-subscription/my-subscription.component';
+import { SubscriptionStatsComponent } from './subscription-stats/subscription-stats.component';
 
 const routes: Routes = [
-  // /app/subscription/plans → Page catalogue des plans
   { path: 'plans', component: PlansCatalogComponent },
-
-  // /app/subscription/my-subscription → Page "Mon abonnement"
-  { path: 'my-subscription', component: MySubscriptionComponent },
-
-  // /app/subscription → Redirige vers /app/subscription/plans
+  { path: 'my', component: MySubscriptionComponent },
+  { path: 'stats', component: SubscriptionStatsComponent },
   { path: '', redirectTo: 'plans', pathMatch: 'full' },
 ];
 

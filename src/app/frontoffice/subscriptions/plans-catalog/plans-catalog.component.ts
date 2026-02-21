@@ -3,6 +3,7 @@ import { Subscription as RxSubscription } from 'rxjs';
 import { Subscription } from '../../../models/subscription.model';
 import { SubscriptionService } from '../../../services/subscription.service';
 import { RoleService } from '../../../services/role.service';
+import { PaymentService } from '../../../services/payment.service';
 import {
   trigger,
   transition,
@@ -56,11 +57,17 @@ export class PlansCatalogComponent implements OnInit, OnDestroy {
   selectedPlan: Subscription | null = null;
   showComparison = false;
 
+  showSuccess = false;
+  successPlanName = '';
+  successPlanTier: 'starter' | 'pro' | 'elite' = 'starter';
+  lastSubscriptionId: number | null = null;
+
   private roleSub!: RxSubscription;
 
   constructor(
     private subscriptionService: SubscriptionService,
-    private roleService: RoleService
+    private roleService: RoleService,
+    private paymentService: PaymentService
   ) {}
 
   ngOnInit(): void {
@@ -74,10 +81,6 @@ export class PlansCatalogComponent implements OnInit, OnDestroy {
     this.roleSub?.unsubscribe();
   }
 
-  // ========================
-  // DATA
-  // ========================
-
   loadPlans(): void {
     this.loading = true;
     this.errorMessage = '';
@@ -89,9 +92,8 @@ export class PlansCatalogComponent implements OnInit, OnDestroy {
         this.loading = false;
       },
       (error) => {
-        console.error('Erreur chargement des plans:', error);
-        this.errorMessage =
-          'Impossible de charger les plans. Vérifiez votre connexion.';
+        console.error('Error loading plans:', error);
+        this.errorMessage = 'Unable to load plans. Please check your connection.';
         this.plans = [];
         this.filteredPlans = [];
         this.loading = false;
@@ -105,18 +107,12 @@ export class PlansCatalogComponent implements OnInit, OnDestroy {
   }
 
   filterPlans(): void {
-    this.filteredPlans = this.plans.filter(
-      (p) => p.billingCycle === this.billingCycle
-    );
+    this.filteredPlans = this.plans.filter((p) => p.billingCycle === this.billingCycle);
   }
 
   toggleComparison(): void {
     this.showComparison = !this.showComparison;
   }
-
-  // ========================
-  // FEATURES
-  // ========================
 
   getFeatures(plan: Subscription): { text: string; highlight: boolean }[] {
     const features: { text: string; highlight: boolean }[] = [];
@@ -124,85 +120,58 @@ export class PlansCatalogComponent implements OnInit, OnDestroy {
     if (this.selectedType === 'CLIENT') {
       if (plan.maxProjects)
         features.push({
-          text:
-            plan.maxProjects >= 999
-              ? 'Offres illimitées'
-              : `${plan.maxProjects} offres d'emploi`,
+          text: plan.maxProjects >= 999 ? 'Unlimited listings' : `${plan.maxProjects} job listings`,
           highlight: (plan.maxProjects ?? 0) >= 999,
         });
       if (plan.maxProposals)
         features.push({
-          text:
-            plan.maxProposals >= 999
-              ? 'Propositions illimitées'
-              : `${plan.maxProposals} propositions`,
+          text: plan.maxProposals >= 999 ? 'Unlimited proposals' : `${plan.maxProposals} proposals`,
           highlight: (plan.maxProposals ?? 0) >= 999,
         });
-      if (plan.featuredListing)
-        features.push({ text: 'Matching IA avancé', highlight: true });
+      if (plan.featuredListing) features.push({ text: 'Advanced AI Matching', highlight: true });
       if (plan.maxActiveJobs)
         features.push({
-          text:
-            plan.maxActiveJobs >= 999
-              ? 'Équipe multi-users'
-              : `${plan.maxActiveJobs} recrutements actifs`,
+          text: plan.maxActiveJobs >= 999 ? 'Multi-user team' : `${plan.maxActiveJobs} active recruitments`,
           highlight: false,
         });
-      if (plan.analyticsAccess)
-        features.push({ text: 'Dashboard analytics', highlight: true });
+      if (plan.analyticsAccess) features.push({ text: 'Analytics dashboard', highlight: true });
       features.push({
-        text: plan.prioritySupport
-          ? 'Support prioritaire 24/7'
-          : 'Support par email',
+        text: plan.prioritySupport ? 'Priority support 24/7' : 'Email support',
         highlight: plan.prioritySupport,
       });
       if (plan.maxProjects && plan.maxProjects >= 999) {
         features.push({ text: 'API access', highlight: true });
-        features.push({ text: 'Manager dédié', highlight: true });
+        features.push({ text: 'Dedicated manager', highlight: true });
       }
     } else {
-      // FREELANCER
       if (plan.maxProjects)
         features.push({
-          text:
-            plan.maxProjects >= 999
-              ? 'Projets illimités'
-              : `${plan.maxProjects} projets max`,
+          text: plan.maxProjects >= 999 ? 'Unlimited projects' : `${plan.maxProjects} max projects`,
           highlight: (plan.maxProjects ?? 0) >= 999,
         });
       if (plan.maxProposals)
         features.push({
-          text:
-            plan.maxProposals >= 999
-              ? 'Propositions illimitées'
-              : `${plan.maxProposals} propositions/mois`,
+          text: plan.maxProposals >= 999 ? 'Unlimited proposals' : `${plan.maxProposals} proposals/month`,
           highlight: (plan.maxProposals ?? 0) >= 999,
         });
       if (plan.maxActiveJobs)
-        features.push({
-          text: `${plan.maxActiveJobs} jobs actifs simultanés`,
-          highlight: false,
-        });
+        features.push({ text: `${plan.maxActiveJobs} concurrent active jobs`, highlight: false });
       features.push({
-        text: plan.featuredListing ? 'Profil mis en avant' : 'Profil standard',
+        text: plan.featuredListing ? 'Featured profile' : 'Standard profile',
         highlight: plan.featuredListing,
       });
       features.push({
-        text: plan.prioritySupport ? 'Support prioritaire' : 'Support email',
+        text: plan.prioritySupport ? 'Priority support' : 'Email support',
         highlight: plan.prioritySupport,
       });
       if (plan.analyticsAccess)
-        features.push({ text: 'Analytics & statistiques', highlight: true });
+        features.push({ text: 'Analytics & statistics', highlight: true });
     }
     return features;
   }
 
-  // ========================
-  // HELPERS
-  // ========================
-
   getDuration(plan: Subscription): string {
-    return plan.billingCycle === 'SEMESTRIELLE' ? '6 mois' : 'an';
+    return plan.billingCycle === 'SEMESTRIELLE' ? '6 months' : 'year';
   }
 
   getMonthlyPrice(plan: Subscription): string {
@@ -211,13 +180,14 @@ export class PlansCatalogComponent implements OnInit, OnDestroy {
   }
 
   isPopular(plan: Subscription): boolean {
-    return plan.name === 'Pro' || plan.name === 'Business';
+    return plan.name === 'Pro' || plan.name === 'Business' || plan.name === 'Freelance Pro' || plan.name === 'Premium';
   }
 
   getPlanTier(plan: Subscription): 'starter' | 'pro' | 'elite' {
-    if (plan.name === 'Starter' || plan.name === 'Basic') return 'starter';
-    if (plan.name === 'Elite' || plan.name === 'Enterprise') return 'elite';
-    return 'pro';
+    const n = plan.name.toLowerCase();
+    if (n.includes('elite') || n.includes('enterprise')) return 'elite';
+    if (n.includes('pro') || n.includes('premium') || n.includes('business')) return 'pro';
+    return 'starter';
   }
 
   getPlanIcon(plan: Subscription): string {
@@ -229,45 +199,64 @@ export class PlansCatalogComponent implements OnInit, OnDestroy {
 
   getSavingsPercent(plan: Subscription): number | null {
     if (plan.billingCycle !== 'ANNUELLE') return null;
-    const semPlan = this.plans.find(
-      (p) => p.name === plan.name && p.billingCycle === 'SEMESTRIELLE'
-    );
+    const semPlan = this.plans.find((p) => p.name === plan.name && p.billingCycle === 'SEMESTRIELLE');
     if (!semPlan) return null;
     const annualFromSem = semPlan.price * 2;
     if (annualFromSem <= plan.price) return null;
     return Math.round(((annualFromSem - plan.price) / annualFromSem) * 100);
   }
 
-  // ========================
-  // ACTIONS
-  // ========================
-
   onSubscribe(plan: Subscription): void {
     this.selectedPlan = plan;
     this.showModal = true;
   }
 
-  onModalConfirmed(event: { plan: Subscription; autoRenew: boolean }): void {
+  onModalConfirmed(event: {
+    plan: Subscription;
+    autoRenew: boolean;
+    transactionId: string;
+    paymentMethod: string;
+    amountPaid: number;
+    promoCode: string;
+  }): void {
     this.showModal = false;
     this.selectedPlan = null;
 
     this.subscriptionService
-      .subscribe(event.plan.id!, event.autoRenew)
+      .subscribe(event.plan.id!, event.autoRenew, event.paymentMethod, event.transactionId, event.amountPaid)
       .subscribe(
-        () =>
-          alert(
-            '✅ Abonnement réussi ! Bienvenue dans le plan ' + event.plan.name
-          ),
+        (response: any) => {
+          this.successPlanName = event.plan.name;
+          this.successPlanTier = this.getPlanTier(event.plan);
+          this.lastSubscriptionId = response.id;
+          this.showSuccess = true;
+        },
         (error) =>
-          alert(
-            '❌ Erreur : ' +
-              (error.error?.message || 'Impossible de souscrire.')
-          )
+          alert('❌ Error: ' + (error.error?.message || 'Unable to subscribe.'))
       );
   }
 
   onModalCancelled(): void {
     this.showModal = false;
     this.selectedPlan = null;
+  }
+
+  onSuccessClosed(): void {
+    this.showSuccess = false;
+  }
+
+  downloadInvoice(): void {
+    if (!this.lastSubscriptionId) return;
+    this.paymentService.downloadInvoice(this.lastSubscriptionId).subscribe(
+      (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice-prolance-${this.lastSubscriptionId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      () => alert('❌ Error downloading the invoice.')
+    );
   }
 }

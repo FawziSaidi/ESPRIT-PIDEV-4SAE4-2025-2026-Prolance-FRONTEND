@@ -10,7 +10,7 @@ import { AuthService } from './auth.services';
 })
 export class SubscriptionService {
 
-  private apiUrl     = 'http://localhost:8089/pidev/api/subscriptions';
+  private apiUrl = 'http://localhost:8089/pidev/api/subscriptions';
   private userSubUrl = 'http://localhost:8089/pidev/api/user-subscriptions';
 
   constructor(
@@ -69,16 +69,36 @@ export class SubscriptionService {
     return userId;
   }
 
-  // POST /api/user-subscriptions/subscribe
-  subscribe(subscriptionId: number, autoRenew: boolean = true): Observable<UserSubscription> {
+  /**
+   * Subscribe to a plan with optional payment details
+   * @param subscriptionId - The plan ID to subscribe to
+   * @param autoRenew - Whether to auto-renew the subscription
+   * @param paymentMethod - Optional payment method (default: 'CREDIT_CARD')
+   * @param transactionId - Optional transaction ID (auto-generated if not provided)
+   * @param amountPaid - Optional amount paid
+   */
+  subscribe(
+    subscriptionId: number,
+    autoRenew: boolean = true,
+    paymentMethod?: string,
+    transactionId?: string,
+    amountPaid?: number
+  ): Observable<UserSubscription> {
     const userId = this.getUserId();
-    return this.http.post<UserSubscription>(`${this.userSubUrl}/subscribe`, {
+    
+    const body: any = {
       userId,
       subscriptionId,
       autoRenew,
-      paymentMethod: 'CREDIT_CARD',
-      transactionId: 'TXN-' + Date.now()
-    });
+      paymentMethod: paymentMethod || 'CREDIT_CARD',
+      transactionId: transactionId || 'TXN-' + Date.now()
+    };
+    
+    if (amountPaid !== undefined) {
+      body.amountPaid = amountPaid;
+    }
+    
+    return this.http.post<UserSubscription>(`${this.userSubUrl}/subscribe`, body);
   }
 
   // GET /api/user-subscriptions/user/:userId/active

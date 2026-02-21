@@ -40,8 +40,8 @@ export class SubscriptionListComponent implements OnInit {
         this.loading = false;
       },
       (error) => {
-        console.error('Erreur:', error);
-        this.errorMessage = 'Impossible de charger les plans.';
+        console.error('Error:', error);
+        this.errorMessage = 'Unable to load plans.';
         this.loading = false;
       }
     );
@@ -50,7 +50,7 @@ export class SubscriptionListComponent implements OnInit {
   applyFilters(): void {
     let result = [...this.subscriptions];
 
-    // Filtre par recherche
+    // Search filter
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
       result = result.filter((s) =>
@@ -60,12 +60,12 @@ export class SubscriptionListComponent implements OnInit {
       );
     }
 
-    // Filtre par type
+    // Type filter
     if (this.filterType !== 'ALL') {
       result = result.filter((s) => s.type === this.filterType);
     }
 
-    // Tri
+    // Sort
     switch (this.sortBy) {
       case 'price_asc':
         result.sort((a, b) => a.price - b.price);
@@ -128,39 +128,19 @@ export class SubscriptionListComponent implements OnInit {
   }
 
   getCycleLabel(cycle: string): string {
-    return cycle === 'SEMESTRIELLE' ? 'SEMEST.' : 'ANNUEL';
+    return cycle === 'SEMESTRIELLE' ? 'SEMI.' : 'ANNUAL';
   }
 
   onToggleActive(sub: Subscription): void {
     if (sub.isActive) {
       this.subscriptionService.deactivateSubscription(sub.id!).subscribe(
         () => { sub.isActive = false; },
-        (error) => alert('Erreur: ' + error.message)
+        (error) => alert('Error: ' + error.message)
       );
     } else {
       this.subscriptionService.activateSubscription(sub.id!).subscribe(
         () => { sub.isActive = true; },
-        (error) => alert('Erreur: ' + error.message)
-      );
-    }
-  }
-
-  onCreate(): void {
-    this.router.navigate(['/admin/subscription/create']);
-  }
-
-  onEdit(id: number): void {
-    this.router.navigate(['/admin/subscription/edit', id]);
-  }
-
-  onDelete(sub: Subscription): void {
-    if (confirm(`Supprimer le plan "${sub.name}" ?`)) {
-      this.subscriptionService.deleteSubscription(sub.id!).subscribe(
-        () => {
-          this.subscriptions = this.subscriptions.filter((s) => s.id !== sub.id);
-          this.applyFilters();
-        },
-        (error) => alert('Erreur: ' + error.message)
+        (error) => alert('Error: ' + error.message)
       );
     }
   }

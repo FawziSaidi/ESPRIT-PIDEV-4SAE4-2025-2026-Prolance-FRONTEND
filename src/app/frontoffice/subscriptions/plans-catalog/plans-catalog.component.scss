@@ -697,6 +697,35 @@ $tier-elite: #7c3aed;
 }
 
 // ═══════════════════════════════════════════
+//  SUCCESS ACTIONS
+// ═══════════════════════════════════════════
+.success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-invoice {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid $border;
+  border-radius: 14px;
+  background: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: $text-primary;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f8fafc;
+    border-color: $primary;
+    color: $primary;
+  }
+}
+
+// ═══════════════════════════════════════════
 //  RESPONSIVE
 // ═══════════════════════════════════════════
 @media (max-width: 1024px) {

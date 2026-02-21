@@ -5,24 +5,20 @@
     <div class="header-left">
       <span class="header-icon">⚡</span>
       <div>
-        <h1>Gestion des Abonnements</h1>
-        <p class="header-subtitle">{{ getTotalFiltered() }} plans disponibles</p>
+        <h1>Subscription Management</h1>
+        <p class="header-subtitle">{{ getTotalFiltered() }} plans available</p>
       </div>
     </div>
-    <button class="btn-new" (click)="onCreate()">
-      <span class="btn-icon">+</span>
-      Nouveau Plan
-    </button>
   </div>
 
-  <!-- Filtres -->
+  <!-- Filters -->
   <div class="filters-row">
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
       <input
         type="text"
         class="search-input"
-        placeholder="Rechercher un plan..."
+        placeholder="Search a plan..."
         [(ngModel)]="searchTerm"
         (input)="onSearch()" />
     </div>
@@ -31,7 +27,7 @@
       <button
         class="filter-btn"
         [class.active]="filterType === 'ALL'"
-        (click)="onFilterType('ALL')">Tous</button>
+        (click)="onFilterType('ALL')">All</button>
       <button
         class="filter-btn freelancer"
         [class.active]="filterType === 'FREELANCER'"
@@ -43,17 +39,17 @@
     </div>
 
     <select class="sort-select" [(ngModel)]="sortBy" (change)="onSort(sortBy)">
-      <option value="price_asc">Prix ↑</option>
-      <option value="price_desc">Prix ↓</option>
-      <option value="name_asc">Nom A-Z</option>
-      <option value="name_desc">Nom Z-A</option>
+      <option value="price_asc">Price ↑</option>
+      <option value="price_desc">Price ↓</option>
+      <option value="name_asc">Name A-Z</option>
+      <option value="name_desc">Name Z-A</option>
     </select>
   </div>
 
   <!-- Loading -->
   <div class="loading" *ngIf="loading">
     <div class="spinner"></div>
-    <p>Chargement des plans...</p>
+    <p>Loading plans...</p>
   </div>
 
   <!-- Table -->
@@ -61,13 +57,12 @@
     <table class="sub-table">
       <thead>
         <tr>
-          <th>Nom du plan</th>
+          <th>Plan Name</th>
           <th>Type</th>
-          <th>Prix</th>
+          <th>Price</th>
           <th>Cycle</th>
-          <th>Statut</th>
-          <th>Abonnés</th>
-          <th>Actions</th>
+          <th>Status</th>
+          <th>Subscribers</th>
         </tr>
       </thead>
       <tbody>
@@ -101,19 +96,11 @@
               <span class="toggle-track">
                 <span class="toggle-thumb"></span>
               </span>
-              <span class="toggle-label">{{ sub.isActive ? 'Actif' : 'Inactif' }}</span>
+              <span class="toggle-label">{{ sub.isActive ? 'Active' : 'Inactive' }}</span>
             </label>
           </td>
           <td class="subscribers-cell">
             <span class="sub-count">{{ sub.activeSubscribersCount || 0 }}</span>
-          </td>
-          <td class="actions-cell">
-            <button class="btn-edit" (click)="onEdit(sub.id!)">
-              ✏️ Éditer
-            </button>
-            <button class="btn-delete" (click)="onDelete(sub)">
-              🗑️
-            </button>
           </td>
         </tr>
       </tbody>
@@ -122,7 +109,7 @@
     <!-- Empty state -->
     <div class="empty-state" *ngIf="filteredSubscriptions.length === 0">
       <span class="empty-icon">📭</span>
-      <p>Aucun plan trouvé</p>
+      <p>No plans found</p>
     </div>
   </div>
 
@@ -130,7 +117,7 @@
   <div class="pagination-row" *ngIf="!loading && totalPages > 1">
     <span class="pagination-info">
       {{ (currentPage - 1) * itemsPerPage + 1 }}–{{ currentPage * itemsPerPage > getTotalFiltered() ? getTotalFiltered() : currentPage * itemsPerPage }}
-      <span class="pagination-total">sur {{ getTotalFiltered() }} plans</span>
+      <span class="pagination-total">of {{ getTotalFiltered() }} plans</span>
     </span>
     <div class="pagination-buttons">
       <button
@@ -143,11 +130,11 @@
     </div>
   </div>
 
-  <!-- Erreur -->
+  <!-- Error -->
   <div class="error-message" *ngIf="errorMessage">
     <span class="error-icon">⚠️</span>
     <p>{{ errorMessage }}</p>
-    <button class="btn-retry" (click)="loadSubscriptions()">Réessayer</button>
+    <button class="btn-retry" (click)="loadSubscriptions()">Retry</button>
   </div>
 
 </div>

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserSubscription } from '../../../models/user-subscription.model';
 import { SubscriptionService } from '../../../services/subscription.service';
+import { PaymentService } from '../../../services/payment.service';
 import {
   trigger,
   transition,
@@ -54,17 +55,14 @@ export class MySubscriptionComponent implements OnInit {
 
   constructor(
     private subscriptionService: SubscriptionService,
-    private router: Router
+    private router: Router,
+    private paymentService: PaymentService
   ) {}
 
   ngOnInit(): void {
     this.loadMySubscription();
     this.loadHistory();
   }
-
-  // ════════════════════════════
-  //  DATA LOADING
-  // ════════════════════════════
 
   loadMySubscription(): void {
     this.loading = true;
@@ -76,11 +74,11 @@ export class MySubscriptionComponent implements OnInit {
         this.loading = false;
       },
       (error) => {
-        console.error('Erreur:', error);
+        console.error('Error:', error);
         if (error.status === 404) {
           this.currentSubscription = null;
         } else {
-          this.errorMessage = 'Impossible de charger votre abonnement.';
+          this.errorMessage = 'Unable to load your subscription.';
         }
         this.loading = false;
       }
@@ -93,23 +91,19 @@ export class MySubscriptionComponent implements OnInit {
         this.subscriptionHistory = data;
       },
       (error) => {
-        console.error('Erreur historique:', error);
+        console.error('History error:', error);
       }
     );
   }
 
-  // ════════════════════════════
-  //  STATUS HELPERS
-  // ════════════════════════════
-
   getStatusLabel(status?: string): string {
     const s = status || this.currentSubscription?.status || '';
     const map: Record<string, string> = {
-      ACTIVE: 'Actif',
-      EXPIRED: 'Expiré',
-      CANCELLED: 'Annulé',
-      SUSPENDED: 'Suspendu',
-      PENDING_PAYMENT: 'En attente',
+      ACTIVE: 'Active',
+      EXPIRED: 'Expired',
+      CANCELLED: 'Cancelled',
+      SUSPENDED: 'Suspended',
+      PENDING_PAYMENT: 'Pending',
     };
     return map[s] || s;
   }
@@ -126,10 +120,6 @@ export class MySubscriptionComponent implements OnInit {
     return map[s] || '';
   }
 
-  // ════════════════════════════
-  //  PLAN HELPERS
-  // ════════════════════════════
-
   getPlanName(): string {
     return this.currentSubscription?.subscription?.name || '';
   }
@@ -144,13 +134,9 @@ export class MySubscriptionComponent implements OnInit {
   getPlanPrice(): string {
     if (!this.currentSubscription?.subscription) return '';
     const sub = this.currentSubscription.subscription;
-    const cycle = sub.billingCycle === 'SEMESTRIELLE' ? '6 mois' : 'an';
+    const cycle = sub.billingCycle === 'SEMESTRIELLE' ? '6 months' : 'year';
     return `${sub.price} DT / ${cycle}`;
   }
-
-  // ════════════════════════════
-  //  TIME & USAGE
-  // ════════════════════════════
 
   getDaysRemaining(): number {
     if (!this.currentSubscription) return 0;
@@ -204,16 +190,12 @@ export class MySubscriptionComponent implements OnInit {
   formatDate(date: Date | string): string {
     if (!date) return '—';
     const d = new Date(date);
-    return d.toLocaleDateString('fr-FR', {
+    return d.toLocaleDateString('en-US', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
   }
-
-  // ════════════════════════════
-  //  ACTIONS
-  // ════════════════════════════
 
   onChangePlan(): void {
     this.router.navigate(['/app/subscription/plans']);
@@ -231,8 +213,8 @@ export class MySubscriptionComponent implements OnInit {
       },
       (error) => {
         alert(
-          '❌ Erreur : ' +
-            (error.error?.message || 'Impossible de modifier')
+          '❌ Error: ' +
+            (error.error?.message || 'Unable to update')
         );
       }
     );
@@ -248,8 +230,8 @@ export class MySubscriptionComponent implements OnInit {
       },
       (error) => {
         alert(
-          '❌ Erreur : ' +
-            (error.error?.message || 'Impossible de renouveler')
+          '❌ Error: ' +
+            (error.error?.message || 'Unable to renew')
         );
         this.renewLoading = false;
       }
@@ -269,8 +251,8 @@ export class MySubscriptionComponent implements OnInit {
       },
       (error) => {
         alert(
-          '❌ Erreur : ' +
-            (error.error?.message || "Impossible d'annuler")
+          '❌ Error: ' +
+            (error.error?.message || 'Unable to cancel')
         );
       }
     );
@@ -285,5 +267,20 @@ export class MySubscriptionComponent implements OnInit {
     return `${sub.subscription.name} (${
       sub.subscription.type === 'FREELANCER' ? 'Freelancer' : 'Client'
     })`;
+  }
+
+  onDownloadInvoice(): void {
+    if (!this.currentSubscription?.id) return;
+    this.paymentService.downloadInvoice(this.currentSubscription.id).subscribe(
+      (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice-prolance-${this.currentSubscription!.id}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      () => alert('❌ Error downloading the invoice.')
+    );
   }
 }

@@ -40,10 +40,18 @@
 
       <!-- ✅ Mon Abonnement -->
       <a class="nav-link nav-link-mysub"
-         routerLink="/app/subscription/my-subscription"
+         routerLink="/app/subscription/my"
          routerLinkActive="active"
          (click)="mobileMenuOpen = false">
         <i class="material-icons">credit_card</i> Mon Abonnement
+      </a>
+
+      <!-- ✅ NOUVEAU : Statistiques -->
+      <a class="nav-link nav-link-stats"
+         routerLink="/app/subscription/stats"
+         routerLinkActive="active"
+         (click)="mobileMenuOpen = false">
+        <i class="material-icons">bar_chart</i> Statistiques
       </a>
     </div>
 
@@ -80,17 +88,25 @@
             <i class="material-icons">person</i> Profil
           </a>
 
-          <!-- ✅ Dans le dropdown aussi -->
+          <!-- ✅ Nos Plans -->
           <a class="dropdown-item"
              routerLink="/app/subscription/plans"
              (click)="profileDropdownOpen = false">
             <i class="material-icons">workspace_premium</i> Nos Plans
           </a>
 
+          <!-- ✅ Mon Abonnement -->
           <a class="dropdown-item"
-             routerLink="/app/subscription/my-subscription"
+             routerLink="/app/subscription/my"
              (click)="profileDropdownOpen = false">
             <i class="material-icons">credit_card</i> Mon Abonnement
+          </a>
+
+          <!-- ✅ NOUVEAU : Statistiques dans dropdown -->
+          <a class="dropdown-item"
+             routerLink="/app/subscription/stats"
+             (click)="profileDropdownOpen = false">
+            <i class="material-icons">bar_chart</i> Statistiques
           </a>
 
           <a class="dropdown-item" href="#"

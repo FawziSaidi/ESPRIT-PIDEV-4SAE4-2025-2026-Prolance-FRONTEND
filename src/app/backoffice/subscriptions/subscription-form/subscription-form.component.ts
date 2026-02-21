@@ -53,7 +53,7 @@ export class SubscriptionFormComponent implements OnInit {
         this.loading = false;
       },
       (error) => {
-        this.errorMessage = 'Impossible de charger le plan.';
+        this.errorMessage = 'Unable to load plan.';
         this.loading = false;
       }
     );
@@ -63,19 +63,19 @@ export class SubscriptionFormComponent implements OnInit {
     this.formErrors = {};
 
     if (!this.subscription.name || this.subscription.name.length < 3 || this.subscription.name.length > 50) {
-      this.formErrors['name'] = 'Le nom doit contenir entre 3 et 50 caractères';
+      this.formErrors['name'] = 'Name must be between 3 and 50 characters';
     }
 
     if (!this.subscription.price || this.subscription.price <= 0) {
-      this.formErrors['price'] = 'Le prix doit être supérieur à 0';
+      this.formErrors['price'] = 'Price must be greater than 0';
     }
 
     if (!this.subscription.type) {
-      this.formErrors['type'] = 'Sélectionnez un type';
+      this.formErrors['type'] = 'Select a type';
     }
 
     if (!this.subscription.billingCycle) {
-      this.formErrors['billingCycle'] = 'Sélectionnez un cycle de facturation';
+      this.formErrors['billingCycle'] = 'Select a billing cycle';
     }
 
     return Object.keys(this.formErrors).length === 0;
@@ -89,22 +89,22 @@ export class SubscriptionFormComponent implements OnInit {
     if (this.isEditMode && this.editId) {
       this.subscriptionService.updateSubscription(this.editId, this.subscription).subscribe(
         () => {
-          alert('✅ Plan modifié avec succès !');
+          alert('✅ Plan updated successfully!');
           this.router.navigate(['/admin/subscription/list']);
         },
         (error) => {
-          this.errorMessage = 'Erreur lors de la modification.';
+          this.errorMessage = 'Error updating plan.';
           this.loading = false;
         }
       );
     } else {
       this.subscriptionService.createSubscription(this.subscription).subscribe(
         () => {
-          alert('✅ Plan créé avec succès !');
+          alert('✅ Plan created successfully!');
           this.router.navigate(['/admin/subscription/list']);
         },
         (error) => {
-          this.errorMessage = 'Erreur lors de la création.';
+          this.errorMessage = 'Error creating plan.';
           this.loading = false;
         }
       );

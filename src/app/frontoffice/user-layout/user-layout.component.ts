@@ -60,7 +60,14 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   }
 
   goToMySubscription(): void {
-    this.router.navigate(['/app/subscription/my-subscription']);
+    this.router.navigate(['/app/subscription/my']);
+    this.mobileMenuOpen = false;
+    this.profileDropdownOpen = false;
+  }
+
+  // ✅ NOUVEAU : Navigation vers Statistiques
+  goToStats(): void {
+    this.router.navigate(['/app/subscription/stats']);
     this.mobileMenuOpen = false;
     this.profileDropdownOpen = false;
   }
