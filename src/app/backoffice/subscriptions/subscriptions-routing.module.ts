@@ -4,11 +4,15 @@ import { SubscriptionListComponent } from './subscription-list/subscription-list
 import { SubscriptionFormComponent } from './subscription-form/subscription-form.component';
 import { SubscriptionStatsComponent } from './subscription-stats/subscription-stats.component';
 
+// ✅ ADD THIS IMPORT
+import { ChurnPredictionComponent } from './churn-prediction/churn-prediction.component';
+
 const routes: Routes = [
   { path: 'list',      component: SubscriptionListComponent },
   { path: 'create',    component: SubscriptionFormComponent },
   { path: 'edit/:id',  component: SubscriptionFormComponent },
   { path: 'stats',     component: SubscriptionStatsComponent },
+  { path: 'churn',     component: ChurnPredictionComponent },  // ✅ ADD THIS → /#/admin/subscription/churn
   { path: '',          redirectTo: 'list', pathMatch: 'full' },
 ];
 

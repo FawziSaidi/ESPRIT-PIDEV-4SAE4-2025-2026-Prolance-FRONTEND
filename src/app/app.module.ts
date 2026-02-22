@@ -9,21 +9,21 @@ import { UserLayoutComponent } from './frontoffice/user-layout/user-layout.compo
 import { LandingModule } from './authentification/landing/landing.module';
 import { AuthModule } from './authentification/auth/auth.module';
 
+
 @NgModule({
   imports: [
     BrowserAnimationsModule,
     FormsModule,
     ReactiveFormsModule,
-    HttpClientModule,   // ✅ nécessaire pour les appels HTTP du SubscriptionService
+    HttpClientModule,
     ComponentsModule,
-    AppRoutingModule,   // ✅ fournit RouterModule via exports: [RouterModule]
+    AppRoutingModule,
     LandingModule,
     AuthModule,
-    // RouterModule retiré ici — déjà exporté par AppRoutingModule, inutile en double
   ],
   declarations: [
     AppComponent,
-    UserLayoutComponent,
+    UserLayoutComponent, 
   ],
   providers: [],
   bootstrap: [AppComponent]

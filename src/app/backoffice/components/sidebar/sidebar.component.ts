@@ -20,6 +20,7 @@ export class SidebarComponent implements OnInit {
     { id: 'evenement',    icon: '📅', label: 'ÉVÉNEMENT',              link: '/admin/evenement' },
     { id: 'subscription', icon: '💳', label: 'ABONNEMENTS',            link: '/admin/subscription/list' },
     { id: 'stats',        icon: '📈', label: 'STATISTIQUES',           link: '/admin/subscription/stats' },
+    { id: 'churn',        icon: '🤖', label: 'AI CHURN',               link: '/admin/subscription/churn' }, // ✅ ADD THIS
     { id: 'logout',       icon: '🔌', label: 'LOGOUT',                 link: '/login' },
   ];
 
