@@ -1,8 +1,26 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.services';
 import { AdsService } from '../../services/ads.service';
 import { ImageGuardService, ValidationResult } from '../../services/image-guard.service';
 import { AdPlan, AdCampaign, CampaignStatus, AdType, RoleType, CreateCampaignRequest } from './models/ad.models';
+
+export const SAFETY_POLICIES: Record<string, string> = {
+  S1: 'S1: Violent Crimes',
+  S2: 'S2: Non-Violent Crimes',
+  S3: 'S3: Sex-Related Crimes',
+  S4: 'S4: Child Sexual Exploitation',
+  S5: 'S5: Defamation',
+  S6: 'S6: Specialized Advice',
+  S7: 'S7: Privacy Violations',
+  S8: 'S8: Intellectual Property',
+  S9: 'S9: Indiscriminate Weapons',
+  S10: 'S10: Hate Speech',
+  S11: 'S11: Suicide & Self-Harm',
+  S12: 'S12: Sexual Content',
+  S13: 'S13: Elections & Misinformation',
+  S14: 'S14: Code Interpreter Abuse',
+};
 
 declare var Chart: any;
 
@@ -70,6 +88,16 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   imageValidationState: ValidationResult | null = null;
   imageValidationMessage = '';
   isScanning = false;
+  
+  // ── AI Suggestion State ──
+  showAiSuggestionModal = false;
+  aiPrompt = '';
+  isGeneratingAi = false;
+  
+  // ── Content Moderation State ──
+  moderationViolation = false;
+  violationCategory = '';
+  showViolationAlert = false;
 
   // ── KPI Stats ──
   stats = {
@@ -98,7 +126,9 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   constructor(
     private authService: AuthService, 
     private adsService: AdsService,
-    private imageGuard: ImageGuardService
+    private imageGuard: ImageGuardService,
+    private cdr: ChangeDetectorRef,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -306,6 +336,39 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     const plan = this.selectedPlan;
     if (!plan) return;
 
+    // Reset moderation state
+    this.moderationViolation = false;
+    this.violationCategory = '';
+    this.showViolationAlert = false;
+
+    // Step 1: Validate content with Llama-Guard
+    this.adsService.validateAdContent(this.formTitle, this.formDescription).subscribe({
+      next: (validation) => {
+        if (!validation.isSafe) {
+          // Block submission - show violation alert
+          this.moderationViolation = true;
+          const code = validation.categoryCode || '';
+          // Show both code (S2) and full name (S2: Non-Violent Crimes)
+          this.violationCategory = SAFETY_POLICIES[code] || code || 'Unknown Policy Violation';
+          this.showViolationAlert = true;
+          return;
+        }
+
+        // Step 2: Content is safe - proceed with submission
+        this.performSubmission();
+      },
+      error: (err) => {
+        console.error('Moderation validation failed:', err);
+        // On error, allow submission (backend will validate again)
+        this.performSubmission();
+      }
+    });
+  }
+
+  private performSubmission(): void {
+    const plan = this.selectedPlan;
+    if (!plan) return;
+
     const payload: CreateCampaignRequest = {
       planId: plan.id,
       title: this.formTitle,
@@ -348,6 +411,64 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     this.showToast = true;
     if (this.toastTimer) clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => this.showToast = false, 4000);
+  }
+
+  // ═══════════════════════════════════════════════
+  // AI SUGGESTION FEATURE
+  // ═══════════════════════════════════════════════
+
+  openAiSuggestionModal(): void {
+    this.showAiSuggestionModal = true;
+    this.aiPrompt = '';
+  }
+
+  closeAiSuggestionModal(): void {
+    this.showAiSuggestionModal = false;
+    this.aiPrompt = '';
+    this.isGeneratingAi = false;
+  }
+
+  generateAiSuggestion(): void {
+    if (!this.aiPrompt.trim()) return;
+
+    this.isGeneratingAi = true;
+
+    this.adsService.generateAiSuggestion(this.aiPrompt).subscribe({
+      next: (suggestion) => {
+        console.log('[AI Suggestion] Response received:', suggestion);
+        this.isGeneratingAi = false;
+        this.closeAiSuggestionModal();
+        
+        // Auto-fill Title and Description after modal closes
+        setTimeout(() => {
+          console.log('[AI Suggestion] Setting formTitle to:', suggestion.title);
+          console.log('[AI Suggestion] Setting formDescription to:', suggestion.description);
+          this.formTitle = suggestion.title;
+          this.formDescription = suggestion.description;
+          console.log('[AI Suggestion] Current formTitle:', this.formTitle);
+          console.log('[AI Suggestion] Current formDescription:', this.formDescription);
+          this.cdr.detectChanges();
+          this.displayToast('AI suggestion applied successfully!', 'success');
+        }, 100);
+      },
+      error: (err) => {
+        console.error('[AI Suggestion] Error:', err);
+        this.isGeneratingAi = false;
+        this.displayToast('Failed to generate AI suggestion. Please try again.', 'error');
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════
+  // MODERATION ALERT HANDLING
+  // ═══════════════════════════════════════════════
+
+  closeViolationAlert(): void {
+    this.showViolationAlert = false;
+  }
+
+  openPolicyPage(): void {
+    this.router.navigate(['/ads-policy']);
   }
 
   // ═══════════════════════════════════════════════

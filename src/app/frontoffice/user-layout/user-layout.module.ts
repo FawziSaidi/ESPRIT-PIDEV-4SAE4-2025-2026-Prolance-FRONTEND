@@ -10,9 +10,9 @@ import { AdCenterComponent } from '../../pages/ads/ad-center.component';
 
 
 const userRoutes: Routes = [
-  { path: '',            redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'dashboard',   component: UserDashboardComponent },
-  { path: 'ads',         component: AdCenterComponent },
+  { path: '',                  redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'dashboard',         component: UserDashboardComponent },
+  { path: 'ads',               component: AdCenterComponent },
 ];
 
 @NgModule({

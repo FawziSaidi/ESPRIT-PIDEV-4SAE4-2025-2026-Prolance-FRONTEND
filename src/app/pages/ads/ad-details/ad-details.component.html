@@ -1,0 +1,116 @@
+<!-- Standalone Page Wrapper -->
+<div class="ad-details-page">
+
+  <!-- Loading State -->
+  <div class="details-loader" *ngIf="isLoading">
+    <div class="spinner-large"></div>
+    <p>Loading ad details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="details-error" *ngIf="error && !isLoading">
+    <i class="material-icons">error_outline</i>
+    <h2>Ad Not Found</h2>
+    <p>The ad you're looking for doesn't exist or has been removed.</p>
+    <button class="btn-back" (click)="goBack()">
+      <i class="material-icons">arrow_back</i>
+      Back to Home
+    </button>
+  </div>
+
+  <!-- Ad Details -->
+  <div class="details-container" *ngIf="ad && !isLoading">
+    <!-- Header with Back Button -->
+    <div class="details-header">
+      <button class="btn-back-circle" (click)="goBack()" title="Go Back">
+        <i class="material-icons">arrow_back</i>
+      </button>
+      <a routerLink="/" class="brand-link">Prolance</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="details-content">
+      <!-- Ad Image -->
+      <div class="details-image-section">
+        <div class="image-wrapper" [ngStyle]="{'border-color': rolePrimary}">
+          <img [src]="getAdImage()" [alt]="ad.title" (error)="onImageError($event)" />
+        </div>
+      </div>
+
+      <!-- Ad Info Card (Glassmorphism) -->
+      <div class="details-info-card" [ngStyle]="{'background': roleGradient}">
+        <div class="info-card-glass">
+          <!-- Role Badge -->
+          <div class="role-badge" [class.freelancer]="ad.roleType === 'FREELANCER'" [class.client]="ad.roleType === 'CLIENT'">
+            <i class="material-icons">{{ ad.roleType === 'FREELANCER' ? 'work' : 'business' }}</i>
+            {{ ad.roleType === 'FREELANCER' ? 'Freelancer' : 'Client' }}
+          </div>
+
+          <!-- Title -->
+          <h1 class="details-title">{{ ad.title }}</h1>
+
+          <!-- Description -->
+          <p class="details-description">{{ ad.description }}</p>
+
+          <!-- Call-to-Action Section -->
+          <div class="cta-section">
+            <!-- CLIENT Layout -->
+            <div class="cta-content" *ngIf="ad.roleType === 'CLIENT'">
+              <div class="cta-icon">
+                <i class="material-icons">handshake</i>
+              </div>
+              <h3 class="cta-heading">This client seems to need help, care to take the job?</h3>
+              <p class="cta-subtext">They're looking for talented professionals like you.</p>
+              <div class="cta-buttons">
+                <a routerLink="/login" class="btn-cta btn-cta-primary" [ngStyle]="{'background': roleGradient}">
+                  <i class="material-icons">login</i>
+                  I already have a freelancer account
+                </a>
+                <a routerLink="/register" class="btn-cta btn-cta-outline">
+                  <i class="material-icons">person_add</i>
+                  I am new, create an account to do this job
+                </a>
+              </div>
+            </div>
+
+            <!-- FREELANCER Layout -->
+            <div class="cta-content" *ngIf="ad.roleType === 'FREELANCER'">
+              <div class="cta-icon">
+                <i class="material-icons">star</i>
+              </div>
+              <h3 class="cta-heading">This amazing freelancer is looking for jobs</h3>
+              <p class="cta-subtext">Experienced, skilled, and ready to deliver excellence.</p>
+              <div class="cta-buttons">
+                <a routerLink="/login" class="btn-cta btn-cta-primary" [ngStyle]="{'background': roleGradient}">
+                  <i class="material-icons">login</i>
+                  I already have a client account, give work
+                </a>
+                <a routerLink="/register" class="btn-cta btn-cta-outline">
+                  <i class="material-icons">person_add</i>
+                  I do not have an account, create one
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ad Meta Info -->
+          <div class="details-meta">
+            <div class="meta-item">
+              <i class="material-icons">category</i>
+              <span>{{ ad.planType?.replace('_', ' ') }}</span>
+            </div>
+            <div class="meta-item">
+              <i class="material-icons">place</i>
+              <span>{{ ad.planLocation?.replace('_', ' ') }}</span>
+            </div>
+            <div class="meta-item" *ngIf="ad.status">
+              <i class="material-icons">info</i>
+              <span>{{ ad.status }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

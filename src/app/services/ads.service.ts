@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, tap, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
   AdPlan,
@@ -175,6 +175,70 @@ export class AdsService {
       headers: this.authHeaders()
     }).pipe(
       catchError(this.handleError('adminDelete'))
+    );
+  }
+
+  // ═══════════════════════════════════════════════
+  // NEW BACKEND CAPABILITIES
+  // ═══════════════════════════════════════════════
+
+  /**
+   * Get a single ad campaign by ID (public endpoint)
+   */
+  getAdById(id: number): Observable<AdCampaign> {
+    return this.http.get<AdCampaign>(`${this.baseUrl}/campaigns/${id}`, {
+      headers: this.publicHeaders()
+    }).pipe(
+      catchError(this.handleError('getAdById'))
+    );
+  }
+
+  /**
+   * Validate ad content using Llama-Guard moderation
+   */
+  validateAdContent(title: string, description: string): Observable<{isSafe: boolean; categoryCode?: string}> {
+    return this.http.post<{isSafe: boolean; categoryCode?: string}>(
+      `${this.baseUrl}/campaigns/validate`,
+      { title, description },
+      { headers: this.authHeaders() }
+    ).pipe(
+      catchError(this.handleError('validateAdContent'))
+    );
+  }
+
+  /**
+   * Generate AI-powered ad suggestion
+   */
+  generateAiSuggestion(prompt: string): Observable<{title: string; description: string}> {
+    console.log('[AdsService] Sending AI suggestion request with prompt:', prompt);
+    return this.http.post(
+      `${this.baseUrl}/campaigns/generate-suggestion`,
+      { prompt },
+      { 
+        headers: this.authHeaders(),
+        observe: 'response',
+        responseType: 'text'
+      }
+    ).pipe(
+      tap(response => {
+        console.log('[AdsService] Full HTTP response:', response);
+        console.log('[AdsService] Response body (raw text):', response.body);
+        console.log('[AdsService] Response headers:', response.headers.keys());
+      }),
+      map(response => {
+        try {
+          const parsed = JSON.parse(response.body || '{}');
+          console.log('[AdsService] Parsed JSON:', parsed);
+          return parsed;
+        } catch (e) {
+          console.error('[AdsService] JSON parse error:', e);
+          return { title: '', description: '' };
+        }
+      }),
+      catchError((error) => {
+        console.error('[AdsService] AI suggestion HTTP error:', error);
+        return this.handleError('generateAiSuggestion')(error);
+      })
     );
   }
 }

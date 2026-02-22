@@ -27,7 +27,7 @@
   <div class="row kpi-row">
     <div class="col-lg-3 col-md-6 col-sm-6">
       <div class="card card-stats ad-card">
-        <div class="card-header card-header-primary card-header-icon">
+        <div class="card-header card-header-icon purple-kpi purple-kpi-1">
           <div class="card-icon"><i class="material-icons">play_circle_filled</i></div>
           <p class="card-category">Active Ads</p>
           <h3 class="card-title">{{ stats.activeAds }}</h3>
@@ -39,7 +39,7 @@
     </div>
     <div class="col-lg-3 col-md-6 col-sm-6">
       <div class="card card-stats ad-card">
-        <div class="card-header card-header-info card-header-icon">
+        <div class="card-header card-header-icon purple-kpi purple-kpi-2">
           <div class="card-icon"><i class="material-icons">visibility</i></div>
           <p class="card-category">Total Impressions</p>
           <h3 class="card-title">{{ stats.totalImpressions | number }}</h3>
@@ -51,7 +51,7 @@
     </div>
     <div class="col-lg-3 col-md-6 col-sm-6">
       <div class="card card-stats ad-card">
-        <div class="card-header card-header-success card-header-icon">
+        <div class="card-header card-header-icon purple-kpi purple-kpi-3">
           <div class="card-icon"><i class="material-icons">touch_app</i></div>
           <p class="card-category">Total Clicks</p>
           <h3 class="card-title">{{ stats.totalClicks | number }}</h3>
@@ -63,7 +63,7 @@
     </div>
     <div class="col-lg-3 col-md-6 col-sm-6">
       <div class="card card-stats ad-card">
-        <div class="card-header card-header-warning card-header-icon">
+        <div class="card-header card-header-icon purple-kpi purple-kpi-4">
           <div class="card-icon"><i class="material-icons">account_balance_wallet</i></div>
           <p class="card-category">Remaining Budget</p>
           <h3 class="card-title">${{ stats.remainingBudget | number }}</h3>
@@ -97,7 +97,7 @@
   <div class="row">
     <div class="col-12">
       <div class="card ad-card">
-        <div class="card-header" [ngClass]="roleCardHeaderClass">
+        <div class="card-header purple-table-header">
           <h4 class="card-title">My Campaigns</h4>
           <p class="card-category">{{ currentRole === 'FREELANCER' ? 'Your freelance promotion campaigns' : 'Your job promotion campaigns' }}</p>
         </div>
@@ -263,6 +263,16 @@
     <!-- ── STEP 2: Campaign Details Form + Live Preview ── -->
     <div class="modal-body-custom" *ngIf="modalStep === 2">
       <p class="step-subtitle">Fill in your campaign details.</p>
+      
+      <!-- AI Suggestion Button -->
+      <div class="ai-suggestion-cta">
+        <button type="button" class="btn-ai-suggestion" (click)="openAiSuggestionModal()">
+          <i class="material-icons">auto_awesome</i>
+          Use AI Suggestion
+        </button>
+        <span class="ai-hint">Let our AI help you craft the perfect ad!</span>
+      </div>
+
       <div class="step2-layout">
         <!-- Form Column -->
         <div class="step2-form">
@@ -493,4 +503,85 @@
   </div>
 </div>
 -->
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- AI SUGGESTION MODAL                              -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="showAiSuggestionModal" (click)="closeAiSuggestionModal()">
+  <div class="modal-container modal-ai" (click)="$event.stopPropagation()">
+    <div class="modal-header-custom">
+      <h3 class="modal-title-custom">
+        <i class="material-icons">auto_awesome</i>
+        AI-Powered Ad Suggestion
+      </h3>
+      <button class="btn-close-modal" (click)="closeAiSuggestionModal()">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+
+    <div class="modal-body-custom">
+      <p class="ai-modal-subtitle">Describe your ad and our AI will generate a compelling title and description for you.</p>
+      
+      <div class="form-group-custom">
+        <label>Describe your ad</label>
+        <textarea class="form-input form-textarea" [(ngModel)]="aiPrompt" rows="5"
+                  placeholder="E.g., I'm a senior full-stack developer with 10 years of experience in React and Node.js, looking for remote freelance projects..."></textarea>
+      </div>
+
+      <div class="ai-loading" *ngIf="isGeneratingAi">
+        <div class="spinner-small"></div>
+        <span>Generating your perfect ad...</span>
+      </div>
+    </div>
+
+    <div class="modal-footer-custom">
+      <button class="btn-secondary" (click)="closeAiSuggestionModal()" [disabled]="isGeneratingAi">
+        Cancel
+      </button>
+      <button class="btn-primary-custom" 
+              [ngStyle]="{'background': roleColors.gradient}"
+              [disabled]="!aiPrompt.trim() || isGeneratingAi"
+              (click)="generateAiSuggestion()">
+        <i class="material-icons">auto_awesome</i>
+        Generate
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- CONTENT VIOLATION ALERT                          -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="violation-alert" *ngIf="showViolationAlert">
+  <div class="violation-card">
+    <button class="btn-close-alert" (click)="closeViolationAlert()">
+      <i class="material-icons">close</i>
+    </button>
+    
+    <div class="violation-icon">
+      <i class="material-icons">error</i>
+    </div>
+    
+    <h3 class="violation-title">Content Policy Violation Detected</h3>
+    
+    <p class="violation-message">
+      Your ad content has been flagged for violating our content policy.
+    </p>
+    
+    <div class="violation-category">
+      <strong>Violation Category:</strong> {{ violationCategory }}
+    </div>
+    
+    <p class="violation-instruction">
+      Please review your ad content and ensure it complies with our policies. 
+      Your submission has been blocked.
+    </p>
+    
+    <a class="btn-policy" routerLink="/ads-policy">
+      <i class="material-icons">policy</i>
+      Read about our Ad Policies
+    </a>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════════════ -->

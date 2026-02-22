@@ -689,7 +689,7 @@
 <!-- ════════════════════════════════════════════════ -->
 <!-- Left Side Rail: Type 3 (SEARCH_SIDEBAR) -->
 <aside class="side-rail side-rail-left" *ngIf="leftSideRailAd" [@fadeInOut]>
-  <a [href]="leftSideRailAd.targetUrl" target="_blank" rel="noopener noreferrer" 
+  <a [routerLink]="['/ads', leftSideRailAd.id]" 
      class="side-rail-content" (click)="onAdClick(leftSideRailAd)"
      [class.rail-freelancer]="leftSideRailAd.roleType === 'FREELANCER'"
      [class.rail-client]="leftSideRailAd.roleType === 'CLIENT'">
@@ -705,7 +705,7 @@
 
 <!-- Right Side Rail: Type 5 (JOB_FEED BANNER) -->
 <aside class="side-rail side-rail-right" *ngIf="rightSideRailAd" [@fadeInOut]>
-  <a [href]="rightSideRailAd.targetUrl" target="_blank" rel="noopener noreferrer" 
+  <a [routerLink]="['/ads', rightSideRailAd.id]" 
      class="side-rail-content" (click)="onAdClick(rightSideRailAd)"
      [class.rail-freelancer]="rightSideRailAd.roleType === 'FREELANCER'"
      [class.rail-client]="rightSideRailAd.roleType === 'CLIENT'">
@@ -730,7 +730,7 @@
   <button class="popup-close" (click)="closeBottomLeftPopup()" aria-label="Close">
     <i class="material-icons">close</i>
   </button>
-  <a [href]="bottomLeftPopup.targetUrl" target="_blank" rel="noopener noreferrer" 
+  <a [routerLink]="['/ads', bottomLeftPopup.id]" 
      class="popup-content" (click)="onAdClick(bottomLeftPopup)">
     <div class="popup-img-wrap">
       <img [src]="getAdImage(bottomLeftPopup)" [alt]="bottomLeftPopup.title" 
@@ -757,7 +757,7 @@
   <button class="popup-close" (click)="closeBottomRightPopup()" aria-label="Close">
     <i class="material-icons">close</i>
   </button>
-  <a [href]="bottomRightPopup.targetUrl" target="_blank" rel="noopener noreferrer" 
+  <a [routerLink]="['/ads', bottomRightPopup.id]" 
      class="popup-content" (click)="onAdClick(bottomRightPopup)">
     <div class="popup-img-wrap">
       <img [src]="getAdImage(bottomRightPopup)" [alt]="bottomRightPopup.title" 

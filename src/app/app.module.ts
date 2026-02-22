@@ -9,6 +9,8 @@ import { AppComponent } from './app.component';
 import { UserLayoutComponent } from './frontoffice/user-layout/user-layout.component';
 import { LandingModule } from './authentification/landing/landing.module';
 import { AuthModule } from './authentification/auth/auth.module';
+import { AdDetailsComponent } from './pages/ads/ad-details/ad-details.component';
+import { AdPolicyComponent } from './pages/ads/ad-policy/ad-policy.component';
 
 @NgModule({
   imports: [
@@ -25,6 +27,8 @@ import { AuthModule } from './authentification/auth/auth.module';
   declarations: [
     AppComponent,
     UserLayoutComponent,
+    AdDetailsComponent,
+    AdPolicyComponent,
   ],
   providers: [],
   bootstrap: [AppComponent]
