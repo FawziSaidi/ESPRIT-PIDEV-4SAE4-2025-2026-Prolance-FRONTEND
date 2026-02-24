@@ -54,40 +54,40 @@
 
           <!-- Call-to-Action Section -->
           <div class="cta-section">
-            <!-- CLIENT Layout -->
+            <!-- CLIENT Layout (Job Posting) -->
             <div class="cta-content" *ngIf="ad.roleType === 'CLIENT'">
               <div class="cta-icon">
-                <i class="material-icons">handshake</i>
+                <i class="material-icons">work_outline</i>
               </div>
-              <h3 class="cta-heading">This client seems to need help, care to take the job?</h3>
-              <p class="cta-subtext">They're looking for talented professionals like you.</p>
+              <h3 class="cta-heading">Interested in this opportunity?</h3>
+              <p class="cta-subtext">This client is looking for talented professionals to help with their project.</p>
               <div class="cta-buttons">
                 <a routerLink="/login" class="btn-cta btn-cta-primary" [ngStyle]="{'background': roleGradient}">
                   <i class="material-icons">login</i>
-                  I already have a freelancer account
+                  I am a freelancer with an account and I would like to apply to this job
                 </a>
                 <a routerLink="/register" class="btn-cta btn-cta-outline">
                   <i class="material-icons">person_add</i>
-                  I am new, create an account to do this job
+                  I am interested in this job and wanna create an account
                 </a>
               </div>
             </div>
 
-            <!-- FREELANCER Layout -->
+            <!-- FREELANCER Layout (Profile Ad) -->
             <div class="cta-content" *ngIf="ad.roleType === 'FREELANCER'">
               <div class="cta-icon">
-                <i class="material-icons">star</i>
+                <i class="material-icons">person_pin</i>
               </div>
-              <h3 class="cta-heading">This amazing freelancer is looking for jobs</h3>
-              <p class="cta-subtext">Experienced, skilled, and ready to deliver excellence.</p>
+              <h3 class="cta-heading">Want to hire this freelancer?</h3>
+              <p class="cta-subtext">This freelancer is available and ready to work on your projects.</p>
               <div class="cta-buttons">
                 <a routerLink="/login" class="btn-cta btn-cta-primary" [ngStyle]="{'background': roleGradient}">
                   <i class="material-icons">login</i>
-                  I already have a client account, give work
+                  I like this freelancer's profile, I am a registered client and would like to offer him a job
                 </a>
                 <a routerLink="/register" class="btn-cta btn-cta-outline">
                   <i class="material-icons">person_add</i>
-                  I do not have an account, create one
+                  I would like to give him a job but I have no account yet, create one
                 </a>
               </div>
             </div>

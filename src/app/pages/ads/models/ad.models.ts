@@ -36,6 +36,7 @@ export interface AdCampaign {
   createdAt: Date | string;
   roleType: RoleType;
   targetId?: number;
+  createdBy?: 'AI' | 'HUMAN'; // Track ad creation origin for Kafka events
   // Enriched / joined fields from backend
   planName?: string;
   planType?: AdType;
@@ -57,6 +58,7 @@ export interface CreateCampaignRequest {
   targetUrl: string;
   roleType: RoleType;
   targetId?: number;
+  usedAiSuggestion?: boolean; // Track if AI suggestion was used
 }
 
 // ═══════════════════════════════════════════════

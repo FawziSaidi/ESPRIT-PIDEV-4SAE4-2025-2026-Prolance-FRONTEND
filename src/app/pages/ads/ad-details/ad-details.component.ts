@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AdsService } from '../../../services/ads.service';
-import { AdCampaign } from '../models/ad.models';
+import { AdTrackingService } from '../../../services/ad-tracking.service';
+import { AdCampaign, RoleType } from '../models/ad.models';
 
 @Component({
   selector: 'app-ad-details',
@@ -17,7 +18,8 @@ export class AdDetailsComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private adsService: AdsService
+    private adsService: AdsService,
+    private adTrackingService: AdTrackingService
   ) {}
 
   ngOnInit(): void {
@@ -38,6 +40,10 @@ export class AdDetailsComponent implements OnInit {
 
     this.adsService.getAdById(this.adId).subscribe({
       next: (ad) => {
+        // Normalize roleType to uppercase to match enum
+        if (ad.roleType) {
+          ad.roleType = (ad.roleType as string).toUpperCase() as RoleType;
+        }
         this.ad = ad;
         this.isLoading = false;
       },

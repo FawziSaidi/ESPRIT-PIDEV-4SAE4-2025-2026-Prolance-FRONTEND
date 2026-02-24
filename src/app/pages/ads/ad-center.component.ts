@@ -84,6 +84,11 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   formTargetUrl = '';
   isValidImageUrl = false;
   
+  // ── AI Generation Tracking ──
+  isAiGenerated = false;
+  aiGeneratedTitle = '';
+  aiGeneratedDescription = '';
+  
   // ── Image Validation State ──
   imageValidationState: ValidationResult | null = null;
   imageValidationMessage = '';
@@ -344,12 +349,14 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     // Step 1: Validate content with Llama-Guard
     this.adsService.validateAdContent(this.formTitle, this.formDescription).subscribe({
       next: (validation) => {
-        if (!validation.isSafe) {
+        const code = validation.categoryCode || '';
+        
+        // Only show violation if content is unsafe AND has a valid violation code (S1-S14)
+        if (!validation.isSafe && code && code.match(/^S\d+$/i)) {
           // Block submission - show violation alert
           this.moderationViolation = true;
-          const code = validation.categoryCode || '';
           // Show both code (S2) and full name (S2: Non-Violent Crimes)
-          this.violationCategory = SAFETY_POLICIES[code] || code || 'Unknown Policy Violation';
+          this.violationCategory = SAFETY_POLICIES[code.toUpperCase()] || code || 'Unknown Policy Violation';
           this.showViolationAlert = true;
           return;
         }
@@ -375,7 +382,8 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
       description: this.formDescription,
       imageUrl: this.formImageUrl?.trim() || '',
       targetUrl: this.formTargetUrl,
-      roleType: this.currentRole
+      roleType: this.currentRole,
+      usedAiSuggestion: this.isAiGenerated
     };
 
     if (this.isEditing && this.editingCampaignId !== null) {
@@ -445,6 +453,12 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
           console.log('[AI Suggestion] Setting formDescription to:', suggestion.description);
           this.formTitle = suggestion.title;
           this.formDescription = suggestion.description;
+          
+          // Mark as AI-generated and store original values
+          this.isAiGenerated = true;
+          this.aiGeneratedTitle = suggestion.title;
+          this.aiGeneratedDescription = suggestion.description;
+          
           console.log('[AI Suggestion] Current formTitle:', this.formTitle);
           console.log('[AI Suggestion] Current formDescription:', this.formDescription);
           this.cdr.detectChanges();
@@ -469,6 +483,31 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
 
   openPolicyPage(): void {
     this.router.navigate(['/ads-policy']);
+  }
+
+  // ═══════════════════════════════════════════════
+  // AI GENERATION TRACKING
+  // ═══════════════════════════════════════════════
+
+  /**
+   * Track manual edits after AI generation
+   * If user clears both fields, reset AI flag
+   * If user makes significant changes (10+ chars), keep AI flag (it's AI-assisted)
+   */
+  onFormFieldChange(): void {
+    if (!this.isAiGenerated) return;
+
+    // If both fields are cleared, reset AI flag
+    if (!this.formTitle.trim() && !this.formDescription.trim()) {
+      this.isAiGenerated = false;
+      this.aiGeneratedTitle = '';
+      this.aiGeneratedDescription = '';
+      return;
+    }
+
+    // Keep isAiGenerated = true even if user edits
+    // The requirement states: "if they manually change more than 10 characters, 
+    // keep the flag as true (it's still AI-assisted)"
   }
 
   // ═══════════════════════════════════════════════
@@ -602,6 +641,9 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     this.modalStep = 1;
     this.isEditing = false;
     this.editingCampaignId = null;
+    this.isAiGenerated = false;
+    this.aiGeneratedTitle = '';
+    this.aiGeneratedDescription = '';
   }
 
   // ═══════════════════════════════════════════════

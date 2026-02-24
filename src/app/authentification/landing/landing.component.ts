@@ -4,6 +4,7 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
 import { Subscription } from 'rxjs';
 import { AdsService } from '../../services/ads.service';
 import { AdPlacementManagerService } from '../../services/ad-placement-manager.service';
+import { AdTrackingService } from '../../services/ad-tracking.service';
 import { AdCampaign } from '../../pages/ads/models/ad.models';
 
 @Component({
@@ -72,11 +73,18 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   private observer!: IntersectionObserver;
   private testimonialInterval: any;
 
+  // Tracking state
+  private impressionObserver!: IntersectionObserver;
+  private impressionTimers = new Map<number, any>();
+  private impressedAds = new Set<number>();
+  private hoverTimers = new Map<number, any>();
+
   constructor(
     private router: Router,
     private el: ElementRef,
     private adsService: AdsService,
-    private adPlacementManager: AdPlacementManagerService
+    private adPlacementManager: AdPlacementManagerService,
+    private adTrackingService: AdTrackingService
   ) {}
 
   ngOnInit(): void {
@@ -117,7 +125,10 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.adsLoading = false;
         // Re-scan DOM for new .reveal elements after Angular renders the ads
-        setTimeout(() => this.initScrollReveal(), 100);
+        setTimeout(() => {
+          this.initScrollReveal();
+          this.initImpressionTracking();
+        }, 100);
       },
       error: () => {
         this.landingPageBanners = [];
@@ -213,8 +224,27 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   onAdClick(ad: AdCampaign): void {
-    this.adsService.recordClick(ad.id).subscribe();
-    // Navigation happens via the <a> href — no need to block
+    // Send Kafka CLICK event (fire-and-forget, no auth redirect)
+    this.adTrackingService.sendEvent(ad.id, 'CLICK');
+    // Navigation happens via routerLink
+  }
+
+  onAdMouseEnter(ad: AdCampaign): void {
+    // Start 1.5s hover timer
+    const timer = setTimeout(() => {
+      this.adTrackingService.sendEvent(ad.id, 'HOVER');
+      this.hoverTimers.delete(ad.id);
+    }, 1500);
+    this.hoverTimers.set(ad.id, timer);
+  }
+
+  onAdMouseLeave(ad: AdCampaign): void {
+    // Cancel hover timer if mouse leaves before 1.5s
+    const timer = this.hoverTimers.get(ad.id);
+    if (timer) {
+      clearTimeout(timer);
+      this.hoverTimers.delete(ad.id);
+    }
   }
 
   ngAfterViewInit(): void {
@@ -259,6 +289,44 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
     revealElements.forEach((el: Element) => this.observer.observe(el));
   }
 
+  private initImpressionTracking(): void {
+    const options: IntersectionObserverInit = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.5 // At least 50% visible
+    };
+
+    this.impressionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const adId = parseInt(entry.target.getAttribute('data-ad-id') || '0', 10);
+        if (!adId || this.impressedAds.has(adId)) return;
+
+        if (entry.isIntersecting) {
+          // Start 1s timer for view
+          const timer = setTimeout(() => {
+            if (!this.impressedAds.has(adId)) {
+              this.adTrackingService.sendEvent(adId, 'VIEW');
+              this.impressedAds.add(adId);
+            }
+            this.impressionTimers.delete(adId);
+          }, 1000);
+          this.impressionTimers.set(adId, timer);
+        } else {
+          // Cancel timer if ad leaves viewport before 1s
+          const timer = this.impressionTimers.get(adId);
+          if (timer) {
+            clearTimeout(timer);
+            this.impressionTimers.delete(adId);
+          }
+        }
+      });
+    }, options);
+
+    // Observe all ad elements
+    const adElements = this.el.nativeElement.querySelectorAll('[data-ad-id]');
+    adElements.forEach((el: Element) => this.impressionObserver.observe(el));
+  }
+
   private startTestimonialRotation(): void {
     this.testimonialInterval = setInterval(() => {
       this.activeTestimonial = (this.activeTestimonial + 1) % this.testimonials.length;
@@ -270,9 +338,18 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
     this.adSubscriptions.forEach(sub => sub.unsubscribe());
     this.adPlacementManager.cleanup();
 
+    // Cleanup tracking timers
+    this.impressionTimers.forEach(timer => clearTimeout(timer));
+    this.hoverTimers.forEach(timer => clearTimeout(timer));
+    this.impressionTimers.clear();
+    this.hoverTimers.clear();
+
     // Cleanup existing observers and intervals
     if (this.observer) {
       this.observer.disconnect();
+    }
+    if (this.impressionObserver) {
+      this.impressionObserver.disconnect();
     }
     if (this.testimonialInterval) {
       clearInterval(this.testimonialInterval);

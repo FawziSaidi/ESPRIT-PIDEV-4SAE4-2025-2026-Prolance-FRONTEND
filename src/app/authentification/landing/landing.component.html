@@ -66,8 +66,12 @@
   <div class="container">
     <div class="split-glass-banner reveal">
       <img [src]="getAdImage(landingPageBanners[0])" class="split-glass-bg" aria-hidden="true" loading="lazy">
-      <a [href]="landingPageBanners[0].targetUrl" target="_blank" rel="noopener noreferrer"
-         class="split-glass-inner" (click)="onAdClick(landingPageBanners[0])">
+      <a [routerLink]="['/ads', landingPageBanners[0].id]"
+         class="split-glass-inner" 
+         [attr.data-ad-id]="landingPageBanners[0].id"
+         (click)="onAdClick(landingPageBanners[0])"
+         (mouseenter)="onAdMouseEnter(landingPageBanners[0])"
+         (mouseleave)="onAdMouseLeave(landingPageBanners[0])">
         <img [src]="getAdImage(landingPageBanners[0])" [alt]="landingPageBanners[0].title"
              class="split-glass-img" loading="lazy" (error)="onImgError($event, landingPageBanners[0])">
         <div class="split-glass-text">
@@ -154,14 +158,17 @@
     </div>
     <div class="spotlight-grid" *ngIf="!adsLoading && gridSpotlights.length > 0">
       <a *ngFor="let ad of gridSpotlights; let i = index"
-         [href]="ad.targetUrl" target="_blank" rel="noopener noreferrer"
+         [routerLink]="['/ads', ad.id]"
          class="card feature-card member-highlight text-center reveal"
          [class.reveal-delay-1]="i % 3 === 0"
          [class.reveal-delay-2]="i % 3 === 1"
          [class.reveal-delay-3]="i % 3 === 2"
          [class.spotlight-freelancer]="ad.roleType === 'FREELANCER'"
          [class.spotlight-client]="ad.roleType === 'CLIENT'"
-         (click)="onAdClick(ad)">
+         [attr.data-ad-id]="ad.id"
+         (click)="onAdClick(ad)"
+         (mouseenter)="onAdMouseEnter(ad)"
+         (mouseleave)="onAdMouseLeave(ad)">
         <!-- Adaptive media container: 16/9 with mesh gradient fallback -->
         <div class="media-container"
              [class.mesh-freelancer]="!hasImage(ad) && ad.roleType === 'FREELANCER'"
@@ -258,8 +265,12 @@
   <div class="container">
     <div class="split-glass-banner split-glass-wide reveal">
       <img [src]="getAdImage(jobFeedBanners[0])" class="split-glass-bg" aria-hidden="true" loading="lazy">
-      <a [href]="jobFeedBanners[0].targetUrl" target="_blank" rel="noopener noreferrer"
-         class="split-glass-inner" (click)="onAdClick(jobFeedBanners[0])">
+      <a [routerLink]="['/ads', jobFeedBanners[0].id]"
+         class="split-glass-inner" 
+         [attr.data-ad-id]="jobFeedBanners[0].id"
+         (click)="onAdClick(jobFeedBanners[0])"
+         (mouseenter)="onAdMouseEnter(jobFeedBanners[0])"
+         (mouseleave)="onAdMouseLeave(jobFeedBanners[0])">
         <img [src]="getAdImage(jobFeedBanners[0])" [alt]="jobFeedBanners[0].title"
              class="split-glass-img" loading="lazy" (error)="onImgError($event, jobFeedBanners[0])">
         <div class="split-glass-text">
@@ -371,8 +382,12 @@
   <div class="container">
     <div class="split-glass-banner reveal">
       <img [src]="getAdImage(landingPageBanners[1])" class="split-glass-bg" aria-hidden="true" loading="lazy">
-      <a [href]="landingPageBanners[1].targetUrl" target="_blank" rel="noopener noreferrer"
-         class="split-glass-inner" (click)="onAdClick(landingPageBanners[1])">
+      <a [routerLink]="['/ads', landingPageBanners[1].id]"
+         class="split-glass-inner" 
+         [attr.data-ad-id]="landingPageBanners[1].id"
+         (click)="onAdClick(landingPageBanners[1])"
+         (mouseenter)="onAdMouseEnter(landingPageBanners[1])"
+         (mouseleave)="onAdMouseLeave(landingPageBanners[1])">
         <img [src]="getAdImage(landingPageBanners[1])" [alt]="landingPageBanners[1].title"
              class="split-glass-img" loading="lazy" (error)="onImgError($event, landingPageBanners[1])">
         <div class="split-glass-text">
@@ -605,12 +620,15 @@
     </div>
     <div class="quick-partners-grid">
       <a *ngFor="let ad of sidebarShowcase; let i = index"
-         [href]="ad.targetUrl" target="_blank" rel="noopener noreferrer"
+         [routerLink]="['/ads', ad.id]"
          class="quick-partner-card reveal"
          [class.reveal-delay-1]="i % 3 === 0"
          [class.reveal-delay-2]="i % 3 === 1"
          [class.reveal-delay-3]="i % 3 === 2"
-         (click)="onAdClick(ad)">
+         [attr.data-ad-id]="ad.id"
+         (click)="onAdClick(ad)"
+         (mouseenter)="onAdMouseEnter(ad)"
+         (mouseleave)="onAdMouseLeave(ad)">
         <img [src]="getAdImage(ad)" [alt]="ad.title" class="quick-partner-img"
              loading="lazy" (error)="onImgError($event, ad)">
         <div class="quick-partner-body">
@@ -628,8 +646,12 @@
   <div class="container">
     <div class="split-glass-banner reveal">
       <img [src]="getAdImage(landingPageBanners[2])" class="split-glass-bg" aria-hidden="true" loading="lazy">
-      <a [href]="landingPageBanners[2].targetUrl" target="_blank" rel="noopener noreferrer"
-         class="split-glass-inner" (click)="onAdClick(landingPageBanners[2])">
+      <a [routerLink]="['/ads', landingPageBanners[2].id]"
+         class="split-glass-inner"
+         [attr.data-ad-id]="landingPageBanners[2].id"
+         (click)="onAdClick(landingPageBanners[2])"
+         (mouseenter)="onAdMouseEnter(landingPageBanners[2])"
+         (mouseleave)="onAdMouseLeave(landingPageBanners[2])">
         <img [src]="getAdImage(landingPageBanners[2])" [alt]="landingPageBanners[2].title"
              class="split-glass-img" loading="lazy" (error)="onImgError($event, landingPageBanners[2])">
         <div class="split-glass-text">
@@ -690,7 +712,11 @@
 <!-- Left Side Rail: Type 3 (SEARCH_SIDEBAR) -->
 <aside class="side-rail side-rail-left" *ngIf="leftSideRailAd" [@fadeInOut]>
   <a [routerLink]="['/ads', leftSideRailAd.id]" 
-     class="side-rail-content" (click)="onAdClick(leftSideRailAd)"
+     class="side-rail-content"
+     [attr.data-ad-id]="leftSideRailAd.id"
+     (click)="onAdClick(leftSideRailAd)"
+     (mouseenter)="onAdMouseEnter(leftSideRailAd)"
+     (mouseleave)="onAdMouseLeave(leftSideRailAd)"
      [class.rail-freelancer]="leftSideRailAd.roleType === 'FREELANCER'"
      [class.rail-client]="leftSideRailAd.roleType === 'CLIENT'">
     <img [src]="getAdImage(leftSideRailAd)" [alt]="leftSideRailAd.title" 
@@ -706,7 +732,11 @@
 <!-- Right Side Rail: Type 5 (JOB_FEED BANNER) -->
 <aside class="side-rail side-rail-right" *ngIf="rightSideRailAd" [@fadeInOut]>
   <a [routerLink]="['/ads', rightSideRailAd.id]" 
-     class="side-rail-content" (click)="onAdClick(rightSideRailAd)"
+     class="side-rail-content"
+     [attr.data-ad-id]="rightSideRailAd.id"
+     (click)="onAdClick(rightSideRailAd)"
+     (mouseenter)="onAdMouseEnter(rightSideRailAd)"
+     (mouseleave)="onAdMouseLeave(rightSideRailAd)"
      [class.rail-freelancer]="rightSideRailAd.roleType === 'FREELANCER'"
      [class.rail-client]="rightSideRailAd.roleType === 'CLIENT'">
     <img [src]="getAdImage(rightSideRailAd)" [alt]="rightSideRailAd.title" 
@@ -731,7 +761,11 @@
     <i class="material-icons">close</i>
   </button>
   <a [routerLink]="['/ads', bottomLeftPopup.id]" 
-     class="popup-content" (click)="onAdClick(bottomLeftPopup)">
+     class="popup-content"
+     [attr.data-ad-id]="bottomLeftPopup.id"
+     (click)="onAdClick(bottomLeftPopup)"
+     (mouseenter)="onAdMouseEnter(bottomLeftPopup)"
+     (mouseleave)="onAdMouseLeave(bottomLeftPopup)">
     <div class="popup-img-wrap">
       <img [src]="getAdImage(bottomLeftPopup)" [alt]="bottomLeftPopup.title" 
            class="popup-img" loading="lazy" (error)="onImgError($event, bottomLeftPopup)">
@@ -758,7 +792,11 @@
     <i class="material-icons">close</i>
   </button>
   <a [routerLink]="['/ads', bottomRightPopup.id]" 
-     class="popup-content" (click)="onAdClick(bottomRightPopup)">
+     class="popup-content"
+     [attr.data-ad-id]="bottomRightPopup.id"
+     (click)="onAdClick(bottomRightPopup)"
+     (mouseenter)="onAdMouseEnter(bottomRightPopup)"
+     (mouseleave)="onAdMouseLeave(bottomRightPopup)">
     <div class="popup-img-wrap">
       <img [src]="getAdImage(bottomRightPopup)" [alt]="bottomRightPopup.title" 
            class="popup-img" loading="lazy" (error)="onImgError($event, bottomRightPopup)">

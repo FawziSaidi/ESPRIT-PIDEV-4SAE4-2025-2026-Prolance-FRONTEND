@@ -278,11 +278,11 @@
         <div class="step2-form">
           <div class="form-group-custom">
             <label>Campaign Title</label>
-            <input type="text" class="form-input" [(ngModel)]="formTitle" placeholder="e.g., Senior Developer Available" />
+            <input type="text" class="form-input" [(ngModel)]="formTitle" (input)="onFormFieldChange()" placeholder="e.g., Senior Developer Available" />
           </div>
           <div class="form-group-custom">
             <label>Description</label>
-            <textarea class="form-input form-textarea" [(ngModel)]="formDescription" rows="3"
+            <textarea class="form-input form-textarea" [(ngModel)]="formDescription" (input)="onFormFieldChange()" rows="3"
                       placeholder="Describe your ad in a few sentences..."></textarea>
           </div>
           <div class="form-group-custom">
