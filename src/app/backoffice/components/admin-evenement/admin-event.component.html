@@ -1,94 +1,209 @@
 <div class="admin-container">
-  <!-- HEADER -->
+
+  <!-- ══ HEADER ══ -->
   <div class="admin-header">
-    <div class="header-content">
-      <h1 class="header-title">Events Management</h1>
-      <p class="header-subtitle">Review, manage and monitor all events on the platform</p>
+    <div class="header-top">
+      <div class="header-content">
+        <h1 class="header-title">Events Management</h1>
+        <p class="header-subtitle">Review, manage and monitor all events on the platform</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-registrations" (click)="openRegistrationsModal()">
+          📋 Registration Requests
+          <span class="reg-badge" *ngIf="pendingCount > 0">{{ pendingCount }}</span>
+        </button>
+        <button class="btn-create" (click)="openCreateModal()">➕ Create Event</button>
+      </div>
     </div>
     <div class="header-stats">
       <div class="stat-card">
         <span class="stat-icon">📅</span>
-        <div class="stat-info">
-          <p class="stat-label">Total Events</p>
-          <p class="stat-value">{{ events.length }}</p>
-        </div>
+        <div class="stat-info"><p class="stat-label">Total</p><p class="stat-value">{{ events.length }}</p></div>
       </div>
       <div class="stat-card">
         <span class="stat-icon">✅</span>
-        <div class="stat-info">
-          <p class="stat-label">Published</p>
-          <p class="stat-value">{{ getEventCountByStatus('PUBLISHED') }}</p>
-        </div>
+        <div class="stat-info"><p class="stat-label">Published</p><p class="stat-value">{{ getEventCountByStatus('PUBLISHED') }}</p></div>
       </div>
       <div class="stat-card">
         <span class="stat-icon">⏳</span>
-        <div class="stat-info">
-          <p class="stat-label">Pending</p>
-          <p class="stat-value">{{ getEventCountByStatus('PENDING') }}</p>
-        </div>
+        <div class="stat-info"><p class="stat-label">Pending</p><p class="stat-value">{{ getEventCountByStatus('PENDING') }}</p></div>
       </div>
       <div class="stat-card">
         <span class="stat-icon">❌</span>
-        <div class="stat-info">
-          <p class="stat-label">Cancelled</p>
-          <p class="stat-value">{{ getEventCountByStatus('CANCELLED') }}</p>
+        <div class="stat-info"><p class="stat-label">Cancelled</p><p class="stat-value">{{ getEventCountByStatus('CANCELLED') }}</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TOOLBAR ══ -->
+  <div class="toolbar">
+    <div class="toolbar-filters">
+      <div class="search-box">
+        <input type="text" placeholder="Search events..." [value]="searchQuery"
+          (input)="onSearchChange($any($event.target).value)" class="search-input">
+        <span class="search-icon">🔍</span>
+      </div>
+      <select (change)="onStatusChange($any($event.target).value)" [value]="statusFilter" class="filter-select">
+        <option *ngFor="let s of statusOptions" [value]="s">{{ s === 'ALL' ? 'All Status' : s }}</option>
+      </select>
+      <select (change)="onCategoryChange($any($event.target).value)" [value]="categoryFilter" class="filter-select">
+        <option *ngFor="let c of categoryOptions" [value]="c">{{ c === 'ALL' ? 'All Categories' : c }}</option>
+      </select>
+      <button class="btn-advanced-toggle" (click)="showAdvancedFilters = !showAdvancedFilters"
+        [class.active]="showAdvancedFilters">
+        ⚙ Filtres avancés
+        <span class="adv-badge" *ngIf="activeAdvancedCount > 0">{{ activeAdvancedCount }}</span>
+      </button>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn" [class.active]="viewMode==='cards'" (click)="setView('cards')" title="Cards View">⊞</button>
+      <button class="view-btn" [class.active]="viewMode==='list'"  (click)="setView('list')"  title="List View">☰</button>
+      <span class="results-count">
+        {{ pageData ? pageData.filteredCount : filteredEvents.length }}
+        event{{ (pageData ? pageData.filteredCount : filteredEvents.length) !== 1 ? 's' : '' }}
+        <ng-container *ngIf="pageData && pageData.filteredCount !== pageData.totalCount">
+          (/ {{ pageData.totalCount }})
+        </ng-container>
+      </span>
+    </div>
+  </div>
+
+  <!-- ══ PANNEAU FILTRES AVANCÉS ══ -->
+  <div class="advanced-filters-panel" *ngIf="showAdvancedFilters">
+    <div class="adv-filters-grid">
+      <div class="adv-filter-group">
+        <label class="adv-label">Location</label>
+        <input type="text" class="adv-input" [(ngModel)]="advLocation" placeholder="Ex: Tunis, Paris…" (input)="applyAdvancedFilters()">
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Activity (keyword)</label>
+        <input type="text" class="adv-input" [(ngModel)]="advActivity" placeholder="Ex: atelier, coding…" (input)="applyAdvancedFilters()">
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Start date — from</label>
+        <input type="date" class="adv-input" [(ngModel)]="advStartDateFrom" (change)="applyAdvancedFilters()">
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Start date — to</label>
+        <input type="date" class="adv-input" [(ngModel)]="advStartDateTo" (change)="applyAdvancedFilters()">
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Minimum capacity</label>
+        <input type="number" class="adv-input" [(ngModel)]="advCapacityMin" min="0" placeholder="0" (change)="applyAdvancedFilters()">
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Maximum capacity</label>
+        <input type="number" class="adv-input" [(ngModel)]="advCapacityMax" min="0" placeholder="10000" (change)="applyAdvancedFilters()">
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Minimum participants</label>
+        <input type="number" class="adv-input" [(ngModel)]="advParticipantsMin" min="0" placeholder="0" (change)="applyAdvancedFilters()">
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Maximum participants</label>
+        <input type="number" class="adv-input" [(ngModel)]="advParticipantsMax" min="0" placeholder="10000" (change)="applyAdvancedFilters()">
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Sort by</label>
+        <select class="adv-input" [(ngModel)]="sortBy" (change)="applyAdvancedFilters()">
+          <option value="idEvent">ID</option>
+          <option value="title">Title</option>
+          <option value="startDate">Start Date</option>
+          <option value="endDate">End Date</option>
+          <option value="capacity">Capacity</option>
+          <option value="createdAt">Created At</option>
+          <option value="location">Location</option>
+        </select>
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Order</label>
+        <select class="adv-input" [(ngModel)]="sortDir" (change)="applyAdvancedFilters()">
+          <option value="desc">Decreasing ↓</option>
+          <option value="asc">Increasing ↑</option>
+        </select>
+      </div>
+      <div class="adv-filter-group">
+        <label class="adv-label">Results per page</label>
+        <select class="adv-input" [(ngModel)]="pageSize" (ngModelChange)="goToPage(0)">
+          <option [ngValue]="2">2</option>
+          <option [ngValue]="4">4</option>
+          <option [ngValue]="8">8</option>
+          <option [ngValue]="10">10</option>
+        </select>
+      </div>
+      <div class="adv-filter-group adv-reset-group">
+        <label class="adv-label">&nbsp;</label>
+        <button class="btn-reset-filters" (click)="resetAdvancedFilters()">🗑 Reset Filters</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LOADING ══ -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div><p>Loading events...</p>
+  </div>
+
+  <!-- ══ EMPTY ══ -->
+  <div *ngIf="!loading && filteredEvents.length === 0" class="empty-state">
+    <p class="empty-icon">🗓️</p>
+    <p class="empty-text">No events found</p>
+    <p class="empty-sub">Try adjusting your filters or create a new event</p>
+  </div>
+
+  <!-- ══ CARDS VIEW ══ -->
+  <div *ngIf="!loading && filteredEvents.length > 0 && viewMode === 'cards'" class="cards-grid">
+    <div *ngFor="let event of filteredEvents" class="event-card"
+      [class.selected]="selectedEvent?.idEvent === event.idEvent" (click)="selectEvent(event)">
+      <div class="card-banner" [style.background]="event.imageUrl ? 'none' : getCardGradient(event.category)">
+        <img *ngIf="event.imageUrl" [src]="event.imageUrl" alt="" class="card-banner-img">
+        <div class="card-banner-overlay"></div>
+        <div class="almost-full-badge" *ngIf="isEventAlmostFull(event)">🔥 {{ getCapacityPercent(event) }}% Full</div>
+        <div class="card-category-icon" *ngIf="!event.imageUrl">{{ getCategoryIcon(event.category) }}</div>
+        <div class="card-status-badge" [style.background-color]="getStatusColor(event.eventStatus)">{{ event.eventStatus }}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-category-label">{{ getCategoryIcon(event.category) }} {{ event.category }}</div>
+        <h3 class="card-title">{{ event.title }}</h3>
+        <p class="card-description">{{ event.description | slice:0:90 }}{{ event.description?.length > 90 ? '…' : '' }}</p>
+        <div class="card-meta">
+          <span class="card-meta-item">📍 {{ event.location }}</span>
+          <span class="card-meta-item">📅 {{ event.startDate | date:'d MMM y' }}</span>
+          <span class="card-meta-item">🎯 {{ event.activities?.length || 0 }} activit{{ (event.activities?.length || 0) !== 1 ? 'ies' : 'y' }}</span>
+        </div>
+        <div class="card-capacity">
+          <div class="card-capacity-header">
+            <span class="card-capacity-label">Participants</span>
+            <span class="card-capacity-count" [style.color]="isEventAlmostFull(event) ? '#f59e0b' : '#a855f7'">
+              {{ event.currentParticipants || 0 }}/{{ event.capacity }}
+            </span>
+          </div>
+          <div class="card-capacity-bar">
+            <div class="card-capacity-fill" [style.width.%]="getCapacityPercent(event)"
+              [style.background]="getCapacityBarColor(getCapacityPercent(event))"></div>
+          </div>
+        </div>
+        <div class="card-actions" (click)="$event.stopPropagation()">
+          <button class="card-btn-edit"   (click)="openEditModal(event)">✏️ Edit</button>
+          <button class="card-btn-delete" (click)="deleteEvent(event)">🗑️</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MAIN CONTENT -->
-  <div class="admin-content">
-    <!-- LEFT SIDE -->
+  <!-- ══ LIST VIEW ══ -->
+  <div *ngIf="!loading && filteredEvents.length > 0 && viewMode === 'list'" class="list-layout">
     <div class="events-panel">
-      <div class="filters-bar">
-        <div class="search-box">
-          <input
-            type="text"
-            placeholder="Search events..."
-            [value]="searchQuery"
-            (input)="onSearchChange($any($event.target).value)"
-            class="search-input">
-          <span class="search-icon">🔍</span>
-        </div>
-        <div class="filter-chips">
-          <select (change)="onStatusChange($any($event.target).value)" [value]="statusFilter" class="filter-select">
-            <option *ngFor="let status of statusOptions" [value]="status">
-              {{ status === 'ALL' ? 'All Status' : status }}
-            </option>
-          </select>
-          <select (change)="onCategoryChange($any($event.target).value)" [value]="categoryFilter" class="filter-select">
-            <option *ngFor="let cat of categoryOptions" [value]="cat">
-              {{ cat === 'ALL' ? 'All Categories' : cat }}
-            </option>
-          </select>
-        </div>
-      </div>
-
-      <div *ngIf="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Loading events...</p>
-      </div>
-
-      <div *ngIf="!loading && filteredEvents.length > 0" class="events-list">
-        <div
-          *ngFor="let event of filteredEvents"
-          class="event-item"
-          [class.active]="selectedEvent?.idEvent === event.idEvent"
-          (click)="selectEvent(event)">
-
+      <div class="events-list">
+        <div *ngFor="let event of filteredEvents" class="event-item"
+          [class.active]="selectedEvent?.idEvent === event.idEvent" (click)="selectEvent(event)">
           <div class="event-header">
             <div class="event-title-group">
               <span class="category-badge">{{ getCategoryIcon(event.category) }} {{ event.category }}</span>
               <h3 class="event-title">{{ event.title }}</h3>
             </div>
-            <span class="status-badge" [style.background-color]="getStatusColor(event.eventStatus)">
-              {{ event.eventStatus }}
-            </span>
+            <span class="status-badge" [style.background-color]="getStatusColor(event.eventStatus)">{{ event.eventStatus }}</span>
           </div>
-
           <p class="event-description">{{ event.description | slice:0:80 }}...</p>
-
           <div class="event-meta">
             <span class="meta-item">📍 {{ event.location }}</span>
             <span class="meta-item">👥 {{ event.currentParticipants || 0 }}/{{ event.capacity }}</span>
@@ -96,107 +211,581 @@
           </div>
         </div>
       </div>
-
-      <div *ngIf="!loading && filteredEvents.length === 0" class="empty-state">
-        <p>No events found</p>
-      </div>
     </div>
 
-    <!-- RIGHT SIDE -->
     <div class="details-panel" *ngIf="selectedEvent; else noSelection">
-      <div class="details-header">
-        <h2 class="details-title">{{ selectedEvent.title }}</h2>
-        <button class="close-btn" (click)="closeEvent()">✕</button>
-      </div>
-
+      <div class="details-header"><h2 class="details-title">{{ selectedEvent.title }}</h2></div>
       <div class="details-content">
         <div class="detail-section">
           <h4 class="section-title">Event Information</h4>
           <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Category</span>
-              <span class="info-value">{{ getCategoryIcon(selectedEvent.category) }} {{ selectedEvent.category }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Status</span>
-              <span class="info-value" [style.color]="getStatusColor(selectedEvent.eventStatus)">
-                {{ selectedEvent.eventStatus }}
-              </span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Location</span>
-              <span class="info-value">📍 {{ selectedEvent.location }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Capacity</span>
-              <span class="info-value">{{ selectedEvent.currentParticipants || 0 }} / {{ selectedEvent.capacity }} participants</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Start Date</span>
-              <span class="info-value">{{ selectedEvent.startDate | date:'short' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">End Date</span>
-              <span class="info-value">{{ selectedEvent.endDate | date:'short' }}</span>
-            </div>
+            <div class="info-item"><span class="info-label">Category</span><span class="info-value">{{ getCategoryIcon(selectedEvent.category) }} {{ selectedEvent.category }}</span></div>
+            <div class="info-item"><span class="info-label">Status</span><span class="info-value" [style.color]="getStatusColor(selectedEvent.eventStatus)">{{ selectedEvent.eventStatus }}</span></div>
+            <div class="info-item"><span class="info-label">Location</span><span class="info-value">📍 {{ selectedEvent.location }}</span></div>
+            <div class="info-item"><span class="info-label">Capacity</span><span class="info-value">{{ selectedEvent.currentParticipants || 0 }} / {{ selectedEvent.capacity }}</span></div>
+            <div class="info-item"><span class="info-label">Start</span><span class="info-value">{{ selectedEvent.startDate | date:'short' }}</span></div>
+            <div class="info-item"><span class="info-label">End</span><span class="info-value">{{ selectedEvent.endDate | date:'short' }}</span></div>
           </div>
           <div class="capacity-bar-wrapper">
             <span class="capacity-label">Capacity</span>
-            <div class="capacity-bar">
-              <div class="capacity-fill"
-                [style.width.%]="(selectedEvent.currentParticipants || 0) / selectedEvent.capacity * 100">
-              </div>
-            </div>
-            <span class="capacity-percent">
-              {{ ((selectedEvent.currentParticipants || 0) / selectedEvent.capacity * 100) | number:'1.0-0' }}%
-            </span>
+            <div class="capacity-bar"><div class="capacity-fill" [style.width.%]="getCapacityPercent(selectedEvent)"></div></div>
+            <span class="capacity-percent">{{ getCapacityPercent(selectedEvent) }}%</span>
           </div>
         </div>
-
-        <div class="detail-section">
-          <h4 class="section-title">Description</h4>
-          <p class="description-text">{{ selectedEvent.description }}</p>
-        </div>
-
-        <div class="detail-section" *ngIf="selectedEvent.activities && selectedEvent.activities.length > 0">
+        <div class="detail-section"><h4 class="section-title">Description</h4><p class="description-text">{{ selectedEvent.description }}</p></div>
+        <div class="detail-section" *ngIf="selectedEvent.activities?.length">
           <h4 class="section-title">Activities ({{ selectedEvent.activities.length }})</h4>
           <div class="activities-list">
             <div *ngFor="let act of selectedEvent.activities" class="activity-card">
-              <div class="activity-header">
-                <h5 class="activity-name">🎯 {{ act.name }}</h5>
-                <span class="activity-participants">👥 {{ act.maxParticipants }} max</span>
-              </div>
+              <div class="activity-header"><h5 class="activity-name">🎯 {{ act.name }}</h5></div>
               <p class="activity-description">{{ act.description || 'No description' }}</p>
-              <div class="activity-requirements" *ngIf="act.requirements">
-                <span>📋 {{ act.requirements }}</span>
-              </div>
+              <div class="activity-requirements" *ngIf="act.requirements"><span>📋 {{ act.requirements }}</span></div>
             </div>
           </div>
         </div>
-
         <div class="detail-section" *ngIf="!selectedEvent.activities || selectedEvent.activities.length === 0">
-          <h4 class="section-title">Activities</h4>
-          <p class="no-activities">No activities for this event.</p>
+          <h4 class="section-title">Activities</h4><p class="no-activities">No activities for this event.</p>
         </div>
-
         <div class="detail-section" *ngIf="selectedEvent.imageUrl">
-          <h4 class="section-title">Image</h4>
-          <img [src]="selectedEvent.imageUrl" alt="Event image" class="event-image">
+          <h4 class="section-title">Image</h4><img [src]="selectedEvent.imageUrl" alt="Event image" class="event-image">
         </div>
-
         <div class="detail-actions">
-          <button class="btn-delete" (click)="deleteEvent(selectedEvent)">🗑️ Delete Event</button>
+          <button class="btn-action-edit" (click)="openEditModal(selectedEvent)">✏️ Edit Event</button>
+          <button class="btn-delete"      (click)="deleteEvent(selectedEvent)">🗑️ Delete Event</button>
         </div>
       </div>
     </div>
 
     <ng-template #noSelection>
       <div class="details-panel empty">
-        <div class="empty-placeholder">
-          <p class="empty-icon">👈</p>
-          <p class="empty-text">Select an event to view details</p>
-        </div>
+        <div class="empty-placeholder"><p class="empty-icon">👈</p><p class="empty-text">Select an event to view details</p></div>
       </div>
     </ng-template>
+  </div>
+
+  <!-- ══ PAGINATION ══ -->
+  <div class="pagination-bar" *ngIf="pageData && pageData.totalPages > 1">
+    <span class="pagination-info">
+      Page {{ currentPage + 1 }} / {{ pageData.totalPages }}
+      &nbsp;·&nbsp;
+      {{ pageData.filteredCount }} résultat{{ pageData.filteredCount !== 1 ? 's' : '' }}
+    </span>
+    <div class="pagination-controls">
+      <button class="pg-btn" (click)="goToPage(0)"                       [disabled]="pageData.first">«</button>
+      <button class="pg-btn" (click)="prevPage()"                        [disabled]="pageData.first">‹</button>
+      <ng-container *ngFor="let p of pageNumbers">
+        <button class="pg-btn"
+          *ngIf="p === 0 || p === pageData.totalPages - 1 || (p >= currentPage - 2 && p <= currentPage + 2)"
+          [class.active]="p === currentPage"
+          (click)="goToPage(p)">{{ p + 1 }}</button>
+        <span class="pg-ellipsis"
+          *ngIf="(p === currentPage - 3 && p > 1) || (p === currentPage + 3 && p < pageData.totalPages - 2)">…</span>
+      </ng-container>
+      <button class="pg-btn" (click)="nextPage()"                        [disabled]="pageData.last">›</button>
+      <button class="pg-btn" (click)="goToPage(pageData.totalPages - 1)" [disabled]="pageData.last">»</button>
+    </div>
+    <span class="pagination-info">{{ pageSize }} / page</span>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL CREATE / EDIT
+══════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+
+<div class="modal-container" *ngIf="showModal">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <i class="material-icons modal-icon">{{ isEditMode ? 'edit' : 'add_circle' }}</i>
+        <h2 class="modal-title">{{ isEditMode ? 'Edit Event' : 'Create Event' }}</h2>
+      </div>
+      <button class="modal-close" (click)="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-alert success" *ngIf="formSuccess"><i class="material-icons">check_circle</i> {{ formSuccess }}</div>
+    <div class="modal-alert danger"  *ngIf="formError">  <i class="material-icons">error</i>        {{ formError }}</div>
+
+    <div class="modal-body">
+      <form [formGroup]="eventForm" (ngSubmit)="onSubmit()" novalidate>
+
+        <div class="modal-section">
+          <div class="modal-section-header purple">
+            <i class="material-icons">event</i>
+            <span>Event Information</span>
+          </div>
+          <div class="modal-section-body">
+
+            <div class="form-row">
+              <div class="form-group col-8">
+                <label class="form-label">Title <span class="req">*</span></label>
+                <div class="input-wrap" [class.err-state]="fieldInvalid('title')" [class.ok-state]="fieldValid('title')">
+                  <input type="text" class="form-control" formControlName="title" placeholder="Ex: AI Hackathon 2025" maxlength="120">
+                  <span class="ico ok"  *ngIf="fieldValid('title')">✔</span>
+                  <span class="ico err" *ngIf="fieldInvalid('title')">✖</span>
+                </div>
+                <div class="field-foot">
+                  <div class="errs">
+                    <span *ngIf="fieldInvalid('title') && fieldError('title','required')">⚠ The title is required.</span>
+                    <span *ngIf="fieldInvalid('title') && fieldError('title','minlength')">⚠ Minimum 5 characters.</span>
+                    <span *ngIf="fieldInvalid('title') && fieldError('title','maxlength')">⚠ Maximum 120 characters.</span>
+                    <span *ngIf="fieldInvalid('title') && fieldError('title','specialChars')">⚠ Letters and numbers only.</span>
+                    <span *ngIf="fieldInvalid('title') && fieldError('title','edgeSpaces')">⚠ No leading or trailing spaces.</span>
+                  </div>
+                  <span class="counter" [class.near]="charCount('title') > 100">{{ charCount('title') }}/120</span>
+                </div>
+              </div>
+              <div class="form-group col-4">
+                <label class="form-label">Category <span class="req">*</span></label>
+                <div class="input-wrap" [class.ok-state]="fieldValid('category')">
+                  <select class="form-control" formControlName="category">
+                    <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+                  </select>
+                  <span class="ico ok" *ngIf="fieldValid('category')">✔</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Description <span class="req">*</span></label>
+              <div class="input-wrap textarea-wrap" [class.err-state]="fieldInvalid('description')" [class.ok-state]="fieldValid('description')">
+                <textarea class="form-control" formControlName="description" rows="3"
+                  placeholder="Décrivez l'événement (minimum 50 caractères)…" maxlength="2000"></textarea>
+                <span class="ico ok"  *ngIf="fieldValid('description')">✔</span>
+                <span class="ico err" *ngIf="fieldInvalid('description')">✖</span>
+              </div>
+              <div class="field-foot">
+                <div class="errs">
+                  <span *ngIf="fieldInvalid('description') && fieldError('description','required')">⚠ The description is required.</span>
+                  <span *ngIf="fieldInvalid('description') && fieldError('description','minlength')">⚠ Minimum 50 characters.</span>
+                  <span *ngIf="fieldInvalid('description') && fieldError('description','maxlength')">⚠ Maximum 2000 characters.</span>
+                  <span *ngIf="fieldInvalid('description') && fieldError('description','specialChars')">⚠ Letters and numbers only.</span>
+                </div>
+                <span class="counter" [class.near]="charCount('description') > 1800">{{ charCount('description') }}/2000</span>
+              </div>
+              <div class="desc-progress" *ngIf="charCount('description') < 50">
+                <div class="desc-progress-bar" [style.width.%]="(charCount('description') / 50) * 100"></div>
+                <span class="desc-progress-label">{{ 50 - charCount('description') }} characters missing</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label class="form-label">Start Date <span class="req">*</span></label>
+                <div class="input-wrap" [class.err-state]="fieldInvalid('startDate')" [class.ok-state]="fieldValid('startDate')">
+                  <input type="datetime-local" class="form-control" formControlName="startDate">
+                  <span class="ico ok"  *ngIf="fieldValid('startDate')">✔</span>
+                  <span class="ico err" *ngIf="fieldInvalid('startDate')">✖</span>
+                </div>
+                <div class="errs">
+                  <span *ngIf="fieldInvalid('startDate') && fieldError('startDate','required')">⚠ The start date is required.</span>
+                  <span *ngIf="fieldInvalid('startDate') && fieldError('startDate','pastDate')">⚠ The start date cannot be in the past.</span>
+                </div>
+              </div>
+              <div class="form-group col-6">
+                <label class="form-label">End Date <span class="req">*</span></label>
+                <div class="input-wrap" [class.err-state]="fieldInvalid('endDate') || dateRangeInvalid" [class.ok-state]="fieldValid('endDate') && !dateRangeInvalid">
+                  <input type="datetime-local" class="form-control" formControlName="endDate">
+                  <span class="ico ok"  *ngIf="fieldValid('endDate') && !dateRangeInvalid">✔</span>
+                  <span class="ico err" *ngIf="fieldInvalid('endDate') || dateRangeInvalid">✖</span>
+                </div>
+                <div class="errs">
+                  <span *ngIf="fieldInvalid('endDate') && fieldError('endDate','required')">⚠ The end date is required.</span>
+                  <span *ngIf="dateRangeInvalid">⚠ The end date must be after the start date.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-5">
+                <label class="form-label">Location <span class="req">*</span></label>
+                <div class="input-wrap" [class.err-state]="fieldInvalid('location')" [class.ok-state]="fieldValid('location')">
+                  <input type="text" class="form-control" formControlName="location" placeholder="Ex: Tunis, Esprit…" maxlength="150">
+                  <span class="ico ok"  *ngIf="fieldValid('location')">✔</span>
+                  <span class="ico err" *ngIf="fieldInvalid('location')">✖</span>
+                </div>
+                <div class="errs">
+                  <span *ngIf="fieldInvalid('location') && fieldError('location','required')">⚠ The location is required.</span>
+                  <span *ngIf="fieldInvalid('location') && fieldError('location','locationShort')">⚠ Minimum 3 characters.</span>
+                  <span *ngIf="fieldInvalid('location') && fieldError('location','locationNumeric')">⚠ The location cannot be only numbers.</span>
+                  <span *ngIf="fieldInvalid('location') && fieldError('location','specialChars')">⚠ Letters and numbers only.</span>
+                </div>
+              </div>
+              <div class="form-group col-3">
+                <label class="form-label">Capacity <span class="req">*</span></label>
+                <div class="input-wrap" [class.err-state]="fieldInvalid('capacity')" [class.ok-state]="fieldValid('capacity')">
+                  <input type="number" class="form-control" formControlName="capacity" min="1" max="10000">
+                  <span class="ico ok"  *ngIf="fieldValid('capacity')">✔</span>
+                  <span class="ico err" *ngIf="fieldInvalid('capacity')">✖</span>
+                </div>
+                <div class="errs">
+                  <span *ngIf="fieldInvalid('capacity') && (fieldError('capacity','required') || fieldError('capacity','capacityMin') || fieldError('capacity','min'))">⚠ The capacity must be at least 1.</span>
+                  <span *ngIf="fieldInvalid('capacity') && (fieldError('capacity','capacityMax') || fieldError('capacity','max'))">⚠ The capacity must be at most 10,000.</span>
+                </div>
+              </div>
+              <div class="form-group col-4">
+                <label class="form-label">Status <span class="req">*</span></label>
+                <div class="input-wrap" [class.ok-state]="fieldValid('eventStatus')">
+                  <select class="form-control" formControlName="eventStatus">
+                    <option *ngFor="let s of eventStatuses" [value]="s">{{ s }}</option>
+                  </select>
+                  <span class="ico ok" *ngIf="fieldValid('eventStatus')">✔</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Event Image <span class="opt">(Optionnel — max 5 Mo)</span></label>
+              <input id="modalImageInput" type="file" accept="image/*" style="display:none" (change)="onFileSelected($event)">
+              <div *ngIf="!imagePreview" class="upload-zone"
+                [class.dragging]="isDragging"
+                (click)="triggerFileInput()"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onDrop($event)">
+                <i class="material-icons upload-icon">cloud_upload</i>
+                <p class="upload-text">Drag and drop or <span class="upload-link">browse</span></p>
+                <p class="upload-hint">JPG · PNG · GIF · WEBP</p>
+              </div>
+              <div *ngIf="imagePreview" class="image-preview-container">
+                <img [src]="imagePreview" alt="Preview" class="image-preview">
+                <div class="image-preview-overlay">
+                  <button type="button" class="btn-change-image" (click)="triggerFileInput()"><i class="material-icons">edit</i> edit</button>
+                  <button type="button" class="btn-remove-image" (click)="removeImage()"><i class="material-icons">delete</i> delete</button>
+                </div>
+                <div class="image-preview-filename" *ngIf="selectedFile">
+                  <i class="material-icons">image</i> {{ selectedFile.name }}
+                  <span class="file-size">({{ (selectedFile.size / 1024).toFixed(0) }} KB)</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ═══ Activités ═══ -->
+        <div class="modal-section">
+          <div class="modal-section-header teal">
+            <i class="material-icons">local_activity</i>
+            <span>Activities ({{ activities.length }})</span>
+            <button type="button" class="btn-add-activity" (click)="addActivity()">
+              <i class="material-icons">add</i> Add
+            </button>
+          </div>
+          <div class="modal-section-body">
+            <div class="no-activities" *ngIf="activities.length === 0">
+              <i class="material-icons">event_note</i>
+              <p>No activities yet. Click "Add" to get started.</p>
+            </div>
+            <div formArrayName="activities">
+              <ng-container *ngFor="let ctrl of activities.controls; let i = index">
+                <div class="activity-block" [formGroupName]="i">
+                  <div class="activity-block-header">
+                    <span><i class="material-icons">play_circle_outline</i> Activity {{ i + 1 }}</span>
+                    <button type="button" class="btn-remove" (click)="removeActivity(i)">
+                      <i class="material-icons">delete_outline</i> Remove
+                    </button>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group col-8">
+                      <label class="form-label">Name <span class="req">*</span></label>
+                      <div class="input-wrap" [class.err-state]="actFieldInvalid(i,'name')" [class.ok-state]="actFieldValid(i,'name')">
+                        <input type="text" class="form-control" formControlName="name" placeholder="Activity name" maxlength="80">
+                        <span class="ico ok"  *ngIf="actFieldValid(i,'name')">✔</span>
+                        <span class="ico err" *ngIf="actFieldInvalid(i,'name')">✖</span>
+                      </div>
+                      <div class="field-foot">
+                        <div class="errs">
+                          <span *ngIf="actFieldInvalid(i,'name') && actField(i,'name').hasError('required')">⚠ The name is required.</span>
+                          <span *ngIf="actFieldInvalid(i,'name') && actField(i,'name').hasError('minlength')">⚠ Minimum 3 characters.</span>
+                          <span *ngIf="actFieldInvalid(i,'name') && actField(i,'name').hasError('maxlength')">⚠ Maximum 80 characters.</span>
+                          <span *ngIf="actFieldInvalid(i,'name') && actField(i,'name').hasError('specialChars')">⚠ Letters and numbers only.</span>
+                          <span *ngIf="actFieldInvalid(i,'name') && actField(i,'name').hasError('edgeSpaces')">⚠ No leading or trailing spaces.</span>
+                        </div>
+                        <span class="counter">{{ actCharCount(i,'name') }}/80</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Description <span class="opt">(Optionnel — min 50 car.)</span></label>
+                    <div class="input-wrap" [class.err-state]="actFieldInvalid(i,'description')" [class.ok-state]="actFieldValid(i,'description')">
+                      <input type="text" class="form-control" formControlName="description" placeholder="Short description" maxlength="500">
+                      <span class="ico ok"  *ngIf="actFieldValid(i,'description')">✔</span>
+                      <span class="ico err" *ngIf="actFieldInvalid(i,'description')">✖</span>
+                    </div>
+                    <div class="field-foot">
+                      <div class="errs">
+                        <span *ngIf="actFieldInvalid(i,'description') && actField(i,'description').hasError('minlength')">⚠ Minimum 50 characters.</span>
+                        <span *ngIf="actFieldInvalid(i,'description') && actField(i,'description').hasError('maxlength')">⚠ Maximum 500 characters.</span>
+                        <span *ngIf="actFieldInvalid(i,'description') && actField(i,'description').hasError('specialChars')">⚠ Letters and numbers only.</span>
+                      </div>
+                      <span class="counter">{{ actCharCount(i,'description') }}/500</span>
+                    </div>
+                    <div class="desc-progress" *ngIf="actCharCount(i,'description') > 0 && actCharCount(i,'description') < 50">
+                      <div class="desc-progress-bar" [style.width.%]="(actCharCount(i,'description') / 50) * 100"></div>
+                      <span class="desc-progress-label">{{ 50 - actCharCount(i,'description') }} missing characters</span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Requirements <span class="opt">(Optionnel — min 10 car.)</span></label>
+                    <div class="input-wrap" [class.err-state]="actFieldInvalid(i,'requirements')" [class.ok-state]="actFieldValid(i,'requirements')">
+                      <input type="text" class="form-control" formControlName="requirements" placeholder="Ex: required equipment" maxlength="300">
+                      <span class="ico ok"  *ngIf="actFieldValid(i,'requirements')">✔</span>
+                      <span class="ico err" *ngIf="actFieldInvalid(i,'requirements')">✖</span>
+                    </div>
+                    <div class="field-foot">
+                      <div class="errs">
+                        <span *ngIf="actFieldInvalid(i,'requirements') && actField(i,'requirements').hasError('minlength')">⚠ Minimum 10 characters.</span>
+                        <span *ngIf="actFieldInvalid(i,'requirements') && actField(i,'requirements').hasError('maxlength')">⚠ Maximum 300 characters.</span>
+                        <span *ngIf="actFieldInvalid(i,'requirements') && actField(i,'requirements').hasError('specialChars')">⚠ Letters and numbers only.</span>
+                      </div>
+                      <span class="counter">{{ actCharCount(i,'requirements') }}/300</span>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <div class="validation-pill" *ngIf="submitted && eventForm.invalid">
+            <i class="material-icons">warning_amber</i> Incomplete or invalid form
+          </div>
+          <button type="button" class="btn-cancel" (click)="closeModal()">
+            <i class="material-icons">close</i> Cancel
+          </button>
+          <button type="submit" class="btn-submit" [disabled]="formLoading">
+            <i class="material-icons">{{ formLoading ? 'hourglass_empty' : (isEditMode ? 'save' : 'add_circle') }}</i>
+            {{ formLoading ? 'Saving…' : (isEditMode ? 'Save Changes' : 'Create Event') }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL SUPPRESSION
+══════════════════════════════════════════════════════ -->
+<div class="delete-backdrop" *ngIf="showDeleteModal" (click)="cancelDelete()"></div>
+
+<div class="delete-modal-container" *ngIf="showDeleteModal">
+  <div class="delete-modal-box">
+    <div class="delete-icon-ring">
+      <div class="delete-icon-pulse"></div>
+      <div class="delete-icon-inner">🗑️</div>
+    </div>
+    <h2 class="delete-modal-title">Delete Event</h2>
+    <p class="delete-modal-message">
+      Are you sure you want to permanently delete
+      <span class="delete-event-name">« {{ eventToDelete?.title }} »</span> ?
+      <br><span class="delete-modal-warn">This action is irreversible.</span>
+    </p>
+    <div class="delete-event-preview" *ngIf="eventToDelete">
+      <span class="delete-preview-icon">{{ getCategoryIcon(eventToDelete.category) }}</span>
+      <div class="delete-preview-info">
+        <span class="delete-preview-title">{{ eventToDelete.title }}</span>
+        <span class="delete-preview-meta">📍 {{ eventToDelete.location }} &nbsp;·&nbsp; {{ eventToDelete.eventStatus }}</span>
+      </div>
+    </div>
+    <div class="delete-modal-actions">
+      <button class="delete-btn-cancel" (click)="cancelDelete()">
+        <i class="material-icons">close</i> Cancel
+      </button>
+      <button class="delete-btn-confirm" (click)="confirmDelete()" [class.loading]="deleteLoading">
+        <i class="material-icons">{{ deleteLoading ? 'hourglass_empty' : 'delete_forever' }}</i>
+        {{ deleteLoading ? 'Deleting…' : 'Yes, delete' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL REGISTRATION REQUESTS
+══════════════════════════════════════════════════════ -->
+<div class="reg-backdrop" *ngIf="showRegistrationsModal" (click)="closeRegistrationsModal()"></div>
+
+<div class="reg-modal-container" *ngIf="showRegistrationsModal">
+  <div class="reg-modal-box" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="reg-modal-header">
+      <div class="reg-modal-title-group">
+        <div class="reg-modal-icon-wrap">
+          <i class="material-icons">how_to_reg</i>
+        </div>
+        <div>
+          <h2 class="reg-modal-title">Registration Requests</h2>
+          <p class="reg-modal-subtitle">Manage all event inscription requests</p>
+        </div>
+      </div>
+      <div class="reg-header-right">
+        <div class="reg-summary-pills">
+          <span class="reg-pill pending">⏳ {{ countByStatus('PENDING') }} pending</span>
+          <span class="reg-pill accepted">✅ {{ countByStatus('ACCEPTED') }} accepted</span>
+          <span class="reg-pill rejected">❌ {{ countByStatus('REJECTED') }} rejected</span>
+        </div>
+        <button class="reg-modal-close" (click)="closeRegistrationsModal()">✕</button>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="reg-toolbar">
+      <div class="reg-search-box">
+        <span class="reg-search-icon">🔍</span>
+        <input type="text" class="reg-search-input"
+          placeholder="Search by name, event, role or domain…"
+          [(ngModel)]="registrationSearch">
+      </div>
+      <div class="reg-status-tabs">
+        <button
+          *ngFor="let s of registrationStatusOptions"
+          class="reg-tab"
+          [class.active]="registrationStatusFilter === s"
+          (click)="registrationStatusFilter = s">
+          {{ s === 'ALL' ? 'All' : s }}
+          <span class="reg-tab-count" *ngIf="s !== 'ALL'">{{ countByStatus(s) }}</span>
+        </button>
+      </div>
+      <button class="reg-refresh-btn" (click)="loadAllRegistrations()" title="Refresh">
+        <i class="material-icons">refresh</i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="reg-modal-body">
+
+      <!-- Loading -->
+      <div *ngIf="registrationsLoading" class="reg-loading">
+        <div class="reg-spinner"></div>
+        <p>Loading registration requests…</p>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="!registrationsLoading && registrationsError" class="reg-error">
+        <i class="material-icons">error_outline</i>
+        <p>{{ registrationsError }}</p>
+        <button class="reg-retry-btn" (click)="loadAllRegistrations()">Retry</button>
+      </div>
+
+      <!-- Empty -->
+      <div *ngIf="!registrationsLoading && !registrationsError && filteredRegistrations.length === 0" class="reg-empty">
+        <p class="reg-empty-icon">📭</p>
+        <p class="reg-empty-text">No registration requests found</p>
+        <p class="reg-empty-sub">Try adjusting the search or status filter</p>
+      </div>
+
+      <!-- Table -->
+      <div *ngIf="!registrationsLoading && !registrationsError && filteredRegistrations.length > 0"
+           class="reg-table-wrapper">
+        <table class="reg-table">
+          <thead>
+            <tr>
+              <th class="reg-th">#</th>
+              <th class="reg-th">Participant</th>
+              <th class="reg-th">Event</th>
+              <th class="reg-th">Role</th>
+              <th class="reg-th">Domain</th>
+              <th class="reg-th">Date</th>
+              <th class="reg-th">Status</th>
+              <th class="reg-th reg-th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let reg of filteredRegistrations" class="reg-tr">
+
+              <!-- ID -->
+              <td class="reg-td reg-td-id">{{ reg.id }}</td>
+
+              <!-- Participant -->
+              <td class="reg-td">
+                <div class="reg-user-cell">
+                  <div class="reg-avatar">
+                    {{ (reg.participantPrenom || '?').charAt(0).toUpperCase() }}{{ (reg.participantNom || '').charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="reg-user-info">
+                    <span class="reg-user-name">{{ reg.participantPrenom }} {{ reg.participantNom }}</span>
+                    <span class="reg-user-email" *ngIf="reg.message">💬 {{ reg.message | slice:0:40 }}{{ reg.message.length > 40 ? '…' : '' }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Event -->
+              <td class="reg-td">
+                <span class="reg-event-title">{{ reg.eventTitle || '—' }}</span>
+              </td>
+
+              <!-- Role -->
+              <td class="reg-td">
+                <span class="reg-role-badge">{{ reg.participantRole }}</span>
+              </td>
+
+              <!-- Domain -->
+              <td class="reg-td">
+                <span class="reg-domain-badge">{{ reg.domaine }}</span>
+              </td>
+
+              <!-- Date -->
+              <td class="reg-td reg-td-date">
+                {{ reg.registrationDate | date:'d MMM y, HH:mm' }}
+              </td>
+
+              <!-- Status -->
+              <td class="reg-td">
+                <span class="reg-status-pill"
+                  [style.background-color]="getRegistrationStatusColor(reg.status) + '22'"
+                  [style.color]="getRegistrationStatusColor(reg.status)"
+                  [style.border-color]="getRegistrationStatusColor(reg.status) + '55'">
+                  {{ getRegistrationStatusIcon(reg.status) }} {{ reg.status }}
+                </span>
+              </td>
+
+              <!-- Actions -->
+              <td class="reg-td reg-td-actions">
+                <div class="reg-action-group" *ngIf="reg.status === 'PENDING'; else noActions">
+                  <button class="reg-btn-approve"
+                    (click)="approveRegistration(reg.id)"
+                    [disabled]="registrationActionLoading[reg.id]"
+                    title="Accept">
+                    <i class="material-icons">{{ registrationActionLoading[reg.id] ? 'hourglass_empty' : 'check_circle' }}</i>
+                    Accept
+                  </button>
+                  <button class="reg-btn-reject"
+                    (click)="rejectRegistration(reg.id)"
+                    [disabled]="registrationActionLoading[reg.id]"
+                    title="Reject">
+                    <i class="material-icons">{{ registrationActionLoading[reg.id] ? 'hourglass_empty' : 'cancel' }}</i>
+                    Reject
+                  </button>
+                </div>
+                <ng-template #noActions>
+                  <span class="reg-no-action">—</span>
+                </ng-template>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="reg-modal-footer">
+      <span class="reg-footer-info">
+        Showing {{ filteredRegistrations.length }} of {{ registrations.length }} requests
+      </span>
+      <button class="reg-btn-close" (click)="closeRegistrationsModal()">
+        <i class="material-icons">close</i> Close
+      </button>
+    </div>
+
   </div>
 </div>

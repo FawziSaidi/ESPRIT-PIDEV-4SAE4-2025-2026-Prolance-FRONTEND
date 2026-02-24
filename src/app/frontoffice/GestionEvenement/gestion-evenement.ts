@@ -5,16 +5,16 @@ import { HttpClientModule } from '@angular/common/http';
 
 import { GestionEvenementRoutingModule } from './gestion-evenement-routing';
 import { EventListComponent } from './Components/event-list/event-list.component';
-import { EventFormComponent } from './Components/event-form/event-form.component';
-import { ActivityFormComponent } from './Components/activity-form/activity-form-component';
+
 import { EventService } from './services/event.service';
 import { ActivityService } from './services/activity.service';
+import { InscriptionService } from './services/inscription.service';  // ← AJOUT
+import { InscriptionFormComponent } from './Components/inscription-form/inscription-form.component';
 
 @NgModule({
   declarations: [
     EventListComponent,
-    EventFormComponent,
-    ActivityFormComponent
+    InscriptionFormComponent,
   ],
   imports: [
     CommonModule,
@@ -23,6 +23,6 @@ import { ActivityService } from './services/activity.service';
     HttpClientModule,
     GestionEvenementRoutingModule
   ],
-  providers: [EventService, ActivityService]
+  providers: [EventService, ActivityService, InscriptionService]  // ← InscriptionService ajouté
 })
 export class GestionEvenementModule {}

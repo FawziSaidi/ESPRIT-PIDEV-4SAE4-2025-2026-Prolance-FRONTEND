@@ -5,7 +5,7 @@ export interface Activity {
   name: string;
   description: string;
   requirements: string;
-  maxParticipants: number;
+
   eventId?: number;
    user?: User;
 }

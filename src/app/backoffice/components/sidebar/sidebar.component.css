@@ -1,14 +1,14 @@
 .sidebar {
-  width: 300px;
+   width: 300px;
   background: linear-gradient(180deg, #7c3aed 0%, #a855f7 50%, #c026d3 100%);
-  height: calc(100vh - 3.5rem);
+  height: calc(100vh - 3rem);   /* ← ajustez selon la hauteur du titre */
   padding: 0;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  position: fixed;
-  top: 3rem;
-  left: 2rem;
+  overflow-y: auto;
+  position: sticky;             /* ← sticky au lieu de fixed */
+  top: 1.5rem;                  /* ← colle en haut quand on scroll */
+  flex-shrink: 0;
 }
 
 .logo-container {

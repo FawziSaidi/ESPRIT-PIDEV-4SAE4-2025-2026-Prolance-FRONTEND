@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { EventService } from '../../services/event.service';
-import { CategoryEvent, EventStatus } from '../../models/event.model';
+import { EventService } from '../../../frontoffice/GestionEvenement/services/event.service';
+import { CategoryEvent, EventStatus } from '../../../frontoffice/GestionEvenement/models/event.model';
 import { AuthService } from 'app/services/auth.services';
 
 @Component({
@@ -26,7 +26,7 @@ export class EventFormComponent implements OnInit {
     private eventService: EventService,
     private router: Router,
     private route: ActivatedRoute,
-     private authService: AuthService 
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -42,15 +42,15 @@ export class EventFormComponent implements OnInit {
 
   initForm(): void {
     this.eventForm = this.fb.group({
-      title:       ['', [Validators.required, Validators.minLength(3)]],
-      description: ['', Validators.required],
-      startDate:   ['', Validators.required],
-      endDate:     ['', Validators.required],
-      eventStatus: [EventStatus.PENDING, Validators.required],
-      location:    ['', Validators.required],
-      capacity:    [10, [Validators.required, Validators.min(1)]],
+      title:       [''],
+      description: [''],
+      startDate:   [''],
+      endDate:     [''],
+      eventStatus: [EventStatus.PENDING],
+      location:    [''],
+      capacity:    [10],
       imageUrl:    [''],
-      category:    [CategoryEvent.CONFERENCE, Validators.required],
+      category:    [CategoryEvent.CONFERENCE],
       activities:  this.fb.array([])
     });
   }
@@ -59,7 +59,6 @@ export class EventFormComponent implements OnInit {
     return this.eventForm.get('activities') as FormArray;
   }
 
-  // Retourne le FormGroup d'une activité à l'index donné
   getActivityGroup(index: number): FormGroup {
     return this.activities.at(index) as FormGroup;
   }
@@ -67,10 +66,10 @@ export class EventFormComponent implements OnInit {
   createActivityGroup(): FormGroup {
     return this.fb.group({
       idActivity:      [null],
-      name:           ['', Validators.required],
+      name:            [''],
       description:     [''],
-      requirements: ['', Validators.required],
-      maxParticipants: [10, [Validators.required, Validators.min(1)]]
+      requirements:    ['']
+     
     });
   }
 
@@ -97,16 +96,15 @@ export class EventFormComponent implements OnInit {
           imageUrl:    event.imageUrl,
           category:    event.category
         });
-        // Remplir les activités existantes
         if (event.activities && event.activities.length > 0) {
           event.activities.forEach(act => {
             const group = this.createActivityGroup();
             group.patchValue({
               idActivity:      act.idActivity,
-              name:           act.name,
+              name:            act.name,
               description:     act.description,
-              requirements:    act.requirements,
-              maxParticipants: act.maxParticipants
+              requirements:    act.requirements
+              
             });
             this.activities.push(group);
           });
@@ -114,61 +112,49 @@ export class EventFormComponent implements OnInit {
         this.loading = false;
       },
       error: () => {
-        this.errorMsg = 'Erreur lors du chargement de l\'événement.';
+        this.errorMsg = 'Error loading event.';
         this.loading = false;
       }
     });
   }
 
   onSubmit(): void {
-    if (this.eventForm.invalid) {
-      this.eventForm.markAllAsTouched();
-      return;
-    }
     this.loading = true;
     this.successMsg = '';
     this.errorMsg = '';
 
-     // Get current user from localStorage
+    const userId = this.authService.getCurrentUserId();
 
-     const userId = this.authService.getCurrentUserId();
- 
+    if (!userId) {
+      this.errorMsg = 'You must be logged in to create an event.';
+      this.loading = false;
+      this.router.navigate(['/login']);
+      return;
+    }
 
-  if (!userId) {
-    this.errorMsg = 'Vous devez être connecté pour créer un événement.';
-    this.loading = false;
-    this.router.navigate(['/login']);
-    return;
-  }
-
-  const formValue = {
-    ...this.eventForm.value,
-    userId: userId
-  };
-
-  console.log('Payload envoyé:', JSON.stringify(formValue, null, 2));
+    const formValue = { ...this.eventForm.value, userId };
 
     if (this.isEditMode && this.eventId) {
       this.eventService.updateEvent(this.eventId, formValue).subscribe({
         next: () => {
-          this.successMsg = 'Événement modifié avec succès !';
+          this.successMsg = 'Event updated successfully!';
           this.loading = false;
-          setTimeout(() => this.router.navigate(['/app/events']), 1500);
+          setTimeout(() => this.router.navigate(['/admin/events']), 1500);
         },
         error: () => {
-          this.errorMsg = 'Erreur lors de la modification.';
+          this.errorMsg = 'Error updating event.';
           this.loading = false;
         }
       });
     } else {
       this.eventService.createEvent(formValue).subscribe({
         next: () => {
-          this.successMsg = 'Événement créé avec succès !';
+          this.successMsg = 'Event created successfully!';
           this.loading = false;
-          setTimeout(() => this.router.navigate(['/app/events']), 1500);
+          setTimeout(() => this.router.navigate(['/admin/events']), 1500);
         },
         error: () => {
-          this.errorMsg = 'Erreur lors de la création.';
+          this.errorMsg = 'Error creating event.';
           this.loading = false;
         }
       });
@@ -176,11 +162,6 @@ export class EventFormComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/app/events']);
-  }
-
-  isFieldInvalid(fieldName: string): boolean {
-    const field = this.eventForm.get(fieldName);
-    return !!(field && field.invalid && field.touched);
+    this.router.navigate(['/admin/events']);
   }
 }
