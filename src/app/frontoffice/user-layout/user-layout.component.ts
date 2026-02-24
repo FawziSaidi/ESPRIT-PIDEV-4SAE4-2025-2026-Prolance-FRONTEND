@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
-import { RoleService } from '../../services/role.service';
+import { AuthService } from '../../services/auth.services';
 
 @Component({
   selector: 'app-user-layout',
@@ -13,11 +13,24 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   mobileMenuOpen = false;
   currentYear = new Date().getFullYear();
 
+  /**
+   * Retourne le rôle de l'utilisateur connecté (FREELANCER ou CLIENT)
+   * normalisé en minuscules pour les comparaisons dans le template.
+   */
   get currentRole(): string {
-    return this.roleService.currentRole;
+    const role = this.authService.getRole();
+    return role ? role.toLowerCase() : '';
   }
 
-  constructor(private router: Router, private roleService: RoleService) {}
+  get isFreelancer(): boolean {
+    return this.currentRole === 'freelancer';
+  }
+
+  get isClient(): boolean {
+    return this.currentRole === 'client';
+  }
+
+  constructor(private router: Router, private authService: AuthService) {}
 
   @HostListener('window:scroll')
   onScroll(): void {
@@ -40,10 +53,6 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
     document.body.classList.remove('user-portal');
   }
 
-  toggleRole(role: 'freelancer' | 'client'): void {
-    this.roleService.setRole(role);
-  }
-
   toggleProfileDropdown(): void {
     this.profileDropdownOpen = !this.profileDropdownOpen;
   }
@@ -57,6 +66,7 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
+    this.authService.logout();
     this.router.navigate(['/login']);
   }
 }

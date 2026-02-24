@@ -330,6 +330,11 @@
   font-weight: 500;
   border: 1px solid rgba(168, 85, 247, 0.2);
 }
+.detail-value {
+  color: #a855f7;
+  font-weight: 600;
+  text-transform: lowercase;
+}
 
 .card-footer {
   padding: 1rem;
@@ -395,4 +400,108 @@
   .btn-add-inline {
     width: 100%;
   }
+}
+
+/* DELETE CONFIRMATION MODAL */
+.delete-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.delete-modal-content {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: popIn 0.25s ease;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.delete-modal-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.delete-modal-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+}
+
+.delete-modal-desc {
+  color: #6c757d;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 2rem 0;
+}
+
+.danger-text {
+  color: #e53e3e;
+  font-weight: 700;
+}
+
+.delete-modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn-cancel-delete {
+  flex: 1;
+  padding: 0.85rem 1.5rem;
+  background: #f1f3f5;
+  color: #495057;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-delete:hover {
+  background: #e9ecef;
+  border-color: #aaa;
+}
+
+.btn-confirm-delete {
+  flex: 1;
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(135deg, #e53e3e, #c62828);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-confirm-delete:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(229, 62, 62, 0.5);
 }

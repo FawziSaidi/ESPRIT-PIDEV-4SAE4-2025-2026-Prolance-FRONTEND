@@ -3,6 +3,7 @@ import { ProjectsService } from '../../services/projects.service';
 import { AuthService } from '../../../../services/auth.services';
 import { Project } from '../../models/project.model';
 import { FreelancerService } from '../../services/freelancer.service';
+import { EmailNotificationService } from '../../services/email-notification.service';
 
 @Component({
   selector: 'app-projects',
@@ -35,8 +36,10 @@ export class ProjectsComponent implements OnInit {
   selectedView = 'ALL';
 
   showSkillsSetupModal = false;
+  showDeleteModal = false;
+  projectToDelete?: Project;
 
-  constructor(private projectsService: ProjectsService, private authService: AuthService,private freelancerService: FreelancerService) {}
+  constructor(private projectsService: ProjectsService, private authService: AuthService, private freelancerService: FreelancerService, private emailService: EmailNotificationService) {}
 
   ngOnInit(): void {
    this.determineUserRole();
@@ -66,7 +69,12 @@ export class ProjectsComponent implements OnInit {
     });
   }
 }
-
+formatStatus(status: string): string {
+  return status.replace('_', ' ').toLowerCase();
+}
+formatBudget(budget: number): string {
+  return `${budget.toFixed(0)} TND`;
+}
   loadProjects(): void {
     this.loading = true;
     this.projectsService.getAllProjects().subscribe({
@@ -185,23 +193,51 @@ onSkillsSetupDone(): void {
   // Ouvre directement la modal apply après avoir ajouté les skills
   this.showApplyModal = true;
 }
-  deleteProject(project: Project): void {
+  openDeleteModal(project: Project): void {
     if (!this.isMyProject(project)) {
       this.errorMessage = 'Vous ne pouvez supprimer que vos propres projets.';
       return;
     }
+    this.projectToDelete = project;
+    this.showDeleteModal = true;
+  }
 
-    if (confirm(`Êtes-vous sûr de vouloir supprimer "${project.title}" ?`)) {
-      if (project.id) {
-        this.projectsService.deleteProject(project.id).subscribe({
-          next: () => this.loadProjects(),
-          error: (err) => {
-            console.error('Error:', err);
-            this.errorMessage = 'Erreur lors de la suppression.';
-          }
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.projectToDelete = undefined;
+  }
+
+  confirmDelete(): void {
+    if (!this.projectToDelete?.id) return;
+
+    // Récupérer les infos du client connecté avant suppression
+    const currentUser = this.authService.getCurrentUser();
+    const projectSnapshot = { ...this.projectToDelete };
+
+    this.projectsService.deleteProject(this.projectToDelete.id).subscribe({
+      next: () => {
+        // ✅ Envoyer email de notification à l'admin après suppression réussie
+        this.emailService.sendDeleteNotification({
+          clientName:      currentUser?.email?.split('@')[0] || 'Client',
+          clientEmail:     currentUser?.email || '',
+          projectTitle:    projectSnapshot.title,
+          projectBudget:   projectSnapshot.budget,
+          projectCategory: projectSnapshot.category
         });
+
+        this.closeDeleteModal();
+        this.loadProjects();
+      },
+      error: (err) => {
+        console.error('Error:', err);
+        this.errorMessage = 'Erreur lors de la suppression.';
+        this.closeDeleteModal();
       }
-    }
+    });
+  }
+
+  deleteProject(project: Project): void {
+    this.openDeleteModal(project);
   }
 
   getCategoryBadgeClass(category: string): string {

@@ -15,33 +15,30 @@
 
     <!-- Nav Links -->
     <div class="navbar-links" [class.open]="mobileMenuOpen">
-          <a class="dropdown-item" routerLink="/app/dashboard" (click)="profileDropdownOpen = false">
-            <i class="material-icons">dashboard</i> Dashboard
-          </a>
-           <a class="dropdown-item" routerLink="/app/projects" (click)="profileDropdownOpen = false">
-            <i class="material-icons">folder_shared</i> Projects
-          </a>
-          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-            <i class="material-icons">forum</i> Forum
-          </a>
-          <a class="nav-link" routerLink="/app/ads" routerLinkActive="active" (click)="mobileMenuOpen = false">
-            <i class="material-icons">campaign</i> Publicité
-          </a>
-          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-            <i class="material-icons">event</i> Événement
-          </a>
+      <a class="dropdown-item" routerLink="/app/dashboard" (click)="profileDropdownOpen = false">
+        <i class="material-icons">dashboard</i> Dashboard
+      </a>
+      <a class="dropdown-item" routerLink="/app/projects" (click)="profileDropdownOpen = false">
+        <i class="material-icons">folder_shared</i> Projects
+      </a>
+      <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+        <i class="material-icons">forum</i> Forum
+      </a>
+      <a class="nav-link" routerLink="/app/ads" routerLinkActive="active" (click)="mobileMenuOpen = false">
+        <i class="material-icons">campaign</i> Publicité
+      </a>
+      <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+        <i class="material-icons">event</i> Événement
+      </a>
     </div>
 
-    <!-- Right Section -->
+    <!-- ✅ UN SEUL navbar-right (supprimé le doublon) -->
     <div class="navbar-right">
-      <!-- Role Switcher (compact) -->
-      <div class="role-chip-group">
-        <button class="role-chip" [class.active]="currentRole === 'freelancer'" (click)="toggleRole('freelancer')">
-          Freelancer
-        </button>
-        <button class="role-chip" [class.active]="currentRole === 'client'" (click)="toggleRole('client')">
-          Client
-        </button>
+
+      <!-- Role Badge (statique) -->
+      <div class="role-badge-group">
+        <span class="role-badge" [class.active]="isFreelancer">Freelancer</span>
+        <span class="role-badge" [class.active]="isClient">Client</span>
       </div>
 
       <!-- Profile Dropdown -->
@@ -54,20 +51,20 @@
             <span class="dropdown-name">Alex Johnson</span>
             <span class="dropdown-role">{{ currentRole | titlecase }}</span>
           </div>
-
           <div class="dropdown-divider"></div>
-            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-              <i class="material-icons">person</i> Profil
-            </a>
-            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-              <i class="material-icons">track_changes</i> Suivie projets
-            </a>
+          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+            <i class="material-icons">person</i> Profil
+          </a>
+          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+            <i class="material-icons">track_changes</i> Suivie projets
+          </a>
           <div class="dropdown-divider"></div>
           <a class="dropdown-item logout-item" (click)="logout(); profileDropdownOpen = false">
             <i class="material-icons">logout</i> Logout
           </a>
         </div>
       </div>
+
     </div>
 
   </div>

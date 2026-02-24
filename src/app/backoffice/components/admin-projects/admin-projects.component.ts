@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ProjectsService } from '../../../frontoffice/ProjectModule/services/projects.service';
 import { Project } from '../../../frontoffice/ProjectModule/models/project.model';
+import { EmailNotificationService } from 'app/frontoffice/ProjectModule/services/email-notification.service';
+import { ProjectStatus } from 'app/frontoffice/ProjectModule/models/enums.model';
 @Component({
   selector: 'app-admin-projects',
   templateUrl: './admin-projects.component.html',
@@ -19,10 +21,50 @@ export class AdminProjectsComponent implements OnInit {
   statusOptions = ['ALL', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
   categoryOptions = ['ALL', 'DEV', 'DESIGN'];
 
-  constructor(private projectsService: ProjectsService) {}
+  approvingProjectId?: number;
+
+  // ✅ AJOUTÉ — propriétés pour les modals
+  showSuccessModal = false;
+  successModalTitle = '';
+  successModalMessage = '';
+  successModalEmail = '';
+
+  showConfirmModal = false;
+  confirmModalType: 'approve' | 'delete' = 'approve';
+  pendingProject?: Project;
+
+  constructor(
+    private projectsService: ProjectsService,
+    private emailService: EmailNotificationService
+  ) {}
 
   ngOnInit(): void {
     this.loadProjects();
+  }
+
+  private showSuccess(title: string, message: string, email: string): void {
+    this.successModalTitle   = title;
+    this.successModalMessage = message;
+    this.successModalEmail   = email;
+    this.showSuccessModal    = true;
+  }
+
+  closeSuccessModal(): void { this.showSuccessModal = false; }
+
+  // ✅ AJOUTÉ — méthodes confirm modal
+  cancelConfirm(): void {
+    this.showConfirmModal = false;
+    this.pendingProject = undefined;
+  }
+
+  confirmAction(): void {
+    this.showConfirmModal = false;
+    if (this.confirmModalType === 'approve' && this.pendingProject) {
+      this.doApprove(this.pendingProject);
+    } else if (this.confirmModalType === 'delete' && this.pendingProject) {
+      this.doDelete(this.pendingProject);
+    }
+    this.pendingProject = undefined;
   }
 
   loadProjects(): void {
@@ -40,10 +82,73 @@ export class AdminProjectsComponent implements OnInit {
     });
   }
 
+  private getCurrentUser(): any {
+    try {
+      const userJson = localStorage.getItem('sessionUser')
+      return userJson ? JSON.parse(userJson) : null;
+    } catch (e) {
+      console.error('Error parsing user:', e);
+      return null;
+    }
+  }
+
+  // ✅ MODIFIÉ — ouvre le modal au lieu du confirm()
+  approveProject(project: Project): void {
+    if (!project.id) return;
+    this.pendingProject = project;
+    this.confirmModalType = 'approve';
+    this.showConfirmModal = true;
+  }
+
+  // ✅ AJOUTÉ — logique déplacée ici
+  private doApprove(project: Project): void {
+    if (!project.id) return;
+    this.approvingProjectId = project.id;
+
+    this.projectsService.approveProject(project.id).subscribe({
+      next: () => {
+        const updateStatus = () => {
+          if (this.selectedProject?.id === project.id) {
+            this.selectedProject!.status = ProjectStatus.COMPLETED;
+          }
+          const p = this.projects.find(p => p.id === project.id);
+          if (p) p.status = ProjectStatus.COMPLETED;
+          this.applyFilters();
+          this.approvingProjectId = undefined;
+        };
+
+        const clientEmail = project.client?.email;
+
+        if (clientEmail) {
+          this.emailService.sendProjectApprovedEmail(
+            project.id!,
+            clientEmail,
+            project.title
+          ).subscribe({
+            next: () => {
+              updateStatus();
+              this.showSuccess('✅ Projet approuvé !', project.title, clientEmail);
+            },
+            error: () => {
+              updateStatus();
+              this.showSuccess('✅ Projet approuvé !', project.title, '');
+            }
+          });
+        } else {
+          updateStatus();
+          this.showSuccess('✅ Projet approuvé !', project.title, '');
+        }
+      },
+      error: (err) => {
+        console.error('Error approving:', err);
+        this.approvingProjectId = undefined;
+      }
+    });
+  }
+
   applyFilters(): void {
     let filtered = this.projects;
 
-    // Search filter
     if (this.searchQuery.trim()) {
       filtered = filtered.filter(p =>
         p.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -51,12 +156,10 @@ export class AdminProjectsComponent implements OnInit {
       );
     }
 
-    // Status filter
     if (this.statusFilter !== 'ALL') {
       filtered = filtered.filter(p => p.status === this.statusFilter);
     }
 
-    // Category filter
     if (this.categoryFilter !== 'ALL') {
       filtered = filtered.filter(p => p.category === this.categoryFilter);
     }
@@ -87,15 +190,23 @@ export class AdminProjectsComponent implements OnInit {
     this.selectedProject = undefined;
   }
 
+  // ✅ MODIFIÉ — ouvre le modal au lieu du confirm()
   deleteProject(project: Project): void {
-    if (confirm(`Delete project "${project.title}"?`)) {
-      if (project.id) {
-        this.projectsService.deleteProject(project.id).subscribe({
-          next: () => this.loadProjects(),
-          error: (err) => console.error('Error deleting:', err)
-        });
-      }
-    }
+    this.pendingProject = project;
+    this.confirmModalType = 'delete';
+    this.showConfirmModal = true;
+  }
+
+  // ✅ AJOUTÉ — logique déplacée ici
+  private doDelete(project: Project): void {
+    if (!project.id) return;
+    this.projectsService.deleteProject(project.id).subscribe({
+      next: () => {
+        if (this.selectedProject?.id === project.id) this.selectedProject = undefined;
+        this.loadProjects();
+      },
+      error: (err) => console.error('Error deleting:', err)
+    });
   }
 
   getCategoryIcon(category: string): string {
@@ -110,8 +221,8 @@ export class AdminProjectsComponent implements OnInit {
     };
     return colors[status] || '#6b7280';
   }
-  getProjectCountByStatus(status: string): number {
-  return this.projects.filter(p => p.status === status).length;
-}
 
+  getProjectCountByStatus(status: string): number {
+    return this.projects.filter(p => p.status === status).length;
+  }
 }

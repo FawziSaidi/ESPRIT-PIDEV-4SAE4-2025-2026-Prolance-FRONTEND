@@ -50,7 +50,7 @@
 
           <div class="card-header-actions">
             <button *ngIf="isMyProject(project)" class="btn-action-small delete" 
-              (click)="deleteProject(project)" title="Delete">🗑️</button>
+              (click)="openDeleteModal(project)" title="Delete">🗑️</button>
             <button class="btn-action-small more-details" (click)="openProjectDetails(project)" 
               title="More details">⋮</button>
           </div>
@@ -63,12 +63,12 @@
           <div class="project-details">
             <div class="detail-item">
               <span class="detail-label">Budget:</span>
-              <span class="detail-value">${{ project.budget | number:'1.0-0' }}</span>
+              <span class="detail-value">{{ formatBudget(project.budget) }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Status:</span>
               <span class="detail-value" [class]="'status-' + (project.status | lowercase)">
-                {{ project.status }}
+                {{ formatStatus(project.status) }}
               </span>
             </div>
           </div>
@@ -93,6 +93,22 @@
       <div class="empty-icon">📝</div>
       <h3>No projects found</h3>
       <button *ngIf="isClient" class="btn-primary" (click)="openAddModal()">Create first project</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div class="delete-modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="delete-modal-content" (click)="$event.stopPropagation()">
+    <div class="delete-modal-icon">🗑️</div>
+    <h2 class="delete-modal-title">Delete this project?</h2>
+    <p class="delete-modal-desc">
+      This action is <strong class="danger-text">irreversible</strong>. The project and all its
+      data will be permanently deleted.
+    </p>
+    <div class="delete-modal-actions">
+      <button class="btn-cancel-delete" (click)="closeDeleteModal()">Cancel</button>
+      <button class="btn-confirm-delete" (click)="confirmDelete()">Yes, delete</button>
     </div>
   </div>
 </div>

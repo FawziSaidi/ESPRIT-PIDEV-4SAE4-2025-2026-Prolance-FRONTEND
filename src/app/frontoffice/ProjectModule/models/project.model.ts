@@ -21,6 +21,7 @@ export interface Project {
     id: number;
     name: string;
     lastName?: string;
+    email?: string;
   };
 
   tasks?: Task[];
