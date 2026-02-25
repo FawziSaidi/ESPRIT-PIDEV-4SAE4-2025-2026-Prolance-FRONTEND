@@ -1,6 +1,8 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { RoleService } from '../../services/role.service';
+import { AuthService, SessionUser } from '../../services/auth.services';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-user-layout',
@@ -12,12 +14,18 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   profileDropdownOpen = false;
   mobileMenuOpen = false;
   currentYear = new Date().getFullYear();
+  currentUser: SessionUser | null = null;
+  private destroy$ = new Subject<void>();
 
   get currentRole(): string {
     return this.roleService.currentRole;
   }
 
-  constructor(private router: Router, private roleService: RoleService) {}
+  constructor(
+    private router: Router,
+    private roleService: RoleService,
+    private authService: AuthService
+  ) {}
 
   @HostListener('window:scroll')
   onScroll(): void {
@@ -34,10 +42,19 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     document.body.classList.add('user-portal');
+
+    // Use AuthService observable instead of reading localStorage directly
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUser = user;
+      });
   }
 
   ngOnDestroy(): void {
     document.body.classList.remove('user-portal');
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   toggleRole(role: 'freelancer' | 'client'): void {
@@ -57,6 +74,7 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
+    this.authService.logout(); // ← also clear the session properly
     this.router.navigate(['/login']);
   }
 }

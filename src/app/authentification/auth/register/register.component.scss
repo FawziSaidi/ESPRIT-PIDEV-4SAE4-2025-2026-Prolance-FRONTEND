@@ -24,7 +24,7 @@
     135deg,
     rgba($purple-600, 0.75) 0%,
     rgba($purple-400, 0.65) 50%,
-    rgba($cyan-600, 0.60) 100%
+    rgba($cyan-600,   0.60) 100%
   );
   z-index: 0;
 }
@@ -33,7 +33,7 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 440px;
+  max-width: 460px;
 }
 
 // ═══════════════════════════════════════════════
@@ -42,15 +42,17 @@
 .auth-card {
   border: 0;
   border-radius: $border-radius-large;
-  box-shadow: 0 16px 38px -12px rgba(0, 0, 0, 0.56),
-              0 4px 25px 0 rgba(0, 0, 0, 0.12),
-              0 8px 10px -5px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 16px 38px -12px rgba(0,0,0,0.56),
+    0  4px 25px  0   rgba(0,0,0,0.12),
+    0  8px 10px -5px rgba(0,0,0,0.2);
   overflow: visible;
 
+  // ── Floating badge (inspired by forum pill style) ──
   .card-header {
     &.card-header-icon {
       text-align: center;
-      margin-top: -30px;
+      margin-top: -36px;
       margin-left: auto;
       margin-right: auto;
       padding: 0;
@@ -62,15 +64,18 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 72px;
-        height: 72px;
+        width: 70px;
+        height: 70px;
         border-radius: 50%;
-        background: linear-gradient(60deg, $purple-400, $purple-600);
-        @include shadow-big-color($brand-primary);
+        background: linear-gradient(135deg, $purple-400, $purple-600);
+        box-shadow:
+          0 6px 20px rgba($purple-600, 0.45),
+          0 2px 8px  rgba(0,0,0,0.18);
+        border: 3px solid #fff;       // white ring like the profile avatar badge
 
         i {
-          font-size: 32px;
-          color: $white;
+          font-size: 30px;
+          color: #fff;
           line-height: 1;
         }
       }
@@ -78,7 +83,7 @@
   }
 
   .card-body {
-    padding: 20px 32px 28px;
+    padding: 18px 32px 28px;
   }
 }
 
@@ -86,28 +91,29 @@
 // TYPOGRAPHY
 // ═══════════════════════════════════════════════
 .auth-title {
-  font-size: 1.6rem;
+  font-size: 1.55rem;
   font-weight: 700;
   color: $black-color;
   text-align: center;
-  margin: 16px 0 4px;
+  margin: 14px 0 4px;
 }
 
 .auth-subtitle {
-  font-size: 14px;
+  font-size: 13px;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 // ═══════════════════════════════════════════════
-// USER TYPE TOGGLE
+// USER TYPE TOGGLE  (pill style matching forum tabs)
 // ═══════════════════════════════════════════════
 .type-toggle {
   display: flex;
-  border-radius: $border-radius-extreme;
+  border-radius: 50px;
   overflow: hidden;
-  border: 2px solid $brand-primary;
-  margin-bottom: 20px;
+  border: 1.5px solid rgba($brand-primary, 0.3);
+  margin-bottom: 18px;
+  background: rgba($brand-primary, 0.03);
 }
 
 .toggle-btn {
@@ -120,61 +126,71 @@
   border: 0;
   background: transparent;
   color: $brand-primary;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   cursor: pointer;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: all 0.25s ease;
 
-  .material-icons {
-    font-size: 18px;
-  }
+  .material-icons { font-size: 17px; }
 
   &.active {
-    background: linear-gradient(60deg, $purple-400, $purple-600);
-    color: $white;
+    background: linear-gradient(135deg, $purple-400, $purple-600);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba($purple-600, 0.4);
+    border-radius: 50px;
+    margin: 2px;
   }
 
   &:not(.active):hover {
-    background: rgba($brand-primary, 0.08);
+    background: rgba($brand-primary, 0.07);
   }
 }
 
 // ═══════════════════════════════════════════════
-// SOCIAL LOGIN
+// GOOGLE BUTTON  (full-width branded)
 // ═══════════════════════════════════════════════
 .social-login {
+  margin-bottom: 14px;
+}
+
+.btn-google-full {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 16px;
+  background: #fff;
+  border: 1.5px solid #e8eaf0;
+  border-radius: 50px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #3c4043;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+  font-family: inherit;
 
-  .btn {
-    width: 46px;
-    height: 46px;
-    min-width: 46px;
-    line-height: 46px;
-    font-size: 18px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  svg { flex-shrink: 0; }
 
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-    }
+  &:hover:not(:disabled) {
+    border-color: #dadce0;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    transform: translateY(-1px);
   }
 
-  .btn-google {
-    background: #db4437;
-    color: $white;
-    &:hover { background: darken(#db4437, 6%); }
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
   }
 
-  .btn-github {
-    background: $grey-900;
-    color: $white;
-    &:hover { background: lighten($grey-900, 8%); }
+  .google-spinner {
+    display: flex;
+    align-items: center;
+    .spinner-icon { font-size: 18px; color: #9c27b0; }
   }
 }
 
@@ -184,19 +200,19 @@
 .divider {
   display: flex;
   align-items: center;
-  margin: 8px 0 20px;
+  margin: 10px 0 16px;
 
   &::before,
   &::after {
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(0,0,0,0.09);
   }
 
   span {
-    padding: 0 14px;
-    font-size: 12px;
+    padding: 0 12px;
+    font-size: 11.5px;
     color: $gray-color;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -205,10 +221,24 @@
 }
 
 // ═══════════════════════════════════════════════
+// SIDE-BY-SIDE NAME ROW
+// ═══════════════════════════════════════════════
+.form-row-double {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 420px) {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+// ═══════════════════════════════════════════════
 // FORM CONTROLS
 // ═══════════════════════════════════════════════
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 
   .input-group {
     .input-group-prepend .input-group-text,
@@ -217,15 +247,20 @@
       border: 0;
       border-bottom: 1px solid #d2d2d2;
       border-radius: 0;
-      padding: 0 12px 0 0;
+      padding: 0 10px 0 0;
       color: $gray-color;
-      transition: color 0.3s ease, border-color 0.3s ease;
-
-      i { font-size: 20px; }
+      transition: color 0.25s ease, border-color 0.25s ease;
+      i { font-size: 19px; }
     }
 
     .input-group-append .input-group-text {
-      padding: 0 0 0 12px;
+      padding: 0 0 0 10px;
+    }
+
+    // Status icon (check / error)
+    .status-icon {
+      border-bottom: 0 !important;
+      i { font-size: 17px; }
     }
 
     .form-control {
@@ -234,36 +269,37 @@
       border-radius: 0;
       box-shadow: none;
       padding: 8px 0;
-      font-size: 14px;
+      font-size: 13.5px;
       background: transparent;
-      transition: border-color 0.3s ease;
+      transition: border-color 0.25s ease;
 
       &:focus {
         border-bottom-color: $brand-primary;
         box-shadow: 0 1px 0 0 $brand-primary;
       }
 
-      &::placeholder {
-        color: #aaa;
-        font-weight: 300;
-      }
+      &::placeholder { color: #bbb; font-weight: 300; }
     }
   }
 
+  // ── Success state ──
   &.has-success {
     .input-group-text { color: $brand-success; border-bottom-color: $brand-success; }
-    .form-control { border-bottom-color: $brand-success; }
+    .form-control     { border-bottom-color: $brand-success; }
+    .status-icon i    { color: $brand-success; }
   }
 
+  // ── Error state ──
   &.has-danger {
     .input-group-text { color: $brand-danger; border-bottom-color: $brand-danger; }
-    .form-control { border-bottom-color: $brand-danger; }
+    .form-control     { border-bottom-color: $brand-danger; }
+    .status-icon i    { color: $brand-danger; }
   }
 
   .text-danger {
     display: block;
     font-size: 11px;
-    margin-top: 6px;
+    margin-top: 5px;
     padding-left: 2px;
   }
 }
@@ -274,49 +310,114 @@
 }
 
 // ═══════════════════════════════════════════════
+// PASSWORD STRENGTH BAR
+// ═══════════════════════════════════════════════
+.strength-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.strength-bar {
+  flex: 1;
+  height: 5px;
+  background: #f0eef8;
+  border-radius: 50px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 50px;
+  transition: width 0.35s ease, background 0.35s ease;
+}
+
+.strength-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 46px;
+  text-align: right;
+  transition: color 0.3s ease;
+}
+
+// ═══════════════════════════════════════════════
+// PASSWORD CRITERIA CHECKLIST
+// ═══════════════════════════════════════════════
+.pw-criteria {
+  list-style: none;
+  padding: 8px 0 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: #bbb;
+    font-weight: 500;
+    transition: color 0.2s ease;
+
+    i {
+      font-size: 14px;
+      color: #ddd;
+      transition: color 0.2s ease;
+    }
+
+    &.met {
+      color: #43a047;
+      i { color: #43a047; }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
 // TERMS GROUP
 // ═══════════════════════════════════════════════
 .terms-group {
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 
   .form-check-label {
-    font-size: 13px;
+    font-size: 12.5px;
     color: $gray-dark;
-
     a {
       text-decoration: none;
       &:hover { text-decoration: underline; }
     }
   }
 
-  .text-danger {
-    margin-top: 4px;
-    padding-left: 28px;
-  }
+  .text-danger { margin-top: 4px; padding-left: 28px; }
 }
 
 // ═══════════════════════════════════════════════
 // SUBMIT BUTTON
 // ═══════════════════════════════════════════════
 .auth-submit {
-  background: linear-gradient(60deg, $purple-400, $purple-600);
+  background: linear-gradient(135deg, $purple-400, $purple-600);
   @include shadow-big-color($brand-primary);
   font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
-  padding: 12px 0;
+  padding: 13px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   transition: box-shadow 0.3s ease, transform 0.2s ease;
+
+  .btn-icon { font-size: 18px; }
 
   &:hover:not(:disabled) {
     @include shadow-16dp-color($brand-primary);
     transform: translateY(-1px);
   }
 
-  &:disabled {
-    opacity: 0.75;
-    cursor: not-allowed;
-  }
+  &:disabled { opacity: 0.7; cursor: not-allowed; }
 }
 
 .spinner-wrap {
@@ -326,8 +427,8 @@
 }
 
 .spinner-icon {
-  animation: spin 1s linear infinite;
-  font-size: 20px;
+  animation: spin 0.9s linear infinite;
+  font-size: 19px;
 }
 
 @keyframes spin {
@@ -339,14 +440,10 @@
 // AUTH SWITCH LINK
 // ═══════════════════════════════════════════════
 .auth-switch {
-  margin-top: 20px;
-  font-size: 14px;
+  margin-top: 18px;
+  font-size: 13px;
   color: $gray-color;
-
-  a {
-    text-decoration: none;
-    &:hover { text-decoration: underline; }
-  }
+  a { text-decoration: none; &:hover { text-decoration: underline; } }
 }
 
 // ═══════════════════════════════════════════════
@@ -358,21 +455,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 32px;
-  gap: 6px;
+  margin-top: 28px;
+  gap: 5px;
 
   .footer-brand {
-    font-size: 1.2rem;
-    color: $white;
+    font-size: 1.15rem;
+    color: #fff;
     text-decoration: none;
     font-weight: 300;
     strong { font-weight: 700; }
-    &:hover { color: $white; text-decoration: none; }
+    &:hover { color: #fff; text-decoration: none; }
   }
 
   .footer-copy {
-    font-size: 12px;
-    color: rgba($white, 0.6);
+    font-size: 11.5px;
+    color: rgba(#fff, 0.55);
   }
 }
 
@@ -380,15 +477,7 @@
 // RESPONSIVE
 // ═══════════════════════════════════════════════
 @media (max-width: 576px) {
-  .auth-card .card-body {
-    padding: 16px 20px 24px;
-  }
-
-  .auth-title { font-size: 1.35rem; }
-
-  .toggle-btn {
-    font-size: 11px;
-    padding: 8px 8px;
-    .material-icons { font-size: 16px; }
-  }
+  .auth-card .card-body { padding: 14px 18px 22px; }
+  .auth-title { font-size: 1.3rem; }
+  .toggle-btn { font-size: 11px; padding: 8px; .material-icons { font-size: 15px; } }
 }

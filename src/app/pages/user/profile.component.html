@@ -1,0 +1,321 @@
+<!-- profile.component.html -->
+<div class="profile-container">
+
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="isLoading && !userProfile">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="!isLoading && loadError && !userProfile">
+    <i class="material-icons error-icon">error_outline</i>
+    <h3>Error Loading Profile</h3>
+    <p>{{ loadError }}</p>
+    <button class="btn-retry" (click)="loadUserProfile()">
+      <i class="material-icons">refresh</i> Try Again
+    </button>
+  </div>
+
+  <!-- Profile Content -->
+  <div class="profile-card" *ngIf="userProfile">
+
+    <!-- Cover: gradient + floating avatar -->
+    <div class="profile-cover">
+      <div class="cover-gradient"></div>
+      <div class="profile-avatar-wrapper">
+
+        <!-- Avatar circle -->
+        <div class="profile-avatar" [class.has-image]="avatarPreview">
+
+          <!-- Photo if uploaded -->
+          <img *ngIf="avatarPreview"
+               [src]="avatarPreview"
+               alt="Profile picture"
+               class="avatar-img" />
+
+          <!-- Initials fallback -->
+          <span class="avatar-initials" *ngIf="!avatarPreview">{{ getInitials() }}</span>
+
+          <!-- Camera overlay (hover to reveal, always clickable) -->
+          <label class="avatar-upload-overlay"
+                 for="avatarInput"
+                 [class.uploading]="isUploadingAvatar"
+                 title="Change profile picture">
+            <span *ngIf="!isUploadingAvatar">
+              <i class="material-icons">photo_camera</i>
+              <span class="overlay-text">Change</span>
+            </span>
+            <span *ngIf="isUploadingAvatar" class="spinner-small white"></span>
+          </label>
+
+          <!-- Hidden file input -->
+          <input id="avatarInput"
+                 type="file"
+                 accept="image/*"
+                 style="display:none"
+                 (change)="onAvatarSelected($event)">
+        </div>
+
+        <!-- Admin badge -->
+        <div class="avatar-badge" *ngIf="userProfile.role === 'ADMIN'">
+          <i class="material-icons">verified</i>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Header bar: title + role badge + actions -->
+    <div class="profile-header">
+      <div class="header-left">
+        <h1 class="profile-title">My Profile</h1>
+        <span class="role-badge"
+              [class.role-admin]="userProfile.role === 'ADMIN'"
+              [class.role-client]="userProfile.role === 'CLIENT'"
+              [class.role-freelancer]="userProfile.role === 'FREELANCER'">
+          <i class="material-icons role-icon">
+            {{ userProfile.role === 'ADMIN' ? 'security' :
+               userProfile.role === 'CLIENT' ? 'business' : 'work' }}
+          </i>
+          {{ userProfile.role }}
+        </span>
+      </div>
+      <div class="header-actions">
+        <ng-container *ngIf="!isEditMode; else editActions">
+          <button class="btn-edit" (click)="toggleEditMode()" [disabled]="isLoading">
+            <i class="material-icons">edit</i>
+            Edit Profile
+          </button>
+        </ng-container>
+        <ng-template #editActions>
+          <button class="btn-save" (click)="saveProfile()" [disabled]="isLoading">
+            <i class="material-icons" *ngIf="!isLoading">save</i>
+            <span class="spinner-small" *ngIf="isLoading"></span>
+            {{ isLoading ? 'Saving...' : 'Save Changes' }}
+          </button>
+          <button class="btn-cancel" (click)="cancelEdit()" [disabled]="isLoading">
+            <i class="material-icons">close</i>
+            Cancel
+          </button>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Details -->
+    <div class="profile-details">
+
+      <!-- ══ VIEW MODE ══ -->
+      <div class="details-grid" *ngIf="!isEditMode && !showPasswordChange">
+
+        <div class="detail-card">
+          <div class="detail-icon"><i class="material-icons">person</i></div>
+          <div class="detail-content">
+            <span class="detail-label">First Name</span>
+            <span class="detail-value">{{ userProfile.name }}</span>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-icon"><i class="material-icons">person</i></div>
+          <div class="detail-content">
+            <span class="detail-label">Last Name</span>
+            <span class="detail-value">{{ userProfile.lastName }}</span>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-icon"><i class="material-icons">email</i></div>
+          <div class="detail-content">
+            <span class="detail-label">Email Address</span>
+            <span class="detail-value">{{ userProfile.email }}</span>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-icon"><i class="material-icons">cake</i></div>
+          <div class="detail-content">
+            <span class="detail-label">Birth Date</span>
+            <span class="detail-value">{{ formatDate(userProfile.birthDate) || 'Not set' }}</span>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-icon"><i class="material-icons">badge</i></div>
+          <div class="detail-content">
+            <span class="detail-label">Role</span>
+            <span class="detail-value role-value"
+                  [class.role-admin]="userProfile.role === 'ADMIN'"
+                  [class.role-client]="userProfile.role === 'CLIENT'"
+                  [class.role-freelancer]="userProfile.role === 'FREELANCER'">
+              {{ userProfile.role }}
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-card password-card">
+          <div class="detail-icon"><i class="material-icons">lock</i></div>
+          <div class="detail-content">
+            <span class="detail-label">Password</span>
+            <div class="password-field">
+              <span class="detail-value password-dots">••••••••</span>
+              <button class="btn-icon" (click)="showPasswordChange = true; isEditMode = false;">
+                <i class="material-icons">lock_reset</i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══ EDIT MODE ══ -->
+      <form class="details-grid edit-grid" *ngIf="isEditMode"
+            [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+
+        <div class="detail-card"
+             [class.card-invalid]="profileForm.get('name')?.invalid && profileForm.get('name')?.touched">
+          <div class="detail-icon"><i class="material-icons">person</i></div>
+          <div class="detail-content">
+            <label class="detail-label" for="name">First Name</label>
+            <input class="detail-input" id="name" type="text"
+                   formControlName="name" placeholder="First name">
+            <span class="field-error"
+                  *ngIf="profileForm.get('name')?.invalid && profileForm.get('name')?.touched">
+              Required
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-card"
+             [class.card-invalid]="profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched">
+          <div class="detail-icon"><i class="material-icons">person</i></div>
+          <div class="detail-content">
+            <label class="detail-label" for="lastName">Last Name</label>
+            <input class="detail-input" id="lastName" type="text"
+                   formControlName="lastName" placeholder="Last name">
+            <span class="field-error"
+                  *ngIf="profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched">
+              Required
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-card"
+             [class.card-invalid]="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
+          <div class="detail-icon"><i class="material-icons">email</i></div>
+          <div class="detail-content">
+            <label class="detail-label" for="email">Email Address</label>
+            <input class="detail-input" id="email" type="email"
+                   formControlName="email" placeholder="Email address">
+            <span class="field-error"
+                  *ngIf="profileForm.get('email')?.invalid && profileForm.get('email')?.touched">
+              Valid email required
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-icon"><i class="material-icons">cake</i></div>
+          <div class="detail-content">
+            <label class="detail-label" for="birthDate">Birth Date</label>
+            <input class="detail-input" id="birthDate" type="date"
+                   formControlName="birthDate">
+          </div>
+        </div>
+
+        <div class="detail-card card-disabled">
+          <div class="detail-icon"><i class="material-icons">badge</i></div>
+          <div class="detail-content">
+            <span class="detail-label">Role</span>
+            <span class="detail-value role-value"
+                  [class.role-admin]="userProfile.role === 'ADMIN'"
+                  [class.role-client]="userProfile.role === 'CLIENT'"
+                  [class.role-freelancer]="userProfile.role === 'FREELANCER'">
+              {{ userProfile.role }}
+            </span>
+            <span class="field-hint">Cannot be changed</span>
+          </div>
+        </div>
+
+        <div class="detail-card card-disabled">
+          <div class="detail-icon"><i class="material-icons">lock</i></div>
+          <div class="detail-content">
+            <span class="detail-label">Password</span>
+            <span class="detail-value password-dots">••••••••</span>
+          </div>
+        </div>
+
+        <button type="submit" style="display:none"></button>
+      </form>
+
+      <!-- ══ PASSWORD CHANGE ══ -->
+      <div class="password-change-section" *ngIf="showPasswordChange && !isEditMode">
+        <h3 class="section-title">
+          <i class="material-icons">password</i>
+          Change Password
+        </h3>
+        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+          <div class="details-grid">
+
+            <div class="detail-card" style="grid-column: 1 / -1">
+              <div class="detail-icon"><i class="material-icons">lock</i></div>
+              <div class="detail-content">
+                <label class="detail-label" for="currentPassword">Current Password</label>
+                <input class="detail-input" id="currentPassword" type="password"
+                       formControlName="currentPassword" placeholder="Enter current password">
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-icon"><i class="material-icons">lock_open</i></div>
+              <div class="detail-content">
+                <label class="detail-label" for="newPassword">New Password</label>
+                <input class="detail-input" id="newPassword" type="password"
+                       formControlName="newPassword" placeholder="New password">
+              </div>
+            </div>
+
+            <div class="detail-card">
+              <div class="detail-icon"><i class="material-icons">lock_clock</i></div>
+              <div class="detail-content">
+                <label class="detail-label" for="confirmPassword">Confirm Password</label>
+                <input class="detail-input" id="confirmPassword" type="password"
+                       formControlName="confirmPassword" placeholder="Confirm password">
+              </div>
+            </div>
+
+          </div>
+
+          <div class="field-error mismatch-error"
+               *ngIf="passwordForm.hasError('mismatch') && passwordForm.get('confirmPassword')?.touched">
+            <i class="material-icons">error</i> Passwords do not match
+          </div>
+
+          <div class="pw-actions">
+            <button type="button" class="btn-cancel" (click)="showPasswordChange = false">
+              <i class="material-icons">close</i> Cancel
+            </button>
+            <button type="submit" class="btn-save"
+                    [disabled]="passwordForm.invalid || isLoading">
+              <i class="material-icons" *ngIf="!isLoading">check</i>
+              <span class="spinner-small" *ngIf="isLoading"></span>
+              {{ isLoading ? 'Saving...' : 'Change Password' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ══ DANGER ZONE ══ -->
+      <div class="danger-zone" *ngIf="!isEditMode && !showPasswordChange">
+        <button class="btn-delete" (click)="deleteAccount()" [disabled]="isLoading">
+          <i class="material-icons">delete_forever</i>
+          Delete Account
+        </button>
+        <p class="danger-hint">
+          <i class="material-icons">warning</i>
+          This action cannot be undone. All your data will be permanently removed.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>

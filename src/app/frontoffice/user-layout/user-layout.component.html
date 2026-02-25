@@ -51,13 +51,15 @@
         </button>
         <div class="profile-dropdown" [class.open]="profileDropdownOpen">
           <div class="dropdown-header">
-            <span class="dropdown-name">Alex Johnson</span>
-            <span class="dropdown-role">{{ currentRole | titlecase }}</span>
-          </div>
+  <span class="dropdown-name">
+    {{ currentUser ? currentUser.name + ' ' + currentUser.lastName : 'Guest' }}
+  </span>
+  <span class="dropdown-role">{{ currentRole | titlecase }}</span>
+</div>
 
           <div class="dropdown-divider"></div>
-            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-              <i class="material-icons">person</i> Profil
+            <a class="nav-link" routerLink="/app/profile" (click)="mobileMenuOpen = false">
+              <i class="material-icons">person</i> Profile
             </a>
             <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
               <i class="material-icons">track_changes</i> Suivie projets
