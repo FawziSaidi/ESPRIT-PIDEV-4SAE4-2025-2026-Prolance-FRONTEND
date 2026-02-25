@@ -6,6 +6,17 @@
     <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
 
     <div class="filters-card">
+      <div class="search-bar-wrapper">
+        <span class="search-icon-left">🔍</span>
+        <input
+          type="text"
+          class="search-bar-input"
+          placeholder="Search by title, description or client..."
+          [value]="searchQuery"
+          (input)="onSearchChange($any($event.target).value)"
+        />
+        <button *ngIf="searchQuery" class="search-clear" (click)="onSearchChange('')">✕</button>
+      </div>
       <div class="filter-group">
         <div class="tabs">
           <button *ngFor="let cat of categoryOptions" [class.active]="selectedCategory === cat.value"
@@ -116,7 +127,7 @@
 <app-project-form *ngIf="showAddModal" (close)="closeAddModal()"></app-project-form>
 <app-project-form *ngIf="showEditModal && selectedProject" [project]="selectedProject" (close)="closeEditModal()"></app-project-form>
 <app-project-details *ngIf="showDetailsModal && selectedProject" [project]="selectedProject" (close)="closeDetailsModal()"></app-project-details>
-<app-freelancer-apply *ngIf="showApplyModal && selectedProject" [project]="selectedProject" (close)="closeApplyModal()" (skillsSubmitted)="onSkillsSubmitted($event)"></app-freelancer-apply>
+<app-freelancer-apply *ngIf="showApplyModal && selectedProject" [project]="selectedProject" (close)="closeApplyModal()" (applied)="onApplicationSubmitted()"></app-freelancer-apply>
 <app-freelancer-skills-setup 
   *ngIf="showSkillsSetupModal"
   [freelancerId]="currentUserId"

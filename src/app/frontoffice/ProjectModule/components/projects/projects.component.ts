@@ -3,7 +3,6 @@ import { ProjectsService } from '../../services/projects.service';
 import { AuthService } from '../../../../services/auth.services';
 import { Project } from '../../models/project.model';
 import { FreelancerService } from '../../services/freelancer.service';
-import { EmailNotificationService } from '../../services/email-notification.service';
 
 @Component({
   selector: 'app-projects',
@@ -34,12 +33,14 @@ export class ProjectsComponent implements OnInit {
   
   viewOptions = [ { label: 'My Projects', value: 'MY_PROJECTS' }];
   selectedView = 'ALL';
+  searchQuery = '';
 
   showSkillsSetupModal = false;
   showDeleteModal = false;
   projectToDelete?: Project;
+  alreadyAppliedProjects: Set<number> = new Set();
 
-  constructor(private projectsService: ProjectsService, private authService: AuthService, private freelancerService: FreelancerService, private emailService: EmailNotificationService) {}
+  constructor(private projectsService: ProjectsService, private authService: AuthService,private freelancerService: FreelancerService) {}
 
   ngOnInit(): void {
    this.determineUserRole();
@@ -94,6 +95,15 @@ formatBudget(budget: number): string {
   applyFilters(): void {
     let filtered = this.projects;
 
+    if (this.searchQuery.trim()) {
+      const q = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        (p.client?.name || '').toLowerCase().includes(q)
+      );
+    }
+
     if (this.selectedCategory !== 'ALL') {
       filtered = filtered.filter(p => p.category === this.selectedCategory);
     }
@@ -107,6 +117,11 @@ formatBudget(budget: number): string {
 
   isMyProject(project: Project): boolean {
     return this.isClient && project.client?.id === this.currentUserId;
+  }
+
+  onSearchChange(query: string): void {
+    this.searchQuery = query;
+    this.applyFilters();
   }
 
   onCategoryChange(category: string): void {
@@ -163,14 +178,30 @@ formatBudget(budget: number): string {
     this.selectedProject = undefined;
   }
 
- openApplyModal(project: Project): void {
+
+openApplyModal(project: Project): void {
   this.selectedProject = project;
   if (!this.hasFilledSkills) {
-    this.showSkillsSetupModal = true; // nouveau flag
+    this.showSkillsSetupModal = true;
   } else {
-    this.showApplyModal = true;
+    // Vérifier si déjà appliqué
+    if (project.id && this.currentUserId) {
+      this.freelancerService.checkAlreadyApplied(this.currentUserId, project.id).subscribe({
+        next: (alreadyApplied) => {
+          if (alreadyApplied) {
+            alert('You have already applied to this project.');
+          } else {
+            this.showApplyModal = true;
+          }
+        },
+        error: () => this.showApplyModal = true // en cas d'erreur, ouvrir quand même
+      });
+    } else {
+      this.showApplyModal = true;
+    }
   }
 }
+
 
   closeApplyModal(): void {
     this.showApplyModal = false;
@@ -193,6 +224,11 @@ onSkillsSetupDone(): void {
   // Ouvre directement la modal apply après avoir ajouté les skills
   this.showApplyModal = true;
 }
+onApplicationSubmitted(): void {
+  this.showApplyModal = false;
+  this.selectedProject = undefined;
+  // Optionnel : rafraîchir ou afficher un toast
+}
   openDeleteModal(project: Project): void {
     if (!this.isMyProject(project)) {
       this.errorMessage = 'Vous ne pouvez supprimer que vos propres projets.';
@@ -209,22 +245,8 @@ onSkillsSetupDone(): void {
 
   confirmDelete(): void {
     if (!this.projectToDelete?.id) return;
-
-    // Récupérer les infos du client connecté avant suppression
-    const currentUser = this.authService.getCurrentUser();
-    const projectSnapshot = { ...this.projectToDelete };
-
     this.projectsService.deleteProject(this.projectToDelete.id).subscribe({
       next: () => {
-        // ✅ Envoyer email de notification à l'admin après suppression réussie
-        this.emailService.sendDeleteNotification({
-          clientName:      currentUser?.email?.split('@')[0] || 'Client',
-          clientEmail:     currentUser?.email || '',
-          projectTitle:    projectSnapshot.title,
-          projectBudget:   projectSnapshot.budget,
-          projectCategory: projectSnapshot.category
-        });
-
         this.closeDeleteModal();
         this.loadProjects();
       },

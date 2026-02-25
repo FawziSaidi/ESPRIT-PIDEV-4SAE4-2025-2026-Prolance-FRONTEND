@@ -1,94 +1,160 @@
 <div class="modal-overlay" (click)="close.emit()">
   <div class="modal-content" (click)="$event.stopPropagation()">
 
+    <!-- Header -->
     <div class="modal-header">
-      <div>
-        <h2 class="modal-title">Complete Your Profile</h2>
-        <p class="modal-subtitle">Add your skills before applying to projects — one-time setup</p>
+      <div class="header-left">
+        <div class="header-icon">🛠️</div>
+        <div>
+          <h2 class="modal-title">Complete Your Profile</h2>
+          <p class="modal-subtitle">Add your skills — this is a one-time setup before applying</p>
+        </div>
       </div>
       <button class="modal-close" (click)="close.emit()">×</button>
     </div>
 
     <div class="modal-body">
 
-      <!-- Form to add a skill -->
-      <div class="section">
-        <h3 class="section-title">Add a Skill</h3>
-        <div class="section-divider"></div>
+      <!-- ── SECTION: Add Skill ── -->
+      <div class="section-block">
+        <div class="section-label">
+          <span class="section-dot"></span>
+          ADD A SKILL
+        </div>
+
+        <div *ngIf="errorMessage" class="error-banner">⚠️ {{ errorMessage }}</div>
+
+        <form [formGroup]="skillForm" class="skill-form" (ngSubmit)="addSkill()">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label">SKILL NAME <span class="req">*</span></label>
+              <input
+                formControlName="skillName"
+                class="form-input"
+                placeholder="e.g. Angular, Python, Figma..."
+                autocomplete="off"
+              />
+              <small class="err-msg" *ngIf="skillForm.get('skillName')?.invalid && skillForm.get('skillName')?.touched">
+                Skill name is required
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label class="field-label">LEVEL <span class="req">*</span></label>
+              <select formControlName="level" class="form-input">
+                <option *ngFor="let l of skillLevels" [value]="l">{{ l }}</option>
+              </select>
+            </div>
+
+            <div class="form-group narrow">
+              <label class="field-label">YEARS EXP. <span class="req">*</span></label>
+              <input
+                formControlName="yearsExperience"
+                type="number"
+                class="form-input"
+                min="0"
+                max="50"
+              />
+            </div>
+          </div>
+
+          <button type="button" class="btn-add" (click)="addSkill()">
+            <span>+</span> Add Skill
+          </button>
+        </form>
+
+        <!-- Skills chips with icons -->
+        <div class="skills-chips" *ngIf="addedSkills.length > 0">
+          <div class="chips-label">Skills to save ({{ addedSkills.length }})</div>
+          <div class="chips-grid">
+            <div class="skill-chip" *ngFor="let skill of addedSkills; let i = index">
+              <div class="chip-icon">
+                <img
+                  *ngIf="getSkillIcon(skill.skillName)"
+                  [src]="getSkillIcon(skill.skillName)!"
+                  [alt]="skill.skillName"
+                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+                />
+                <span
+                  class="chip-initial"
+                  [style.display]="getSkillIcon(skill.skillName) ? 'none' : 'flex'"
+                >
+                  {{ getInitial(skill.skillName) }}
+                </span>
+              </div>
+              <div class="chip-info">
+                <span class="chip-name">{{ skill.skillName }}</span>
+                <span class="chip-meta">{{ skill.level }} · {{ skill.yearsExperience }} yr{{ skill.yearsExperience !== 1 ? 's' : '' }}</span>
+              </div>
+              <button class="chip-remove" (click)="removeSkill(i)" title="Remove">×</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</div>
-
-      <form [formGroup]="skillForm" class="skill-form">
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>SKILL NAME <span class="required">*</span></label>
-            <input formControlName="skillName" class="form-input" placeholder="e.g. Angular, Figma..." />
-            <small *ngIf="skillForm.get('skillName')?.invalid && skillForm.get('skillName')?.touched">Required</small>
-          </div>
-
-          <div class="form-group">
-            <label>LEVEL <span class="required">*</span></label>
-            <select formControlName="level" class="form-input">
-              <option value="">Select level</option>
-              <option *ngFor="let l of skillLevels" [value]="l">{{ l }}</option>
-            </select>
-            <small *ngIf="skillForm.get('level')?.invalid && skillForm.get('level')?.touched">Required</small>
-          </div>
+      <!-- ── SECTION: CV / Resume ── -->
+      <div class="section-block">
+        <div class="section-label">
+          <span class="section-dot orange"></span>
+          YOUR RESUME / CV
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>YEARS OF EXPERIENCE <span class="required">*</span></label>
-            <input formControlName="yearsExperience" type="number" class="form-input" min="0" />
-            <small *ngIf="skillForm.get('yearsExperience')?.invalid && skillForm.get('yearsExperience')?.touched">Required</small>
+        <div class="cv-area">
+          <!-- Upload -->
+          <div class="cv-card">
+            <div class="cv-card-icon">📤</div>
+            <div class="cv-card-body">
+              <p class="cv-card-title">Upload your CV</p>
+              <p class="cv-card-sub">PDF format recommended</p>
+              <div class="upload-row">
+                <label class="btn-file-label">
+                  <input type="file" accept=".pdf" (change)="onResumeFileChange($event)" hidden />
+                  Choose file
+                </label>
+                <span class="file-name" *ngIf="resumeFileName">{{ resumeFileName }}</span>
+                <span class="file-name placeholder" *ngIf="!resumeFileName">No file chosen</span>
+                <button
+                  class="btn-upload"
+                  (click)="uploadResume()"
+                  [disabled]="!resumeFile || isUploadingResume"
+                >
+                  {{ isUploadingResume ? 'Uploading...' : 'Upload' }}
+                </button>
+              </div>
+              <div class="success-badge" *ngIf="resumeUrl">✅ CV uploaded</div>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>AVAILABILITY <span class="required">*</span></label>
-            <select formControlName="availability" class="form-input">
-              <option value="">Select availability</option>
-              <option *ngFor="let a of availabilities" [value]="a">{{ a }}</option>
-            </select>
-            <small *ngIf="skillForm.get('availability')?.invalid && skillForm.get('availability')?.touched">Required</small>
+          <!-- Generate -->
+          <div class="cv-card">
+            <div class="cv-card-icon">⚡</div>
+            <div class="cv-card-body">
+              <p class="cv-card-title">Generate from skills</p>
+              <p class="cv-card-sub">Auto-creates a PDF resume from your profile</p>
+              <button
+                class="btn-generate"
+                (click)="generateResume()"
+                [disabled]="addedSkills.length === 0 || isGeneratingResume"
+              >
+                {{ isGeneratingResume ? 'Generating...' : '📄 Generate PDF' }}
+              </button>
+            </div>
           </div>
-        </div>
-
-        <div class="form-group full">
-          <label>DESCRIPTION <span class="required">*</span></label>
-          <textarea formControlName="description" class="form-textarea" rows="3"
-            placeholder="Describe your experience with this skill..."></textarea>
-          <small *ngIf="skillForm.get('description')?.invalid && skillForm.get('description')?.touched">Required</small>
-        </div>
-
-        <div class="form-group full">
-          <label>RESUME / PORTFOLIO URL</label>
-          <input formControlName="resumeUrl" class="form-input" placeholder="https://..." />
-        </div>
-
-        <button type="button" class="btn-add-skill" (click)="addSkill()">+ Add Skill</button>
-
-      </form>
-
-      <!-- Added skills list -->
-      <div class="added-skills" *ngIf="addedSkills.length > 0">
-        <h4>SKILLS TO SAVE ({{ addedSkills.length }})</h4>
-        <div class="skill-chip" *ngFor="let skill of addedSkills; let i = index">
-          <div class="chip-info">
-            <span class="chip-name">{{ skill.skillName }}</span>
-            <span class="chip-meta">{{ skill.level }} · {{ skill.yearsExperience }} yr(s) · {{ skill.availability }}</span>
-          </div>
-          <button class="chip-remove" (click)="removeSkill(i)">×</button>
         </div>
       </div>
 
     </div>
 
+    <!-- Footer -->
     <div class="modal-footer">
       <button class="btn-cancel" (click)="close.emit()">Cancel</button>
-      <button class="btn-save" (click)="save()" [disabled]="isSubmitting || addedSkills.length === 0">
-        {{ isSubmitting ? 'Saving...' : 'Save & Continue →' }}
+      <button
+        class="btn-save"
+        (click)="save()"
+        [disabled]="isSubmitting || addedSkills.length === 0"
+      >
+        <span *ngIf="!isSubmitting">Save & Continue →</span>
+        <span *ngIf="isSubmitting">Saving...</span>
       </button>
     </div>
 
