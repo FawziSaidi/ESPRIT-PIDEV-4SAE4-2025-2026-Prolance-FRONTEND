@@ -101,29 +101,48 @@
 
         <div class="cv-area">
           <!-- Upload -->
-          <div class="cv-card">
-            <div class="cv-card-icon">📤</div>
-            <div class="cv-card-body">
-              <p class="cv-card-title">Upload your CV</p>
-              <p class="cv-card-sub">PDF format recommended</p>
-              <div class="upload-row">
-                <label class="btn-file-label">
-                  <input type="file" accept=".pdf" (change)="onResumeFileChange($event)" hidden />
-                  Choose file
-                </label>
-                <span class="file-name" *ngIf="resumeFileName">{{ resumeFileName }}</span>
-                <span class="file-name placeholder" *ngIf="!resumeFileName">No file chosen</span>
-                <button
-                  class="btn-upload"
-                  (click)="uploadResume()"
-                  [disabled]="!resumeFile || isUploadingResume"
-                >
-                  {{ isUploadingResume ? 'Uploading...' : 'Upload' }}
-                </button>
-              </div>
-              <div class="success-badge" *ngIf="resumeUrl">✅ CV uploaded</div>
-            </div>
-          </div>
+          <!-- Upload -->
+<div class="cv-card">
+  <div class="cv-card-icon">📤</div>
+  <div class="cv-card-body">
+    <p class="cv-card-title">Upload your CV</p>
+    <p class="cv-card-sub">PDF format recommended</p>
+
+    <!-- Drop zone -->
+    <label class="drop-zone" [class.drop-zone--selected]="resumeFile">
+      <input type="file" accept=".pdf" (change)="onResumeFileChange($event)" hidden />
+
+      <!-- État vide -->
+      <div class="drop-empty" *ngIf="!resumeFile">
+        <div class="drop-icon">📁</div>
+        <span class="drop-text">Click to choose a PDF</span>
+        <span class="drop-hint">or drag & drop here</span>
+      </div>
+
+      <!-- Preview fichier sélectionné -->
+      <div class="drop-preview" *ngIf="resumeFile">
+        <div class="pdf-thumb">
+          <span class="pdf-ext">PDF</span>
+        </div>
+        <div class="drop-preview-info">
+          <span class="drop-preview-name">{{ resumeFileName }}</span>
+          <span class="drop-preview-size">{{ (resumeFile.size / 1024).toFixed(0) }} KB</span>
+        </div>
+        <span class="drop-change">Change</span>
+      </div>
+    </label>
+
+    <button
+      class="btn-upload"
+      (click)="uploadResume()"
+      [disabled]="!resumeFile || isUploadingResume || !!resumeUrl">
+      <span *ngIf="!isUploadingResume && !resumeUrl">⬆️ Upload</span>
+      <span *ngIf="isUploadingResume">⏳ Uploading...</span>
+      <span *ngIf="resumeUrl && !isUploadingResume">✅ Uploaded</span>
+    </button>
+
+  </div>
+</div>
 
           <!-- Generate -->
           <div class="cv-card">

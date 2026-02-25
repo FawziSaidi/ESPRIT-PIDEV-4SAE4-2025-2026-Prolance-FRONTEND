@@ -3,6 +3,7 @@ import { ProjectsService } from '../../../frontoffice/ProjectModule/services/pro
 import { Project } from '../../../frontoffice/ProjectModule/models/project.model';
 import { EmailNotificationService } from 'app/frontoffice/ProjectModule/services/email-notification.service';
 import { ProjectStatus } from 'app/frontoffice/ProjectModule/models/enums.model';
+
 @Component({
   selector: 'app-admin-projects',
   templateUrl: './admin-projects.component.html',
@@ -23,7 +24,29 @@ export class AdminProjectsComponent implements OnInit {
 
   approvingProjectId?: number;
 
-  // ✅ AJOUTÉ — propriétés pour les modals
+  // ── Pagination ────────────────────────────────────────────
+  currentPage = 1;
+  readonly PAGE_SIZE = 5;
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredProjects.length / this.PAGE_SIZE);
+  }
+
+  get paginatedProjects(): Project[] {
+    const start = (this.currentPage - 1) * this.PAGE_SIZE;
+    return this.filteredProjects.slice(start, start + this.PAGE_SIZE);
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages) return;
+    this.currentPage = page;
+  }
+
+  // ── Modals ────────────────────────────────────────────────
   showSuccessModal = false;
   successModalTitle = '';
   successModalMessage = '';
@@ -51,7 +74,6 @@ export class AdminProjectsComponent implements OnInit {
 
   closeSuccessModal(): void { this.showSuccessModal = false; }
 
-  // ✅ AJOUTÉ — méthodes confirm modal
   cancelConfirm(): void {
     this.showConfirmModal = false;
     this.pendingProject = undefined;
@@ -82,17 +104,6 @@ export class AdminProjectsComponent implements OnInit {
     });
   }
 
-  private getCurrentUser(): any {
-    try {
-      const userJson = localStorage.getItem('sessionUser')
-      return userJson ? JSON.parse(userJson) : null;
-    } catch (e) {
-      console.error('Error parsing user:', e);
-      return null;
-    }
-  }
-
-  // ✅ MODIFIÉ — ouvre le modal au lieu du confirm()
   approveProject(project: Project): void {
     if (!project.id) return;
     this.pendingProject = project;
@@ -100,7 +111,6 @@ export class AdminProjectsComponent implements OnInit {
     this.showConfirmModal = true;
   }
 
-  // ✅ AJOUTÉ — logique déplacée ici
   private doApprove(project: Project): void {
     if (!project.id) return;
     this.approvingProjectId = project.id;
@@ -118,21 +128,10 @@ export class AdminProjectsComponent implements OnInit {
         };
 
         const clientEmail = project.client?.email;
-
         if (clientEmail) {
-          this.emailService.sendProjectApprovedEmail(
-            project.id!,
-            clientEmail,
-            project.title
-          ).subscribe({
-            next: () => {
-              updateStatus();
-              this.showSuccess('✅ Projet approuvé !', project.title, clientEmail);
-            },
-            error: () => {
-              updateStatus();
-              this.showSuccess('✅ Projet approuvé !', project.title, '');
-            }
+          this.emailService.sendProjectApprovedEmail(project.id!, clientEmail, project.title).subscribe({
+            next: () => { updateStatus(); this.showSuccess('✅ Projet approuvé !', project.title, clientEmail); },
+            error: () => { updateStatus(); this.showSuccess('✅ Projet approuvé !', project.title, ''); }
           });
         } else {
           updateStatus();
@@ -155,49 +154,30 @@ export class AdminProjectsComponent implements OnInit {
         p.description.toLowerCase().includes(this.searchQuery.toLowerCase())
       );
     }
-
     if (this.statusFilter !== 'ALL') {
       filtered = filtered.filter(p => p.status === this.statusFilter);
     }
-
     if (this.categoryFilter !== 'ALL') {
       filtered = filtered.filter(p => p.category === this.categoryFilter);
     }
 
     this.filteredProjects = filtered;
+    this.currentPage = 1; // reset to page 1 on filter change
   }
 
-  onSearchChange(query: string): void {
-    this.searchQuery = query;
-    this.applyFilters();
-  }
+  onSearchChange(query: string): void { this.searchQuery = query; this.applyFilters(); }
+  onStatusChange(status: string): void { this.statusFilter = status; this.applyFilters(); }
+  onCategoryChange(category: string): void { this.categoryFilter = category; this.applyFilters(); }
 
-  onStatusChange(status: string): void {
-    this.statusFilter = status;
-    this.applyFilters();
-  }
+  selectProject(project: Project): void { this.selectedProject = project; }
+  closeProject(): void { this.selectedProject = undefined; }
 
-  onCategoryChange(category: string): void {
-    this.categoryFilter = category;
-    this.applyFilters();
-  }
-
-  selectProject(project: Project): void {
-    this.selectedProject = project;
-  }
-
-  closeProject(): void {
-    this.selectedProject = undefined;
-  }
-
-  // ✅ MODIFIÉ — ouvre le modal au lieu du confirm()
   deleteProject(project: Project): void {
     this.pendingProject = project;
     this.confirmModalType = 'delete';
     this.showConfirmModal = true;
   }
 
-  // ✅ AJOUTÉ — logique déplacée ici
   private doDelete(project: Project): void {
     if (!project.id) return;
     this.projectsService.deleteProject(project.id).subscribe({

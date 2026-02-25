@@ -42,23 +42,34 @@ export class FreelancerApplyComponent implements OnInit {
 
   currentStep: 'skills' | 'application' = 'skills';
 
-  // My skills (from backend)
   mySkills: any[] = [];
   selectedSkills: any[] = [];
   loadingSkills = true;
 
-  // Application form
   form: FormGroup;
 
-  // Cover letter options
   coverLetterMode: 'text' | 'upload' | 'generate' | null = null;
+
+  // Upload mode
   coverLetterFile: File | null = null;
   coverLetterFileName = '';
-  isGeneratingLetter = false;
-  generatedLetterBlob: Blob | null = null;
+  isUploadingFile = false;
+  coverLetterRelativePath: string | null = null;
+  coverLetterPreviewUrl: string | null = null;
 
+  // Generate mode
+  isGeneratingLetter = false;
+  generatedRelativePath: string | null = null;
+  generatedPreviewUrl: string | null = null;
+
+  // States
   isSubmitting = false;
+  showSuccessModal = false;
+  errorMessage = '';
+
   currentUserId: number | null = null;
+
+  private readonly backendBase = 'http://localhost:8089/pidev';
 
   constructor(
     private fb: FormBuilder,
@@ -80,20 +91,17 @@ export class FreelancerApplyComponent implements OnInit {
     if (!this.currentUserId) return;
     this.loadingSkills = true;
     this.freelancerService.getFreelancerSkills(this.currentUserId).subscribe({
-      next: (skills) => {
-        this.mySkills = skills;
-        this.loadingSkills = false;
-      },
+      next: (skills) => { this.mySkills = skills; this.loadingSkills = false; },
       error: () => { this.loadingSkills = false; }
     });
   }
 
   getSkillIcon(name: string): string | null {
-    return SKILL_ICONS[name.toLowerCase().trim()] || null;
+    return SKILL_ICONS[name?.toLowerCase()?.trim()] || null;
   }
 
   getInitial(name: string): string {
-    return name.charAt(0).toUpperCase();
+    return name?.charAt(0)?.toUpperCase() || '?';
   }
 
   toggleSkill(skill: any): void {
@@ -107,94 +115,121 @@ export class FreelancerApplyComponent implements OnInit {
   }
 
   nextStep(): void {
-    if (this.selectedSkills.length === 0) {
-      alert('Please select at least one skill.');
-      return;
-    }
+    if (this.selectedSkills.length === 0) return;
+    this.errorMessage = '';
     this.currentStep = 'application';
   }
 
-  // ─── Cover Letter ─────────────────────────────────────────
+  // ─── Upload cover letter ──────────────────────────────────
+
   onCoverLetterFileChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
       this.coverLetterFile = input.files[0];
       this.coverLetterFileName = input.files[0].name;
+      this.coverLetterRelativePath = null;
+      this.coverLetterPreviewUrl = null;
+      this.errorMessage = '';
     }
   }
 
-  generateCoverLetter(): void {
-    if (!this.currentUserId || !this.project?.id) return;
-    this.isGeneratingLetter = true;
-    this.freelancerService.generateCoverLetter(this.currentUserId, this.project.id).subscribe({
-      next: (blob) => {
-        this.generatedLetterBlob = blob;
-        this.isGeneratingLetter = false;
-        // Preview download
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+  uploadCoverLetterFile(): void {
+    if (!this.coverLetterFile || !this.currentUserId) return;
+    this.isUploadingFile = true;
+    this.errorMessage = '';
+
+    this.freelancerService.uploadCoverLetter(this.currentUserId, this.coverLetterFile).subscribe({
+      next: (relativePath: string) => {
+        this.coverLetterRelativePath = relativePath;
+        this.coverLetterPreviewUrl   = `${this.backendBase}${relativePath}`;
+        this.isUploadingFile = false;
       },
-      error: () => {
-        this.isGeneratingLetter = false;
-        alert('Error generating cover letter. Make sure your CV is uploaded.');
+      error: (err) => {
+        console.error('Upload error:', err);
+        this.isUploadingFile = false;
+        this.errorMessage = 'Error uploading the file. Please try again.';
       }
     });
   }
 
-  // ─── Submit ───────────────────────────────────────────────
+  // ─── Generate cover letter ───────────────────────────────
+
+  generateCoverLetter(): void {
+    if (!this.currentUserId || !this.project?.id) return;
+    this.isGeneratingLetter = true;
+    this.generatedRelativePath = null;
+    this.generatedPreviewUrl   = null;
+    this.errorMessage = '';
+
+    this.freelancerService.generateCoverLetterAsString(this.currentUserId, this.project.id).subscribe({
+      next: (relativePath: string) => {
+        this.generatedRelativePath = relativePath;
+        this.generatedPreviewUrl   = `${this.backendBase}${relativePath}`;
+        this.isGeneratingLetter = false;
+      },
+      error: (err) => {
+        console.error('Generate error:', err);
+        this.isGeneratingLetter = false;
+        this.errorMessage = 'Error generating cover letter. Make sure you have added skills first.';
+      }
+    });
+  }
+
+  // ─── Submit ──────────────────────────────────────────────
+
   submitApplication(): void {
     if (!this.currentUserId || !this.project?.id) return;
+    this.errorMessage = '';
 
-    // Validate cover letter
-    const hasCoverLetterText = this.coverLetterMode === 'text' && this.form.value.coverLetter?.length >= 20;
-    const hasCoverLetterFile = this.coverLetterMode === 'upload' && this.coverLetterFile;
-    const hasCoverLetterGenerated = this.coverLetterMode === 'generate' && this.generatedLetterBlob;
+    const hasText      = this.coverLetterMode === 'text'
+                         && (this.form.value.coverLetter?.length ?? 0) >= 20;
+    const hasUploaded  = this.coverLetterMode === 'upload'  && !!this.coverLetterRelativePath;
+    const hasGenerated = this.coverLetterMode === 'generate' && !!this.generatedRelativePath;
 
-    if (!hasCoverLetterText && !hasCoverLetterFile && !hasCoverLetterGenerated) {
-      alert('Please provide a cover letter (text, upload, or generate).');
+    if (this.coverLetterMode === 'upload' && this.coverLetterFile && !this.coverLetterRelativePath) {
+      this.errorMessage = 'Please click "Upload" to upload your PDF before submitting.';
+      return;
+    }
+
+    if (!hasText && !hasUploaded && !hasGenerated) {
+      this.errorMessage = 'Please provide a cover letter (write, upload a PDF, or generate one).';
       return;
     }
 
     this.isSubmitting = true;
 
-    // If upload or generate → use FormData
-    if (hasCoverLetterFile || hasCoverLetterGenerated) {
-      const fd = new FormData();
-      fd.append('freelancerId', String(this.currentUserId));
-      fd.append('projectId', String(this.project.id));
-      fd.append('skillIds', JSON.stringify(this.selectedSkills.map(s => s.id)));
-      if (hasCoverLetterFile) fd.append('coverLetterFile', this.coverLetterFile!);
-      if (hasCoverLetterGenerated) fd.append('coverLetterFile', this.generatedLetterBlob!, 'cover-letter.pdf');
+    let coverLetterValue: string;
+    if (hasText)           coverLetterValue = this.form.value.coverLetter;
+    else if (hasUploaded)  coverLetterValue = this.coverLetterRelativePath!;
+    else                   coverLetterValue = this.generatedRelativePath!;
 
-      this.freelancerService.submitApplication(fd).subscribe({
-        next: () => this.onSuccess(),
-        error: (err) => this.onError(err)
-      });
-    } else {
-      // Plain JSON
-      const payload = {
-        freelancerId: this.currentUserId,
-        projectId: this.project.id,
-        coverLetter: this.form.value.coverLetter,
-        skillIds: this.selectedSkills.map(s => s.id)
-      };
-      this.freelancerService.submitApplication(payload).subscribe({
-        next: () => this.onSuccess(),
-        error: (err) => this.onError(err)
-      });
-    }
+    const payload = {
+      freelancerId:   this.currentUserId,
+      projectId:      this.project.id,
+      coverLetterUrl: coverLetterValue
+    };
+
+    this.freelancerService.submitApplication(payload).subscribe({
+      next: () => this.onSuccess(),
+      error: (err) => this.onError(err)
+    });
   }
 
   private onSuccess(): void {
     this.isSubmitting = false;
-    this.applied.emit();
-    this.close.emit();
+    this.showSuccessModal = true;
   }
 
   private onError(err: any): void {
     console.error(err);
     this.isSubmitting = false;
-    alert(`Error: ${err.status} — ${err.error?.message || 'Something went wrong.'}`);
+    this.errorMessage = `Submission failed (${err.status}). Please try again.`;
+  }
+
+  closeSuccessModal(): void {
+    this.showSuccessModal = false;
+    this.applied.emit();
+    this.close.emit();
   }
 
   closeModal(): void {

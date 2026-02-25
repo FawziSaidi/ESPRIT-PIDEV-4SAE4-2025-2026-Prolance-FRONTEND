@@ -61,8 +61,9 @@
         <p>Loading projects...</p>
       </div>
 
+      <!-- Projects list — paginated -->
       <div *ngIf="!loading && filteredProjects.length > 0" class="projects-list">
-        <div *ngFor="let project of filteredProjects"
+        <div *ngFor="let project of paginatedProjects"
           class="project-item"
           [class.active]="selectedProject?.id === project.id"
           (click)="selectProject(project)">
@@ -82,6 +83,33 @@
             <span class="meta-item">📝 {{ project.tasks?.length || 0 }} tasks</span>
           </div>
         </div>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="!loading && totalPages > 1" class="pagination">
+        <button class="page-btn page-btn--nav"
+          (click)="goToPage(currentPage - 1)"
+          [disabled]="currentPage === 1">
+          ‹
+        </button>
+
+        <button *ngFor="let page of pageNumbers"
+          class="page-btn"
+          [class.page-btn--active]="page === currentPage"
+          (click)="goToPage(page)">
+          {{ page }}
+        </button>
+
+        <button class="page-btn page-btn--nav"
+          (click)="goToPage(currentPage + 1)"
+          [disabled]="currentPage === totalPages">
+          ›
+        </button>
+      </div>
+
+      <!-- Page info -->
+      <div *ngIf="!loading && filteredProjects.length > 0" class="pagination-info">
+        {{ (currentPage - 1) * PAGE_SIZE + 1 }}–{{ currentPage * PAGE_SIZE > filteredProjects.length ? filteredProjects.length : currentPage * PAGE_SIZE }} of {{ filteredProjects.length }} projects
       </div>
 
       <div *ngIf="!loading && filteredProjects.length === 0" class="empty-state">
@@ -147,7 +175,6 @@
           </div>
         </div>
 
-        <!-- ✅ ACTIONS — boutons égaux -->
         <div class="detail-actions">
           <button *ngIf="selectedProject?.status === 'IN_PROGRESS'"
             class="btn-action btn-approve"
@@ -176,31 +203,22 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     MODAL CONFIRMATION (Approve / Delete)
-══════════════════════════════════════════════════════ -->
+<!-- MODAL CONFIRMATION -->
 <div class="modal-backdrop" *ngIf="showConfirmModal" (click)="cancelConfirm()">
   <div class="modal-box confirm-modal" (click)="$event.stopPropagation()">
-
     <div class="modal-icon" [ngClass]="confirmModalType === 'approve' ? 'icon-approve' : 'icon-delete'">
       {{ confirmModalType === 'approve' ? '✅' : '🗑️' }}
     </div>
-
     <h3 class="modal-title">
       {{ confirmModalType === 'approve' ? 'Validate this project?' : 'Delete this project?' }}
     </h3>
-
-    <p class="modal-subtitle">
-      <strong>{{ pendingProject?.title }}</strong>
-    </p>
-
+    <p class="modal-subtitle"><strong>{{ pendingProject?.title }}</strong></p>
     <p class="modal-desc" *ngIf="confirmModalType === 'approve'">
       Le projet sera approuvé et publié. Un email de confirmation sera envoyé au client.
     </p>
     <p class="modal-desc danger-text" *ngIf="confirmModalType === 'delete'">
       Cette action est irréversible. Le projet sera définitivement supprimé.
     </p>
-
     <div class="modal-actions">
       <button class="modal-btn modal-btn-cancel" (click)="cancelConfirm()">Annuler</button>
       <button class="modal-btn"
@@ -212,28 +230,19 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════
-     MODAL SUCCESS
-══════════════════════════════════════════════════════ -->
+<!-- MODAL SUCCESS -->
 <div class="modal-backdrop" *ngIf="showSuccessModal" (click)="closeSuccessModal()">
   <div class="modal-box success-modal" (click)="$event.stopPropagation()">
-
     <div class="success-animation">
       <div class="success-ring"></div>
       <div class="success-icon">✅</div>
     </div>
-
     <h3 class="modal-title">{{ successModalTitle }}</h3>
-
-    <p class="modal-subtitle">
-      <strong>{{ successModalMessage }}</strong>
-    </p>
-
+    <p class="modal-subtitle"><strong>{{ successModalMessage }}</strong></p>
     <div class="email-sent-badge" *ngIf="successModalEmail">
       <span class="email-icon">📧</span>
       <span>Email envoyé à <strong>{{ successModalEmail }}</strong></span>
     </div>
-
     <button class="modal-btn modal-btn-approve full-width" (click)="closeSuccessModal()">
       OK, fermer
     </button>

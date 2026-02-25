@@ -53,7 +53,7 @@ export class FreelancerSkillsSetupComponent implements OnInit {
   resumeUrl = '';
   isGeneratingResume = false;
 
-  skillLevels = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'];
+  skillLevels = ['BEGINNER', 'INTERMEDIATE', 'EXPERT'];
 
   constructor(private fb: FormBuilder, private freelancerService: FreelancerService) {
     this.skillForm = this.fb.group({
@@ -109,8 +109,8 @@ export class FreelancerSkillsSetupComponent implements OnInit {
     if (!this.resumeFile || !this.freelancerId) return;
     this.isUploadingResume = true;
     this.freelancerService.uploadResume(this.freelancerId, this.resumeFile).subscribe({
-      next: (res) => {
-        this.resumeUrl = res.url;
+      next: (res: string) => {
+        this.resumeUrl = res;
         this.isUploadingResume = false;
         alert('✅ CV uploaded successfully!');
       },

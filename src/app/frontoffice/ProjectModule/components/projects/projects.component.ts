@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ProjectsService } from '../../services/projects.service';
 import { AuthService } from '../../../../services/auth.services';
 import { Project } from '../../models/project.model';
 import { FreelancerService } from '../../services/freelancer.service';
+import { ToastService } from '../../services/toast.service'; // adapte le chemin
+import { EmailNotificationService } from '../../services/email-notification.service';
 
 @Component({
   selector: 'app-projects',
@@ -15,39 +17,56 @@ export class ProjectsComponent implements OnInit {
   filteredProjects: Project[] = [];
   loading = true;
   errorMessage = '';
-  
+  showBlockedAlert = false;
+
   showAddModal = false;
   showEditModal = false;
   showDetailsModal = false;
   showApplyModal = false;
   selectedProject?: Project;
-  
+
   currentUserRole: string = '';
   currentUserId: number | null = null;
   isClient: boolean = false;
   isFreelancer: boolean = false;
   hasFilledSkills: boolean = false;
 
-  categoryOptions = [{ label: 'All', value: 'ALL' }, { label: 'Dev', value: 'DEV' }, { label: 'Design', value: 'DESIGN' }];
+  // IDs des projets où le freelancer a déjà appliqué
+  appliedProjectIds: Set<number> = new Set();
+  // Nombre total d'applications du freelancer
+  applicationCount: number = 0;
+  readonly MAX_APPLICATIONS = 10;
+
+  categoryOptions = [
+    { label: 'All', value: 'ALL' },
+    { label: 'Dev', value: 'DEV' },
+    { label: 'Design', value: 'DESIGN' }
+  ];
   selectedCategory = 'ALL';
-  
-  viewOptions = [ { label: 'My Projects', value: 'MY_PROJECTS' }];
+  viewOptions = [{ label: 'My Projects', value: 'MY_PROJECTS' }];
   selectedView = 'ALL';
   searchQuery = '';
 
   showSkillsSetupModal = false;
   showDeleteModal = false;
   projectToDelete?: Project;
-  alreadyAppliedProjects: Set<number> = new Set();
 
-  constructor(private projectsService: ProjectsService, private authService: AuthService,private freelancerService: FreelancerService) {}
+  constructor(
+    private projectsService: ProjectsService,
+    private authService: AuthService,
+    private freelancerService: FreelancerService,
+    private toast: ToastService,
+    private cdr: ChangeDetectorRef,
+     private emailService: EmailNotificationService 
+  ) {}
 
   ngOnInit(): void {
-   this.determineUserRole();
-  this.loadProjects();
-  if (this.isFreelancer) {
-    this.checkIfSkillsFilled();
-  }
+    this.determineUserRole();
+    this.loadProjects();
+    if (this.isFreelancer) {
+      this.checkIfSkillsFilled();
+      this.loadMyApplications();
+    }
   }
 
   determineUserRole(): void {
@@ -60,22 +79,39 @@ export class ProjectsComponent implements OnInit {
     }
   }
 
- checkIfSkillsFilled(): void {
-  if (this.currentUserId) {
-    this.freelancerService.getFreelancerSkills(this.currentUserId).subscribe({
-      next: (skills) => {
-        this.hasFilledSkills = skills && skills.length > 0;
+  // Charge toutes les applications du freelancer pour savoir lesquels il a déjà appliqué
+  loadMyApplications(): void {
+    if (!this.currentUserId) return;
+    this.freelancerService.getFreelancerApplications(this.currentUserId).subscribe({
+      next: (apps) => {
+        this.applicationCount = apps.length;
+        this.appliedProjectIds = new Set(apps.map((a: any) => a.project?.id).filter(Boolean));
       },
-      error: () => this.hasFilledSkills = false
+      error: () => {}
     });
   }
-}
-formatStatus(status: string): string {
-  return status.replace('_', ' ').toLowerCase();
-}
-formatBudget(budget: number): string {
-  return `${budget.toFixed(0)} TND`;
-}
+
+  hasApplied(project: Project): boolean {
+    return !!project.id && this.appliedProjectIds.has(project.id);
+  }
+
+  checkIfSkillsFilled(): void {
+    if (this.currentUserId) {
+      this.freelancerService.getFreelancerSkills(this.currentUserId).subscribe({
+        next: (skills) => { this.hasFilledSkills = skills && skills.length > 0; },
+        error: () => { this.hasFilledSkills = false; }
+      });
+    }
+  }
+
+  formatStatus(status: string): string {
+    return status.replace('_', ' ').toLowerCase();
+  }
+
+  formatBudget(budget: number): string {
+    return `${budget.toFixed(0)} TND`;
+  }
+
   loadProjects(): void {
     this.loading = true;
     this.projectsService.getAllProjects().subscribe({
@@ -94,7 +130,6 @@ formatBudget(budget: number): string {
 
   applyFilters(): void {
     let filtered = this.projects;
-
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
       filtered = filtered.filter(p =>
@@ -103,15 +138,12 @@ formatBudget(budget: number): string {
         (p.client?.name || '').toLowerCase().includes(q)
       );
     }
-
     if (this.selectedCategory !== 'ALL') {
       filtered = filtered.filter(p => p.category === this.selectedCategory);
     }
-
     if (this.selectedView === 'MY_PROJECTS' && this.isClient && this.currentUserId) {
       filtered = filtered.filter(p => p.client?.id === this.currentUserId);
     }
-
     this.filteredProjects = filtered;
   }
 
@@ -119,153 +151,133 @@ formatBudget(budget: number): string {
     return this.isClient && project.client?.id === this.currentUserId;
   }
 
-  onSearchChange(query: string): void {
-    this.searchQuery = query;
-    this.applyFilters();
-  }
-
-  onCategoryChange(category: string): void {
-    this.selectedCategory = category;
-    this.applyFilters();
-  }
-
+  onSearchChange(query: string): void { this.searchQuery = query; this.applyFilters(); }
+  onCategoryChange(category: string): void { this.selectedCategory = category; this.applyFilters(); }
   onViewChange(view: string): void {
-  this.selectedView = view;
-  
-  // Reset category filter when switching to My Projects
-  if (view === 'MY_PROJECTS') {
-    this.selectedCategory = 'ALL';
+    this.selectedView = view;
+    if (view === 'MY_PROJECTS') this.selectedCategory = 'ALL';
+    this.applyFilters();
   }
-  
-  this.applyFilters();
-}
 
-  openAddModal(): void {
-    if (!this.isClient) {
-      this.errorMessage = 'Seuls les clients peuvent créer des projets.';
+  openApplyModal(project: Project): void {
+    // Déjà appliqué
+    if (this.hasApplied(project)) {
+      this.toast.info('You have already applied to this project.');
       return;
     }
-    this.showAddModal = true;
-  }
 
-  closeAddModal(): void {
-    this.showAddModal = false;
-    this.loadProjects();
-  }
-
-  openEditModal(project: Project): void {
-    if (!this.isMyProject(project)) {
-      this.errorMessage = 'Vous ne pouvez modifier que vos propres projets.';
+    // Max 10 applications
+    if (this.applicationCount >= this.MAX_APPLICATIONS) {
+      this.toast.warning(`You have reached the maximum of ${this.MAX_APPLICATIONS} applications.`);
       return;
     }
+
     this.selectedProject = project;
-    this.showEditModal = true;
-  }
-
-  closeEditModal(): void {
-    this.showEditModal = false;
-    this.selectedProject = undefined;
-    this.loadProjects();
-  }
-
-  openProjectDetails(project: Project): void {
-    this.selectedProject = project;
-    this.showDetailsModal = true;
-  }
-
-  closeDetailsModal(): void {
-    this.showDetailsModal = false;
-    this.selectedProject = undefined;
-  }
-
-
-openApplyModal(project: Project): void {
-  this.selectedProject = project;
-  if (!this.hasFilledSkills) {
-    this.showSkillsSetupModal = true;
-  } else {
-    // Vérifier si déjà appliqué
-    if (project.id && this.currentUserId) {
-      this.freelancerService.checkAlreadyApplied(this.currentUserId, project.id).subscribe({
-        next: (alreadyApplied) => {
-          if (alreadyApplied) {
-            alert('You have already applied to this project.');
-          } else {
-            this.showApplyModal = true;
-          }
-        },
-        error: () => this.showApplyModal = true // en cas d'erreur, ouvrir quand même
-      });
+    if (!this.hasFilledSkills) {
+      this.showSkillsSetupModal = true;
     } else {
       this.showApplyModal = true;
     }
   }
-}
-
 
   closeApplyModal(): void {
     this.showApplyModal = false;
     this.selectedProject = undefined;
   }
 
-  onSkillsSubmitted(skills: any): void {
-    console.log('Skills submitted:', skills);
-    this.hasFilledSkills = true;
-    this.closeApplyModal();
+  onApplicationSubmitted(): void {
+  if (this.selectedProject?.id) {
+    this.appliedProjectIds.add(this.selectedProject.id);
+    this.applicationCount++;
   }
-closeSkillsSetupModal(): void {
-  this.showSkillsSetupModal = false;
-  this.selectedProject = undefined;
-}
-
-onSkillsSetupDone(): void {
-  this.hasFilledSkills = true;
-  this.showSkillsSetupModal = false;
-  // Ouvre directement la modal apply après avoir ajouté les skills
-  this.showApplyModal = true;
-}
-onApplicationSubmitted(): void {
   this.showApplyModal = false;
   this.selectedProject = undefined;
-  // Optionnel : rafraîchir ou afficher un toast
+  
 }
+
+  closeSkillsSetupModal(): void {
+    this.showSkillsSetupModal = false;
+    this.selectedProject = undefined;
+  }
+
+  onSkillsSetupDone(): void {
+    this.hasFilledSkills = true;
+    this.showSkillsSetupModal = false;
+    this.showApplyModal = true;
+  }
+
+  // ─── Add / Edit / Delete ──────────────────────────────────
+
+  openAddModal(): void {
+    if (!this.isClient) { this.errorMessage = 'Seuls les clients peuvent créer des projets.'; return; }
+    this.showAddModal = true;
+  }
+  closeAddModal(): void { this.showAddModal = false; this.loadProjects(); }
+
+  openEditModal(project: Project): void {
+    if (!this.isMyProject(project)) { this.errorMessage = 'Vous ne pouvez modifier que vos propres projets.'; return; }
+    this.selectedProject = project;
+    this.showEditModal = true;
+  }
+  closeEditModal(): void { this.showEditModal = false; this.selectedProject = undefined; this.loadProjects(); }
+
+  openProjectDetails(project: Project): void { this.selectedProject = project; this.showDetailsModal = true; }
+  closeDetailsModal(): void { this.showDetailsModal = false; this.selectedProject = undefined; }
+
   openDeleteModal(project: Project): void {
-    if (!this.isMyProject(project)) {
-      this.errorMessage = 'Vous ne pouvez supprimer que vos propres projets.';
-      return;
-    }
+    if (!this.isMyProject(project)) { this.errorMessage = 'Vous ne pouvez supprimer que vos propres projets.'; return; }
     this.projectToDelete = project;
     this.showDeleteModal = true;
   }
-
-  closeDeleteModal(): void {
-    this.showDeleteModal = false;
-    this.projectToDelete = undefined;
-  }
+  closeDeleteModal(): void { this.showDeleteModal = false; this.projectToDelete = undefined; }
 
   confirmDelete(): void {
-    if (!this.projectToDelete?.id) return;
-    this.projectsService.deleteProject(this.projectToDelete.id).subscribe({
-      next: () => {
-        this.closeDeleteModal();
-        this.loadProjects();
-      },
-      error: (err) => {
-        console.error('Error:', err);
-        this.errorMessage = 'Erreur lors de la suppression.';
-        this.closeDeleteModal();
-      }
-    });
-  }
+  if (!this.projectToDelete?.id) return;
 
-  deleteProject(project: Project): void {
-    this.openDeleteModal(project);
-  }
+  const idToDelete    = this.projectToDelete.id;
+  const projectTitle  = this.projectToDelete.title;
+  const projectBudget = this.projectToDelete.budget;
+  const projectCat    = this.projectToDelete.category;
+  const clientName    = `${this.projectToDelete.client?.name || ''} ${this.projectToDelete.client?.lastName || ''}`.trim();
+  const clientEmail   = this.projectToDelete.client?.email || '';
+
+  this.showDeleteModal = false;
+  this.projectToDelete = undefined;
+  this.cdr.detectChanges();
+
+  this.projectsService.deleteProject(idToDelete).subscribe({
+    next: () => {
+      // ← Envoyer l'email APRÈS suppression réussie
+      this.emailService.sendDeleteNotification({
+        clientName,
+        clientEmail,
+        projectTitle,
+        projectBudget,
+        projectCategory: projectCat
+      });
+
+      this.loadProjects();
+      this.toast.success('Project deleted successfully.');
+    },
+    error: (err) => {
+      if (err.status === 409) {
+        this.showBlockedAlert = true;
+        this.cdr.detectChanges();
+      } else {
+        this.toast.error('An unexpected error occurred. Please try again.');
+      }
+    }
+  });
+}
+closeBlockedAlert(): void {
+  this.showBlockedAlert = false;
+}
+
+  deleteProject(project: Project): void { this.openDeleteModal(project); }
 
   getCategoryBadgeClass(category: string): string {
     return { 'DEV': 'category-dev', 'DESIGN': 'category-design' }[category] || 'category-default';
   }
-
   getCategoryIcon(category: string): string {
     return { 'DEV': '💻', 'DESIGN': '🎨' }[category] || '📌';
   }

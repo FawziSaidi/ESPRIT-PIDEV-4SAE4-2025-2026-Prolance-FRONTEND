@@ -7,9 +7,10 @@ import { ProjectFormComponent } from './components/project-form/project-form.com
 import { FreelancerApplyComponent } from './components/freelancer-apply/freelancerApply.component';
 import { ProjectDetailsComponent } from './components/projects-details/projectDetails.component';
 import { FreelancerSkillsSetupComponent } from './components/freelancer-skills-setup/freelancer-skills-setup.component';
+import { ToastComponent } from './components/toast/toast.component';
 
 @NgModule({
-  declarations: [ProjectsComponent, ProjectFormComponent, ProjectDetailsComponent, FreelancerApplyComponent,FreelancerSkillsSetupComponent],
+  declarations: [ProjectsComponent, ProjectFormComponent, ProjectDetailsComponent, FreelancerApplyComponent,FreelancerSkillsSetupComponent, ToastComponent],
   imports: [CommonModule, ReactiveFormsModule, FormsModule, ProjectsRoutingModule]
 })
 export class ProjectsModule {}
