@@ -15,7 +15,7 @@ export interface SessionUser {
 })
 export class AuthService {
 
-  private apiUrl = 'http://localhost:8089/pidev/api/auth';
+  private apiUrl = 'http://localhost:8222/api/auth';
 
   // 🔐 session state (single source of truth)
   private currentUserSubject = new BehaviorSubject<SessionUser | null>(

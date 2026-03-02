@@ -3,6 +3,8 @@ import { Publication, TypePublication } from '../../models/publication.model';
 import { PublicationService } from '../../services/publication.service';
 import { AuthService } from '../../../../services/auth.services';
 
+
+
 @Component({
   selector: 'app-forum-list',
   templateUrl: './forum-list.component.html',
@@ -15,14 +17,61 @@ export class ForumListComponent implements OnInit {
   showAddModal: boolean = false;
   showEditModal: boolean = false;
   showCommentModal: boolean = false;
+  showDeleteModal: boolean = false;
+  publicationToDelete: Publication | null = null;
   selectedPublication: Publication | null = null;
   currentUserId: number = 0;
   loading: boolean = false;
   errorMessage: string = '';
   activeMenuId: number | null = null;
+  expandedPosts = new Set<number>();
+
+  // ── Lightbox ──────────────────────────────────────────
+  lightboxImages: string[] = [];
+  lightboxIndex: number = 0;
+  showLightbox: boolean = false;
+
+  isExpanded(id: number): boolean {
+    return this.expandedPosts.has(id);
+  }
+
+  toggleExpand(id: number): void {
+    if (this.expandedPosts.has(id)) {
+      this.expandedPosts.delete(id);
+    } else {
+      this.expandedPosts.add(id);
+    }
+  }
 
   // ✅ Recherche en temps réel par nom d'auteur
   searchQuery: string = '';
+
+  // ── Pagination ────────────────────────────────────────
+  currentPage: number = 1;
+  pageSize: number = 5;
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredPublications.length / this.pageSize);
+  }
+
+  get paginatedPublications(): Publication[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    return this.filteredPublications.slice(start, start + this.pageSize);
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  prevPage(): void { this.goToPage(this.currentPage - 1); }
+  nextPage(): void { this.goToPage(this.currentPage + 1); }
 
   typeOptions = [
     { value: 'TOUS', label: 'All' },
@@ -89,6 +138,7 @@ export class ForumListComponent implements OnInit {
     }
 
     this.filteredPublications = result;
+    this.currentPage = 1; // reset pagination on filter/search change
   }
 
   onTypeChange(type: string): void {
@@ -129,20 +179,43 @@ export class ForumListComponent implements OnInit {
     this.selectedPublication = null;
   }
 
+  onCommentCountChanged(count: number): void {
+    if (!this.selectedPublication) return;
+    const arr = Array(count).fill({});
+    this.selectedPublication.commentaires = arr;
+    const pub = this.publications.find(p => p.id === this.selectedPublication!.id);
+    if (pub) pub.commentaires = arr;
+    const fpub = this.filteredPublications.find(p => p.id === this.selectedPublication!.id);
+    if (fpub) fpub.commentaires = arr;
+  }
+
   onPublicationCreated(): void { this.closeAddModal(); this.loadPublications(); }
   onPublicationUpdated(): void { this.closeEditModal(); this.loadPublications(); }
 
   deletePublication(publication: Publication): void {
-    if (publication.user?.id !== this.currentUserId) {
-      alert('You are not authorized to delete this post');
-      return;
-    }
-    if (confirm('Are you sure you want to delete this post?')) {
-      this.publicationService.deletePublication(publication.id!, this.currentUserId).subscribe({
-        next: () => this.loadPublications(),
-        error: () => alert('Error deleting post')
-      });
-    }
+    if (publication.user?.id !== this.currentUserId) return;
+    this.publicationToDelete = publication;
+    this.showDeleteModal = true;
+  }
+
+  confirmDelete(): void {
+    if (!this.publicationToDelete) return;
+    this.publicationService.deletePublication(this.publicationToDelete.id!, this.currentUserId).subscribe({
+      next: () => {
+        this.showDeleteModal = false;
+        this.publicationToDelete = null;
+        this.loadPublications();
+      },
+      error: () => {
+        this.showDeleteModal = false;
+        this.publicationToDelete = null;
+      }
+    });
+  }
+
+  cancelDelete(): void {
+    this.showDeleteModal = false;
+    this.publicationToDelete = null;
   }
 
   canModifyPublication(publication: Publication): boolean {
@@ -180,15 +253,54 @@ export class ForumListComponent implements OnInit {
   }
 
   getImageUrl(imageName: string): string {
-    return `http://localhost:8089/pidev/uploads/publications/${imageName}`;
+    return `http://localhost:8222/uploads/publications/${imageName}`;
   }
 
   getPdfUrl(pdfName: string): string {
-    return `http://localhost:8089/pidev/uploads/publications/${pdfName}`;
+    return `http://localhost:8222/uploads/publications/${pdfName}`;
   }
 
   onImageError(event: any): void {
     event.target.style.display = 'none';
+  }
+
+  // ── Lightbox methods ──────────────────────────────────
+  openLightbox(images: string[], index: number): void {
+    this.lightboxImages = images;
+    this.lightboxIndex = index;
+    this.showLightbox = true;
+  }
+
+  closeLightbox(): void {
+    this.showLightbox = false;
+  }
+
+  lightboxPrev(): void {
+    this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxImages.length) % this.lightboxImages.length;
+  }
+
+  lightboxNext(): void {
+    this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxImages.length;
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    if (!this.showLightbox) return;
+    if (event.key === 'ArrowLeft') this.lightboxPrev();
+    if (event.key === 'ArrowRight') this.lightboxNext();
+    if (event.key === 'Escape') this.closeLightbox();
+  }
+
+  // ✅ Génère un fond de card pastel à partir de la couleur du titre
+  getCardBg(titleColor?: string): string {
+    if (!titleColor || titleColor === '#2d1f4e') return 'rgba(255,255,255,0.82)';
+    return `${titleColor}12`; // couleur + 7% opacité
+  }
+
+  // ✅ Génère un fond d'avatar assorti
+  getAvatarBg(titleColor?: string): string {
+    if (!titleColor || titleColor === '#2d1f4e') return 'linear-gradient(135deg, #ddd6fe, #c4b5fd)';
+    return `${titleColor}30`;
   }
 
   // ✅ Surligne la partie du nom qui correspond à la recherche

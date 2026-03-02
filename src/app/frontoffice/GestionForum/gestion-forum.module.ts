@@ -6,28 +6,33 @@ import { HttpClientModule } from '@angular/common/http';
 import { ForumListComponent } from './components/forum-list/forum-list.component';
 import { PublicationFormComponent } from './components/publication-form/publication-form.component';
 import { CommentaireModalComponent } from './components/commentaire-modal/commentaire-modal.component';
+import { ReactionButtonComponent } from './components/reaction-button/reaction-button.component';
+import { ChatbotComponent } from './components/chatbot/chatbot.component';
 
 import { PublicationService } from './services/publication.service';
 import { CommentaireService } from './services/commentaire.service';
+import { ReactionService } from './services/reaction.service';
 
-// IMPORTANT: Importer le module de routing
 import { GestionForumRoutingModule } from './gestion-forum-routing.module';
 
 @NgModule({
   declarations: [
     ForumListComponent,
     PublicationFormComponent,
-    CommentaireModalComponent
+    CommentaireModalComponent,
+    ReactionButtonComponent,
+    ChatbotComponent         // ✅
   ],
   imports: [
     CommonModule,
     FormsModule,
     HttpClientModule,
-    GestionForumRoutingModule  // Ajouter le routing module
+    GestionForumRoutingModule
   ],
   providers: [
     PublicationService,
-    CommentaireService
+    CommentaireService,
+    ReactionService
   ],
   exports: [
     ForumListComponent

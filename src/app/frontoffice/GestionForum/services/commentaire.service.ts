@@ -7,7 +7,7 @@ import { Commentaire } from '../models/commentaire.model';
   providedIn: 'root'
 })
 export class CommentaireService {
-  private baseUrl = 'http://localhost:8089/pidev/api/commentaires';
+  private baseUrl = 'http://localhost:8222/api/commentaires';
 
   constructor(private http: HttpClient) {}
 
@@ -50,5 +50,11 @@ export class CommentaireService {
   deleteCommentaire(id: number, userId: number): Observable<any> {
     const params = new HttpParams().set('userId', userId.toString());
     return this.http.delete(`${this.baseUrl}/${id}`, { params, responseType: 'text' });
+  }
+
+  // ✅ Épingler / désépingler un commentaire
+  togglePin(commentaireId: number, userId: number): Observable<Commentaire> {
+    const params = new HttpParams().set('userId', userId.toString());
+    return this.http.put<Commentaire>(`${this.baseUrl}/${commentaireId}/pin`, null, { params });
   }
 }

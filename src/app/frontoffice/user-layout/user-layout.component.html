@@ -34,14 +34,10 @@
 
     <!-- Right Section -->
     <div class="navbar-right">
-      <!-- Role Switcher (compact) -->
-      <div class="role-chip-group">
-        <button class="role-chip" [class.active]="currentRole === 'freelancer'" (click)="toggleRole('freelancer')">
-          Freelancer
-        </button>
-        <button class="role-chip" [class.active]="currentRole === 'client'" (click)="toggleRole('client')">
-          Client
-        </button>
+      <!-- Role Badge (statique – reflète le rôle du compte connecté) -->
+      <div class="role-badge-group">
+        <span class="role-badge" [class.active]="isFreelancer">Freelancer</span>
+        <span class="role-badge" [class.active]="isClient">Client</span>
       </div>
 
       <!-- Profile Dropdown -->

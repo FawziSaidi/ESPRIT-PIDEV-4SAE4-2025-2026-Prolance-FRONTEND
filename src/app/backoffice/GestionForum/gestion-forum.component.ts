@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { ForumService, Publication, Commentaire } from './forum.service';
+import { ForumService, Publication, Commentaire, ReactionSummary } from './forum.service';
+
+export type DetailPanel = 'pdfs' | 'images' | 'reactions' | 'comments' | null;
 
 @Component({
   selector: 'app-gestion-forum',
@@ -8,34 +10,47 @@ import { ForumService, Publication, Commentaire } from './forum.service';
 })
 export class GestionForumComponent implements OnInit {
 
-  // Publications
+  // Data
   publications: Publication[] = [];
   filteredPublications: Publication[] = [];
   selectedPublication: Publication | null = null;
-
-  // Commentaires for selected pub
   selectedCommentaires: Commentaire[] = [];
-  loadingComments: boolean = false;
+  loadingComments = false;
+  reactionSummary: ReactionSummary | null = null;
+  loadingReactions = false;
 
-  // All commentaires (for table 2 view)
-  allCommentaires: Commentaire[] = [];
+  // Which panel is open in the right sidebar
+  activePanel: DetailPanel = null;
+
+  // Expanded "see more" per card
+  expandedCards = new Set<number>();
 
   // Filters
-  searchQuery: string = '';
-  typeFilter: string = 'ALL';
-  typeOptions: string[] = ['ALL', 'QUESTION', 'ARTICLE', 'REVIEW'];
+  searchQuery = '';
+  typeFilter = 'ALL';
+  typeOptions = ['ALL', 'QUESTION', 'ARTICLE', 'REVIEW'];
 
-  // Active tab in right panel
-  activeTab: 'comments' | 'details' = 'details';
+  // State
+  loading = true;
+  error = '';
 
-  loading: boolean = true;
-  error: string = '';
+  // Pagination
+  readonly PAGE_SIZE = 3;
+  currentPage = 1;
+
+  // Modal
+  showDeleteModal = false;
+  pubToDelete: Publication | null = null;
+
+  // Toast
+  toast = { visible: false, success: true, message: '' };
+  private toastTimer: any;
 
   constructor(private forumService: ForumService) {}
 
-  ngOnInit(): void {
-    this.loadData();
-  }
+  ngOnInit(): void { this.loadData(); }
+
+  // ── DATA ──────────────────────────────────────────────
 
   loadData(): void {
     this.loading = true;
@@ -46,10 +61,7 @@ export class GestionForumComponent implements OnInit {
         this.applyFilters();
         this.loading = false;
       },
-      error: () => {
-        this.error = 'Error loading publications.';
-        this.loading = false;
-      }
+      error: () => { this.error = 'Error loading publications.'; this.loading = false; }
     });
   }
 
@@ -58,7 +70,6 @@ export class GestionForumComponent implements OnInit {
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
       result = result.filter(p =>
-        p.titre.toLowerCase().includes(q) ||
         this.getUserLabel(p.user).toLowerCase().includes(q)
       );
     }
@@ -66,22 +77,64 @@ export class GestionForumComponent implements OnInit {
       result = result.filter(p => p.type === this.typeFilter);
     }
     this.filteredPublications = result;
+    this.currentPage = 1;
   }
 
-  onSearchChange(q: string): void {
-    this.searchQuery = q;
+  onSearchChange(q: string): void { this.searchQuery = q; this.applyFilters(); }
+  onTypeChange(type: string): void { this.typeFilter = type; this.applyFilters(); }
+
+  clearFilters(): void {
+    this.searchQuery = '';
+    this.typeFilter = 'ALL';
     this.applyFilters();
   }
 
-  onTypeChange(type: string): void {
-    this.typeFilter = type;
-    this.applyFilters();
+  // ── PAGINATION ────────────────────────────────────────
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredPublications.length / this.PAGE_SIZE);
   }
 
-  selectPublication(pub: Publication): void {
+  get pagedPublications(): Publication[] {
+    const start = (this.currentPage - 1) * this.PAGE_SIZE;
+    return this.filteredPublications.slice(start, start + this.PAGE_SIZE);
+  }
+
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages) this.currentPage = p;
+  }
+
+  // ── EXPAND (see more/less) ────────────────────────────
+
+  isExpanded(id: number): boolean { return this.expandedCards.has(id); }
+  toggleExpand(id: number, event: Event): void {
+    event.stopPropagation();
+    this.expandedCards.has(id) ? this.expandedCards.delete(id) : this.expandedCards.add(id);
+  }
+
+  // ── PANEL OPENING ─────────────────────────────────────
+
+  openPanel(pub: Publication, panel: DetailPanel, event: Event): void {
+    event.stopPropagation();
+    if (this.selectedPublication?.id === pub.id && this.activePanel === panel) {
+      // Toggle off same panel
+      this.activePanel = null;
+      return;
+    }
     this.selectedPublication = pub;
-    this.activeTab = 'details';
-    this.loadComments(pub);
+    this.activePanel = panel;
+
+    if (panel === 'comments') this.loadComments(pub);
+    if (panel === 'reactions') this.loadReactions(pub);
+  }
+
+  closePanel(): void {
+    this.selectedPublication = null;
+    this.activePanel = null;
   }
 
   loadComments(pub: Publication): void {
@@ -96,37 +149,85 @@ export class GestionForumComponent implements OnInit {
     });
   }
 
-  closePublication(): void {
-    this.selectedPublication = null;
-    this.selectedCommentaires = [];
+  loadReactions(pub: Publication): void {
+    this.loadingReactions = true;
+    this.forumService.getReactionSummary(pub.id).subscribe({
+      next: (s) => { this.reactionSummary = s; this.loadingReactions = false; },
+      error: () => {
+        this.reactionSummary = { LIKE: 0, DISLIKE: 0, HEART: 0, userReaction: null, reactors: [] };
+        this.loadingReactions = false;
+      }
+    });
   }
 
-  deletePublication(pub: Publication): void {
-    if (confirm(`Delete publication "${pub.titre}"?`)) {
-      // Admin delete — pass userId 0 or handle server-side
-      this.forumService.adminDeletePublication(pub.id).subscribe({
-        next: () => {
-          this.closePublication();
-          this.loadData();
-        },
-        error: () => alert('Error deleting publication.')
-      });
-    }
+  // ── DELETE ────────────────────────────────────────────
+
+  askDelete(pub: Publication, event: Event): void {
+    event.stopPropagation();
+    this.pubToDelete = pub;
+    this.showDeleteModal = true;
   }
 
-  getCountByType(type: string): number {
-    return this.publications.filter(p => p.type === type).length;
+  cancelDelete(): void { this.showDeleteModal = false; this.pubToDelete = null; }
+
+  confirmDelete(): void {
+    if (!this.pubToDelete) return;
+    const pub = this.pubToDelete;
+    this.showDeleteModal = false;
+    this.pubToDelete = null;
+    this.forumService.adminDeletePublication(pub.id).subscribe({
+      next: () => {
+        if (this.selectedPublication?.id === pub.id) this.closePanel();
+        this.loadData();
+        this.showToast(true, `"${pub.titre}" deleted successfully.`);
+      },
+      error: () => { this.showToast(false, `Failed to delete "${pub.titre}". Please try again.`); }
+    });
   }
+
+  // ── TOAST ─────────────────────────────────────────────
+
+  showToast(success: boolean, message: string): void {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toast = { visible: true, success, message };
+    this.toastTimer = setTimeout(() => this.toast = { ...this.toast, visible: false }, 4000);
+  }
+
+  closeToast(): void {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toast = { ...this.toast, visible: false };
+  }
+
+  // ── HELPERS ───────────────────────────────────────────
+
+  get totalReactions(): number {
+    if (!this.reactionSummary) return 0;
+    return (this.reactionSummary.LIKE || 0) + (this.reactionSummary.DISLIKE || 0) + (this.reactionSummary.HEART || 0);
+  }
+
+  getCountByType(type: string): number { return this.publications.filter(p => p.type === type).length; }
 
   getTypeIcon(type: string): string {
-    return { 'QUESTION': '❓', 'ARTICLE': '📰', 'REVIEW': '⭐' }[type] || '📝';
+    return ({ QUESTION: '❓', ARTICLE: '📰', REVIEW: '⭐' } as any)[type] || '📝';
   }
 
   getTypeColor(type: string): string {
-    return { 'QUESTION': '#f59e0b', 'ARTICLE': '#3b82f6', 'REVIEW': '#10b981' }[type] || '#6b7280';
+    return ({ QUESTION: '#3b82f6', ARTICLE: '#a855f7', REVIEW: '#f59e0b' } as any)[type] || '#6b7280';
   }
 
-  getUserLabel(user: { name?: string; lastName?: string; email?: string } | null | undefined): string {
+  getTypeBg(type: string): string {
+    return ({ QUESTION: 'rgba(59,130,246,0.14)', ARTICLE: 'rgba(168,85,247,0.14)', REVIEW: 'rgba(245,158,11,0.14)' } as any)[type] || 'rgba(107,114,128,0.14)';
+  }
+
+  getPdfUrl(pdf: string): string { return `http://localhost:8222/uploads/publications/${pdf}`; }
+  getImageUrl(img: string): string { return `http://localhost:8222/uploads/publications/${img}`; }
+
+  getPdfName(pdf: string): string {
+    const idx = pdf.indexOf('_');
+    return idx >= 0 ? pdf.substring(idx + 1) : pdf;
+  }
+
+  getUserLabel(user: any): string {
     if (!user) return 'N/A';
     const full = [user.name, user.lastName].filter(Boolean).join(' ').trim();
     return full || user.email || 'N/A';
@@ -137,7 +238,7 @@ export class GestionForumComponent implements OnInit {
     return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
-  getInitials(user: { name?: string; lastName?: string } | null | undefined): string {
+  getInitials(user: any): string {
     if (!user) return '?';
     return [(user.name || '').charAt(0), (user.lastName || '').charAt(0)].join('').toUpperCase() || '?';
   }

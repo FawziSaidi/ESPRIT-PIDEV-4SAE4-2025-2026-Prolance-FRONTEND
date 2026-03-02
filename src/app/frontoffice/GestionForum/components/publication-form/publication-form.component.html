@@ -3,167 +3,216 @@
 
     <!-- Header -->
     <div class="modal-header">
-      <h2 class="modal-title">{{ getTitle() }}</h2>
+      <h2 class="modal-title">{{ mode === 'create' ? '✍️ New Post' : '✏️ Edit Post' }}</h2>
       <button class="btn-close" (click)="onClose()" [disabled]="loading">✕</button>
     </div>
 
-    <!-- Error Message -->
-    <div *ngIf="errorMessage" class="alert-error">
-      {{ errorMessage }}
-    </div>
+    <div class="modal-divider"></div>
 
-    <!-- Form -->
-    <form (ngSubmit)="onSubmit()" class="publication-form">
+    <!-- Error -->
+    <div *ngIf="errorMessage" class="alert-error">{{ errorMessage }}</div>
 
-      <!-- Type Selection -->
-      <div class="form-group">
-        <label class="form-label">Post type *</label>
-        <div class="type-selector">
-          <div
-            *ngFor="let typeOption of typeOptions"
-            class="type-option"
-            [class.selected]="formData.type === typeOption.value"
-            (click)="formData.type = typeOption.value">
-            <span class="type-option-icon">{{ typeOption.icon }}</span>
-            <span class="type-option-label">{{ typeOption.label }}</span>
+    <!-- Body -->
+    <div class="modal-body">
+
+      <!-- Type pills -->
+      <div class="type-pills">
+        <button
+          *ngFor="let typeOption of typeOptions"
+          type="button"
+          class="type-pill"
+          [class.active]="formData.type === typeOption.value"
+          [attr.data-type]="typeOption.value"
+          (click)="formData.type = typeOption.value; onTypeChange()">
+          <span>{{ typeOption.icon }}</span> {{ typeOption.label }}
+        </button>
+      </div>
+      <span *ngIf="errors.type" class="error-text">{{ errors.type }}</span>
+
+      <!-- ══ TITLE INPUT with inline color + size pickers ══ -->
+      <div class="fb-input-wrap">
+        <div class="input-row">
+
+          <!-- Color picker button for title -->
+          <div class="picker-wrap">
+            <button type="button" class="picker-btn color-btn"
+              [style.background]="titleColor"
+              (click)="showTitleColorPicker = !showTitleColorPicker; showTitleSizePicker = false; showContentColorPicker = false"
+              title="Title color">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+              </svg>
+            </button>
+            <!-- Title color popover -->
+            <div class="picker-popover" *ngIf="showTitleColorPicker">
+              <div class="popover-label">Title color</div>
+              <div class="color-swatches">
+                <button *ngFor="let c of colorOptions" type="button"
+                  class="swatch" [style.background]="c"
+                  [class.swatch-active]="titleColor === c"
+                  (click)="titleColor = c; showTitleColorPicker = false"></button>
+              </div>
+            </div>
           </div>
+
+          <!-- Size picker button for title -->
+          <div class="picker-wrap">
+            <button type="button" class="picker-btn size-picker-btn"
+              (click)="showTitleSizePicker = !showTitleSizePicker; showTitleColorPicker = false; showContentColorPicker = false"
+              title="Title size">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z"/>
+              </svg>
+            </button>
+            <!-- Title size popover -->
+            <div class="picker-popover" *ngIf="showTitleSizePicker">
+              <div class="popover-label">Title size</div>
+              <div class="size-btns">
+                <button *ngFor="let s of fontSizes" type="button"
+                  class="size-btn" [class.size-active]="titleFontSize === s.value"
+                  (click)="titleFontSize = s.value; showTitleSizePicker = false">{{ s.label }}</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Title input -->
+          <input
+            type="text"
+            name="titre"
+            [(ngModel)]="formData.titre"
+            class="fb-title-input"
+            [style.color]="titleColor"
+            [style.font-size]="titleFontSize"
+            placeholder="Write a title..."
+            maxlength="200"
+            [class.has-error]="errors.titre" />
         </div>
-        <span *ngIf="errors.type" class="error-text">{{ errors.type }}</span>
+        <span class="char-hint">{{ formData.titre.length }}/200</span>
+        <span *ngIf="errors.titre" class="error-text">{{ errors.titre }}</span>
       </div>
 
-      <!-- Title -->
-      <div class="form-group">
-        <label class="form-label" for="titre">Title *</label>
-        <input
-          type="text"
-          id="titre"
-          name="titre"
-          [(ngModel)]="formData.titre"
-          class="form-input"
-          [class.error]="errors.titre"
-          placeholder="Enter the title of your post..."
-          maxlength="200"
-          required>
-        <div class="input-helper">
-          <span *ngIf="errors.titre" class="error-text">{{ errors.titre }}</span>
-          <span class="char-count">{{ formData.titre.length }}/200</span>
-        </div>
+      <!-- ✨ AI Generate Button -->
+      <div class="ai-generate-wrap">
+        <button
+          type="button"
+          class="btn-ai-generate"
+          (click)="generateContent()"
+          [disabled]="generatingContent || loading"
+          title="Generate content from title with AI">
+          <span *ngIf="!generatingContent">
+            ✨ {{ showRegenerateBtn ? 'Regenerate content' : 'Generate content with AI' }}
+          </span>
+          <span *ngIf="generatingContent" class="ai-loading">
+            <span class="spinner-dot"></span>
+            <span class="spinner-dot"></span>
+            <span class="spinner-dot"></span>
+            Generating...
+          </span>
+        </button>
+        <span *ngIf="aiError" class="error-text ai-error">{{ aiError }}</span>
+        <span *ngIf="showRegenerateBtn && !generatingContent" class="ai-hint">
+          💡 Content generated! You can edit it or regenerate.
+        </span>
       </div>
 
-      <!-- Content -->
-      <div class="form-group">
-        <label class="form-label" for="contenue">Content *</label>
-        <textarea
-          id="contenue"
-          name="contenue"
-          [(ngModel)]="formData.contenue"
-          class="form-textarea"
-          [class.error]="errors.contenue"
-          placeholder="Write the content of your post..."
-          rows="6"
-          required></textarea>
+      <!-- ══ CONTENT TEXTAREA with inline color picker ══ -->
+      <div class="fb-input-wrap">
+        <div class="input-row">
+
+          <!-- Color picker button for content -->
+          <div class="picker-wrap">
+            <button type="button" class="picker-btn color-btn"
+              [style.background]="contentColor"
+              (click)="showContentColorPicker = !showContentColorPicker; showTitleColorPicker = false; showTitleSizePicker = false"
+              title="Content color">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+              </svg>
+            </button>
+            <!-- Content color popover -->
+            <div class="picker-popover" *ngIf="showContentColorPicker">
+              <div class="popover-label">Content color</div>
+              <div class="color-swatches">
+                <button *ngFor="let c of colorOptions" type="button"
+                  class="swatch" [style.background]="c"
+                  [class.swatch-active]="contentColor === c"
+                  (click)="contentColor = c; showContentColorPicker = false"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Content textarea -->
+          <textarea
+            name="contenue"
+            [(ngModel)]="formData.contenue"
+            class="fb-content-input"
+            [style.color]="contentColor"
+            placeholder="What's on your mind?"
+            rows="5"
+            [class.has-error]="errors.contenue"></textarea>
+        </div>
         <span *ngIf="errors.contenue" class="error-text">{{ errors.contenue }}</span>
       </div>
 
-      <!-- ✅ PDF Upload (shown ABOVE images) -->
-      <div class="form-group">
-        <label class="form-label">
-          PDF Documents (optional)
-          <span class="images-counter">{{ pdfPreviews.length }}/{{ MAX_PDFS }}</span>
-        </label>
-
-        <!-- PDF error -->
-        <div *ngIf="errors.pdfs" class="alert-error small">{{ errors.pdfs }}</div>
-
-        <!-- PDF list -->
-        <div *ngIf="pdfPreviews.length > 0" class="pdf-list">
-          <div *ngFor="let pdf of pdfPreviews; let i = index" class="pdf-item">
-            <span class="pdf-icon">📄</span>
-            <span class="pdf-name">{{ pdf.fileName }}</span>
-            <button type="button" class="btn-remove-pdf" (click)="removePdf(i)" title="Remove">✕</button>
-          </div>
-        </div>
-
-        <!-- PDF upload area -->
-        <div *ngIf="canAddMorePdfs" class="upload-area" [class.compact]="pdfPreviews.length > 0">
-          <input
-            type="file"
-            id="pdfInput"
-            accept="application/pdf"
-            multiple
-            (change)="onPdfsSelected($event)"
-            class="file-input">
-          <label for="pdfInput" class="upload-label">
-            <div class="upload-icon">{{ pdfPreviews.length > 0 ? '➕' : '📎' }}</div>
-            <p class="upload-text">
-              {{ pdfPreviews.length > 0 ? 'Add more PDFs' : 'Click to upload PDF files' }}
-            </p>
-            <p class="upload-hint">PDF only · Max 20 MB per file · {{ MAX_PDFS - pdfPreviews.length }} remaining</p>
-          </label>
-        </div>
-
-        <!-- Limit reached -->
-        <div *ngIf="!canAddMorePdfs" class="limit-reached">
-          ✅ Limit of {{ MAX_PDFS }} PDFs reached
+      <!-- Image previews -->
+      <div *ngIf="imagePreviews.length > 0" class="preview-grid">
+        <div *ngFor="let preview of imagePreviews; let i = index" class="preview-item">
+          <img [src]="preview.previewUrl" [alt]="'Image ' + (i + 1)">
+          <button type="button" class="btn-remove" (click)="removeImage(i)">✕</button>
         </div>
       </div>
+      <div *ngIf="errors.images" class="error-text small-err">{{ errors.images }}</div>
 
-      <!-- ✅ MULTI-IMAGES Upload -->
-      <div class="form-group">
-        <label class="form-label">
-          Images (optional)
-          <span class="images-counter">{{ imagePreviews.length }}/{{ MAX_IMAGES }}</span>
-        </label>
-
-        <!-- Images error -->
-        <div *ngIf="errors.images" class="alert-error small">{{ errors.images }}</div>
-
-        <!-- Image previews grid -->
-        <div *ngIf="imagePreviews.length > 0" class="images-grid">
-          <div *ngFor="let preview of imagePreviews; let i = index" class="image-thumb">
-            <img [src]="preview.previewUrl" [alt]="'Image ' + (i + 1)">
-            <button type="button" class="btn-remove-image" (click)="removeImage(i)" title="Remove">✕</button>
-            <span class="image-badge">{{ i + 1 }}</span>
-          </div>
+      <!-- PDF previews -->
+      <div *ngIf="pdfPreviews.length > 0" class="pdf-previews">
+        <div *ngFor="let pdf of pdfPreviews; let i = index" class="pdf-chip">
+          <span>📄</span>
+          <span class="pdf-chip-name">{{ pdf.fileName }}</span>
+          <button type="button" (click)="removePdf(i)">✕</button>
         </div>
+      </div>
+      <div *ngIf="errors.pdfs" class="error-text small-err">{{ errors.pdfs }}</div>
 
-        <!-- Upload area -->
-        <div *ngIf="canAddMoreImages" class="upload-area" [class.compact]="imagePreviews.length > 0">
-          <input
-            type="file"
-            id="imageInput"
-            accept="image/*"
-            multiple
+      <!-- QUESTION notice -->
+      <div *ngIf="formData.type === 'QUESTION'" class="question-notice">
+        📌 Images and PDFs are not available for Question posts.
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <div class="footer-left">
+        <span class="add-label">Add to post</span>
+
+        <!-- Image upload -->
+        <label class="icon-btn green" [class.icon-disabled]="formData.type === 'QUESTION'" title="Add images">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5z"/>
+          </svg>
+          <input type="file" accept="image/*" multiple
             (change)="onFilesSelected($event)"
-            class="file-input">
-          <label for="imageInput" class="upload-label">
-            <div class="upload-icon">{{ imagePreviews.length > 0 ? '➕' : '📷' }}</div>
-            <p class="upload-text">
-              {{ imagePreviews.length > 0 ? 'Add more images' : 'Click to upload images' }}
-            </p>
-            <p class="upload-hint">PNG, JPG, JPEG · Max 5 MB per image · {{ MAX_IMAGES - imagePreviews.length }} remaining</p>
-          </label>
-        </div>
+            [disabled]="formData.type === 'QUESTION'"
+            class="file-input-hidden">
+        </label>
 
-        <!-- Limit reached -->
-        <div *ngIf="!canAddMoreImages" class="limit-reached">
-          ✅ Limit of {{ MAX_IMAGES }} images reached
-        </div>
+        <!-- PDF upload -->
+        <label class="icon-btn orange" [class.icon-disabled]="formData.type === 'QUESTION'" title="Add PDF">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/>
+          </svg>
+          <input type="file" accept="application/pdf" multiple
+            (change)="onPdfsSelected($event)"
+            [disabled]="formData.type === 'QUESTION'"
+            class="file-input-hidden">
+        </label>
       </div>
 
-      <!-- Actions -->
-      <div class="modal-actions">
-        <button type="button" class="btn-cancel" (click)="onClose()" [disabled]="loading">
-          Cancel
-        </button>
-        <button type="submit" class="btn-submit" [disabled]="loading">
-          <span *ngIf="!loading">{{ mode === 'create' ? 'Create' : 'Update' }}</span>
-          <span *ngIf="loading" class="loading-text">
-            <span class="spinner-small"></span>
-            Processing...
-          </span>
-        </button>
-      </div>
-    </form>
+      <button class="btn-publish" (click)="onSubmit()" [disabled]="loading">
+        <span *ngIf="!loading">{{ mode === 'create' ? 'Publish' : 'Update' }}</span>
+        <span *ngIf="loading" class="spinner-small"></span>
+      </button>
+    </div>
+
   </div>
 </div>

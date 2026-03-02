@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Publication {
@@ -24,11 +24,19 @@ export interface Commentaire {
   replies: Commentaire[];
 }
 
+export interface ReactionSummary {
+  LIKE: number;
+  DISLIKE: number;
+  HEART: number;
+  userReaction: string | null;
+  reactors: { userId: number; userName: string; type: string; }[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ForumService {
-  private readonly apiBase = 'http://localhost:8089/pidev/api';
+  private readonly apiBase = 'http://localhost:8222/api';
 
   constructor(private http: HttpClient) {}
 
@@ -38,6 +46,14 @@ export class ForumService {
 
   getAllCommentaires(): Observable<Commentaire[]> {
     return this.http.get<Commentaire[]>(`${this.apiBase}/commentaires`);
+  }
+
+  getReactionSummary(publicationId: number): Observable<ReactionSummary> {
+    const params = new HttpParams().set('userId', '0');
+    return this.http.get<ReactionSummary>(
+      `${this.apiBase}/reactions/publication/${publicationId}/summary`,
+      { params }
+    );
   }
 
   // Admin delete — no userId required

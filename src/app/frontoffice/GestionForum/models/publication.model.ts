@@ -16,19 +16,22 @@ export interface Publication {
   titre: string;
   contenue: string;
   images?: string[];
-  pdfs?: string[];        // ✅ PDF file names
+  pdfs?: string[];
   createAt?: string;
   type: TypePublication;
   user?: User;
   commentaires?: any[];
+  titleColor?: string;
+  contentColor?: string;
+  titleFontSize?: string;
 }
 
 // ✅ Helper to build an image URL
 export function getImageUrl(imageName: string): string {
-  return `http://localhost:8089/pidev/uploads/publications/${imageName}`;
+  return `http://localhost:8222/uploads/publications/${imageName}`;
 }
 
 // ✅ Helper to build a PDF URL
 export function getPdfUrl(pdfName: string): string {
-  return `http://localhost:8089/pidev/uploads/publications/${pdfName}`;
+  return `http://localhost:8222/uploads/publications/${pdfName}`;
 }

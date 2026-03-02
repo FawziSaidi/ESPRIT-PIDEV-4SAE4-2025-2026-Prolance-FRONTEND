@@ -7,7 +7,7 @@ import { Publication, TypePublication } from '../models/publication.model';
   providedIn: 'root'
 })
 export class PublicationService {
-  private baseUrl = 'http://localhost:8089/pidev/api/publications';
+  private baseUrl = 'http://localhost:8222/api/publications';
 
   constructor(private http: HttpClient) {}
 

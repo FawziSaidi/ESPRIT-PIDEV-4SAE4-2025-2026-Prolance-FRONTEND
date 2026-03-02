@@ -1,32 +1,33 @@
 <div class="forum-container">
-  <div class="forum-content">
+  <div class="forum-content" >
+
+    <!-- Galaxy Filter Card -->
+    <div class="galaxy-card">
 
     <!-- Tabs + Add Post -->
     <div class="tabs-bar">
-      <div class="tabs">
-        <button
-          *ngFor="let type of typeOptions"
-          [class.active]="selectedType === type.value"
-          (click)="onTypeChange(type.value)"
-          class="tab-button">
-          {{ type.label }}
-        </button>
-        <button
-          [class.active]="selectedType === 'MYPOSTS'"
-          (click)="onTypeChange('MYPOSTS')"
-          class="tab-button">
-          My Posts
-        </button>
-      </div>
+      <button
+        *ngFor="let type of typeOptions"
+        [class.active]="selectedType === type.value"
+        (click)="onTypeChange(type.value)"
+        class="tab-button">
+        {{ type.label }}
+      </button>
+      <button
+        [class.active]="selectedType === 'MYPOSTS'"
+        (click)="onTypeChange('MYPOSTS')"
+        class="tab-button">
+        My Posts
+      </button>
       <button class="btn-add" (click)="openAddModal()">
         <span class="btn-icon">+</span> Add Post
       </button>
     </div>
 
-    <!-- BARRE DE RECHERCHE -->
+    <!-- Search bar -->
     <div class="search-bar">
       <div class="search-input-wrapper">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
@@ -37,17 +38,18 @@
           placeholder="Search by author name..."
           autocomplete="off" />
         <button *ngIf="searchQuery" class="btn-clear" (click)="clearSearch()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
       </div>
       <span class="search-results" *ngIf="searchQuery.trim()">
-        <strong>{{ filteredPublications.length }}</strong>
-        result{{ filteredPublications.length !== 1 ? 's' : '' }} for
-        <em>« {{ searchQuery.trim() }} »</em>
+        <strong>{{ filteredPublications.length }}</strong> result{{ filteredPublications.length !== 1 ? 's' : '' }}
+        for <em>« {{ searchQuery.trim() }} »</em>
       </span>
     </div>
+
+    </div><!-- end galaxy-card -->
 
     <!-- Error -->
     <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
@@ -58,13 +60,19 @@
       <p>Loading posts...</p>
     </div>
 
-    <!-- Publications Grid -->
+    <!-- Cards -->
     <div *ngIf="!loading && filteredPublications.length > 0" class="publications-grid">
-      <div *ngFor="let publication of filteredPublications" class="publication-card">
+      <div
+        *ngFor="let publication of paginatedPublications"
+        class="publication-card"
+        [attr.data-type]="publication.type">
+
         <div class="card-main">
+
+          <!-- Header -->
           <div class="card-header">
             <div class="user-info">
-              <div class="user-avatar">
+              <div class="user-avatar" [attr.data-type]="publication.type">
                 {{ publication.user?.name?.charAt(0) }}{{ publication.user?.lastName?.charAt(0) }}
               </div>
               <div class="user-details">
@@ -76,34 +84,41 @@
             </div>
             <div class="header-right">
               <div class="type-badge" [attr.data-type]="publication.type">
-                <span class="type-icon">{{ getTypeIcon(publication.type) }}</span>
                 {{ getTypeLabel(publication.type) }}
               </div>
               <div class="actions-right" *ngIf="canModifyPublication(publication)">
-                <button class="btn-menu" (click)="toggleActionMenu(publication.id!)">⋮</button>
+                <button class="btn-menu" (click)="toggleActionMenu(publication.id!)">••</button>
                 <div class="actions-dropdown" *ngIf="activeMenuId === publication.id">
                   <button class="dropdown-item edit" (click)="openEditModal(publication); closeActionMenu()">
-                    <span class="icon">✏️</span> Edit
+                    <span>✏️</span> Edit
                   </button>
                   <button class="dropdown-item delete" (click)="deletePublication(publication); closeActionMenu()">
-                    <span class="icon">🗑️</span> Delete
+                    <span>🗑️</span> Delete
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
+          <!-- Content -->
           <div class="card-content">
-            <h2 class="publication-titre">{{ publication.titre }}</h2>
-            <p class="publication-contenue">{{ publication.contenue }}</p>
+            <h2 class="publication-titre"
+                [style.color]="publication.titleColor || '#2d1f4e'"
+                [style.font-size]="publication.titleFontSize || '1.1rem'">{{ publication.titre }}</h2>
+            <p class="publication-contenue"
+               [class.clamped]="!isExpanded(publication.id!)"
+               [style.color]="publication.contentColor || '#555'">{{ publication.contenue }}</p>
+            <button
+              *ngIf="publication.contenue && publication.contenue.length > 300"
+              class="btn-see-more"
+              (click)="toggleExpand(publication.id!)">
+              {{ isExpanded(publication.id!) ? 'See less ▲' : 'See more ▼' }}
+            </button>
 
-            <!-- ✅ PDFs: clickable, open in new tab -->
+            <!-- PDFs -->
             <div *ngIf="publication.pdfs && publication.pdfs.length > 0" class="pub-pdfs-list">
-              <a
-                *ngFor="let pdf of publication.pdfs"
-                [href]="getPdfUrl(pdf)"
-                target="_blank"
-                rel="noopener noreferrer"
+              <a *ngFor="let pdf of publication.pdfs"
+                [href]="getPdfUrl(pdf)" target="_blank" rel="noopener noreferrer"
                 class="pub-pdf-link">
                 <span class="pub-pdf-icon">📄</span>
                 <span class="pub-pdf-name">{{ pdf.substring(pdf.indexOf('_') + 1) }}</span>
@@ -111,46 +126,80 @@
               </a>
             </div>
 
-            <!-- ✅ IMAGES : 2 par ligne, taille identique 180x180, badge +N -->
-            <div *ngIf="publication.images && publication.images.length > 0" class="pub-images-grid">
-              <ng-container *ngFor="let img of publication.images; let i = index">
-                <ng-container *ngIf="i < 4">
+            <!-- Images -->
+            <div *ngIf="publication.images && publication.images.length > 0" class="pub-images-row"
+                 [class.center-single]="publication.images.length === 1">
 
-                  <!-- 4e image avec badge +N si plus de 4 images -->
-                  <div *ngIf="i === 3 && publication.images.length > 4" class="pub-img-wrapper">
-                    <img [src]="getImageUrl(img)" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
-                    <div class="pub-img-more">+{{ publication.images.length - 4 }}</div>
-                  </div>
+              <!-- 1 image : centrée -->
+              <div *ngIf="publication.images.length === 1"
+                   class="pub-img-wrapper"
+                   (click)="openLightbox(publication.images, 0)">
+                <img [src]="getImageUrl(publication.images[0])" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
+              </div>
 
-                  <!-- Image normale -->
-                  <div *ngIf="!(i === 3 && publication.images.length > 4)" class="pub-img-wrapper">
-                    <img [src]="getImageUrl(img)" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
-                  </div>
-
-                </ng-container>
+              <!-- 2 images : côte à côte -->
+              <ng-container *ngIf="publication.images.length === 2">
+                <div class="pub-img-wrapper" (click)="openLightbox(publication.images, 0)">
+                  <img [src]="getImageUrl(publication.images[0])" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
+                </div>
+                <div class="pub-img-wrapper" (click)="openLightbox(publication.images, 1)">
+                  <img [src]="getImageUrl(publication.images[1])" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
+                </div>
               </ng-container>
-            </div>
 
+              <!-- 3+ images : 2 images + overlay +N sur la 2ème -->
+              <ng-container *ngIf="publication.images.length > 2">
+                <div class="pub-img-wrapper" (click)="openLightbox(publication.images, 0)">
+                  <img [src]="getImageUrl(publication.images[0])" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
+                </div>
+                <div class="pub-img-wrapper pub-img-wrapper--more" (click)="openLightbox(publication.images, 1)">
+                  <img [src]="getImageUrl(publication.images[1])" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
+                  <div class="pub-img-overlay">+{{ publication.images.length - 2 }}</div>
+                </div>
+              </ng-container>
+
+            </div>
           </div>
 
+          <!-- Footer : React gauche | Comments droite | pas de ligne -->
           <div class="card-footer">
-            <div class="actions-left">
-              <button class="btn-action" (click)="openCommentModal(publication)">
+            <div class="footer-actions">
+              <app-reaction-button [publicationId]="publication.id!"></app-reaction-button>
+              <button class="btn-action btn-comments" (click)="openCommentModal(publication)">
                 <span class="icon">💬</span> Comments
                 <span class="count" *ngIf="publication.commentaires?.length">({{ publication.commentaires.length }})</span>
               </button>
             </div>
           </div>
+
         </div>
       </div>
     </div>
 
-    <!-- Empty State -->
+    <!-- Pagination -->
+    <div *ngIf="!loading && totalPages > 1" class="pagination-bar">
+      <button class="page-btn page-nav" (click)="prevPage()" [disabled]="currentPage === 1">
+        &#8592;
+      </button>
+      <button
+        *ngFor="let page of pageNumbers"
+        class="page-btn"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page)">
+        {{ page }}
+      </button>
+      <button class="page-btn page-nav" (click)="nextPage()" [disabled]="currentPage === totalPages">
+        &#8594;
+      </button>
+      <span class="page-info">Page {{ currentPage }} / {{ totalPages }}</span>
+    </div>
+
+    <!-- Empty state -->
     <div *ngIf="!loading && filteredPublications.length === 0" class="empty-state">
-      <div class="empty-icon">{{ searchQuery.trim() ? '🔍' : '📝' }}</div>
-      <h3>{{ searchQuery.trim() ? 'No results found' : 'No posts' }}</h3>
+      <div class="empty-icon">{{ searchQuery.trim() ? '🔍' : '💬' }}</div>
+      <h3>{{ searchQuery.trim() ? 'No results found' : 'No posts yet' }}</h3>
       <p *ngIf="searchQuery.trim()">No author matches <strong>« {{ searchQuery.trim() }} »</strong></p>
-      <p *ngIf="!searchQuery.trim()">There are no posts in this category yet.</p>
+      <p *ngIf="!searchQuery.trim()">Be the first to start the conversation!</p>
       <button *ngIf="searchQuery.trim()" class="btn-primary" (click)="clearSearch()">Clear search</button>
       <button *ngIf="!searchQuery.trim()" class="btn-primary" (click)="openAddModal()">Create first post</button>
     </div>
@@ -161,4 +210,52 @@
 <!-- Modals -->
 <app-publication-form *ngIf="showAddModal" [mode]="'create'" (close)="closeAddModal()" (saved)="onPublicationCreated()"></app-publication-form>
 <app-publication-form *ngIf="showEditModal && selectedPublication" [mode]="'edit'" [publication]="selectedPublication" (close)="closeEditModal()" (saved)="onPublicationUpdated()"></app-publication-form>
-<app-commentaire-modal *ngIf="showCommentModal && selectedPublication" [publication]="selectedPublication" [currentUserId]="currentUserId" (close)="closeCommentModal()"></app-commentaire-modal>
+<app-commentaire-modal *ngIf="showCommentModal && selectedPublication" [publication]="selectedPublication" [currentUserId]="currentUserId" (close)="closeCommentModal()" (commentCountChanged)="onCommentCountChanged($event)"></app-commentaire-modal>
+
+<!-- ═══════════════════════ LIGHTBOX ═══════════════════════ -->
+<div class="lightbox-overlay" *ngIf="showLightbox" (click)="closeLightbox()">
+  <div class="lightbox-box" (click)="$event.stopPropagation()">
+    <!-- Close -->
+    <button class="lightbox-close" (click)="closeLightbox()">✕</button>
+
+    <!-- Image principale -->
+    <div class="lightbox-img-wrapper">
+      <img [src]="getImageUrl(lightboxImages[lightboxIndex])" alt="Image" class="lightbox-img">
+    </div>
+
+    <!-- Flèche gauche : cachée sur la première image -->
+    <button class="lightbox-arrow lightbox-prev" (click)="lightboxPrev()" *ngIf="lightboxImages.length > 1 && lightboxIndex > 0">&#8592;</button>
+    <!-- Flèche droite : cachée sur la dernière image -->
+    <button class="lightbox-arrow lightbox-next" (click)="lightboxNext()" *ngIf="lightboxImages.length > 1 && lightboxIndex < lightboxImages.length - 1">&#8594;</button>
+
+    <!-- Indicateur -->
+    <div class="lightbox-counter" *ngIf="lightboxImages.length > 1">
+      {{ lightboxIndex + 1 }} / {{ lightboxImages.length }}
+    </div>
+
+    <!-- Miniatures -->
+    <div class="lightbox-thumbs" *ngIf="lightboxImages.length > 1">
+      <img *ngFor="let img of lightboxImages; let i = index"
+           [src]="getImageUrl(img)"
+           [class.active]="i === lightboxIndex"
+           (click)="lightboxIndex = i"
+           class="lightbox-thumb">
+    </div>
+  </div>
+</div>
+<div class="delete-modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
+  <div class="delete-modal-box" (click)="$event.stopPropagation()">
+    <div class="delete-modal-icon">🗑️</div>
+    <h3 class="delete-modal-title">Delete this post?</h3>
+    <p class="delete-modal-msg">
+      This action is <strong>irreversible</strong>. The post and all its reactions and comments will be permanently deleted.
+    </p>
+    <div class="delete-modal-actions">
+      <button class="btn-cancel-delete" (click)="cancelDelete()">Cancel</button>
+      <button class="btn-confirm-delete" (click)="confirmDelete()">Yes, delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Chatbot flottant -->
+<app-chatbot></app-chatbot>
