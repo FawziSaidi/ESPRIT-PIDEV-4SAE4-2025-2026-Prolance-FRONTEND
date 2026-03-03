@@ -1,0 +1,21 @@
+<div class="map-container">
+
+  <!-- État : géocodage en cours -->
+  <div *ngIf="isGeocoding" class="map-loading">
+    <i class="material-icons spin">autorenew</i>
+    <span>Localisation en cours...</span>
+  </div>
+
+  <!-- État : localisation introuvable -->
+  <div *ngIf="!_lat && !_lng && !isGeocoding" class="map-unavailable">
+    <i class="material-icons">location_off</i>
+    <span>Localisation non disponible pour « {{ _locationName }} »</span>
+  </div>
+
+  <!-- Carte Leaflet -->
+  <div #mapEl
+       id="event-map"
+       [style.display]="(_lat && _lng) ? 'block' : 'none'">
+  </div>
+
+</div>

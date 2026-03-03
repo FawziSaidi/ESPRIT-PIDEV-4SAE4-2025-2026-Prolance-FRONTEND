@@ -212,6 +212,24 @@
         ></div>
       </div>
 
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <!--  SECTION CARTE LEAFLET                                  -->
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <div class="modal-section-title">
+        <i class="material-icons">map</i>
+        Localisation
+      </div>
+
+      <app-event-map
+        [lat]="selectedEvent.latitude"
+        [lng]="selectedEvent.longitude"
+        [locationName]="selectedEvent.location"
+        [eventTitle]="selectedEvent.title"
+      ></app-event-map>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <!--  SECTION ACTIVITÉS                                      -->
+      <!-- ═══════════════════════════════════════════════════════ -->
       <div class="modal-section-title">
         <i class="material-icons">list_alt</i>
         Activités ({{ selectedEvent.activities?.length || 0 }})
@@ -246,7 +264,6 @@
       </div>
 
       <div class="modal-actions">
-        <!-- Ouvre le formulaire d'inscription depuis le modal détails -->
         <button class="btn-modal-participate"
           [disabled]="isParticipateDisabled(selectedEvent.idEvent!)"
           [class.btn-participate--pending]="getUserInscriptionStatus(selectedEvent.idEvent!) === 'PENDING'"

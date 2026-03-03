@@ -10,11 +10,13 @@ import { EventService } from './services/event.service';
 import { ActivityService } from './services/activity.service';
 import { InscriptionService } from './services/inscription.service';  // ← AJOUT
 import { InscriptionFormComponent } from './Components/inscription-form/inscription-form.component';
+import { EventMapComponent } from './Components/event-map/event-map.component';
 
 @NgModule({
   declarations: [
     EventListComponent,
     InscriptionFormComponent,
+    EventMapComponent,
   ],
   imports: [
     CommonModule,

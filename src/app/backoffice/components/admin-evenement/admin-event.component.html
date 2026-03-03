@@ -8,6 +8,11 @@
         <p class="header-subtitle">Review, manage and monitor all events on the platform</p>
       </div>
       <div class="header-actions">
+        <!-- ── BOUTON ARCHIVES ── -->
+        <button class="btn-archived" (click)="openArchivedModal()">
+          🗂️ Archived Events
+          <span class="archived-badge" *ngIf="archivedEvents.length > 0">{{ archivedEvents.length }}</span>
+        </button>
         <button class="btn-registrations" (click)="openRegistrationsModal()">
           📋 Registration Requests
           <span class="reg-badge" *ngIf="pendingCount > 0">{{ pendingCount }}</span>
@@ -16,22 +21,10 @@
       </div>
     </div>
     <div class="header-stats">
-      <div class="stat-card">
-        <span class="stat-icon">📅</span>
-        <div class="stat-info"><p class="stat-label">Total</p><p class="stat-value">{{ events.length }}</p></div>
-      </div>
-      <div class="stat-card">
-        <span class="stat-icon">✅</span>
-        <div class="stat-info"><p class="stat-label">Published</p><p class="stat-value">{{ getEventCountByStatus('PUBLISHED') }}</p></div>
-      </div>
-      <div class="stat-card">
-        <span class="stat-icon">⏳</span>
-        <div class="stat-info"><p class="stat-label">Pending</p><p class="stat-value">{{ getEventCountByStatus('PENDING') }}</p></div>
-      </div>
-      <div class="stat-card">
-        <span class="stat-icon">❌</span>
-        <div class="stat-info"><p class="stat-label">Cancelled</p><p class="stat-value">{{ getEventCountByStatus('CANCELLED') }}</p></div>
-      </div>
+      <div class="stat-card"><span class="stat-icon">📅</span><div class="stat-info"><p class="stat-label">Total</p><p class="stat-value">{{ events.length }}</p></div></div>
+      <div class="stat-card"><span class="stat-icon">✅</span><div class="stat-info"><p class="stat-label">Published</p><p class="stat-value">{{ getEventCountByStatus('PUBLISHED') }}</p></div></div>
+      <div class="stat-card"><span class="stat-icon">⏳</span><div class="stat-info"><p class="stat-label">Pending</p><p class="stat-value">{{ getEventCountByStatus('PENDING') }}</p></div></div>
+      <div class="stat-card"><span class="stat-icon">❌</span><div class="stat-info"><p class="stat-label">Cancelled</p><p class="stat-value">{{ getEventCountByStatus('CANCELLED') }}</p></div></div>
     </div>
   </div>
 
@@ -39,8 +32,7 @@
   <div class="toolbar">
     <div class="toolbar-filters">
       <div class="search-box">
-        <input type="text" placeholder="Search events..." [value]="searchQuery"
-          (input)="onSearchChange($any($event.target).value)" class="search-input">
+        <input type="text" placeholder="Search events..." [value]="searchQuery" (input)="onSearchChange($any($event.target).value)" class="search-input">
         <span class="search-icon">🔍</span>
       </div>
       <select (change)="onStatusChange($any($event.target).value)" [value]="statusFilter" class="filter-select">
@@ -49,8 +41,7 @@
       <select (change)="onCategoryChange($any($event.target).value)" [value]="categoryFilter" class="filter-select">
         <option *ngFor="let c of categoryOptions" [value]="c">{{ c === 'ALL' ? 'All Categories' : c }}</option>
       </select>
-      <button class="btn-advanced-toggle" (click)="showAdvancedFilters = !showAdvancedFilters"
-        [class.active]="showAdvancedFilters">
+      <button class="btn-advanced-toggle" (click)="showAdvancedFilters = !showAdvancedFilters" [class.active]="showAdvancedFilters">
         ⚙ Filtres avancés
         <span class="adv-badge" *ngIf="activeAdvancedCount > 0">{{ activeAdvancedCount }}</span>
       </button>
@@ -59,76 +50,40 @@
       <button class="view-btn" [class.active]="viewMode==='cards'" (click)="setView('cards')" title="Cards View">⊞</button>
       <button class="view-btn" [class.active]="viewMode==='list'"  (click)="setView('list')"  title="List View">☰</button>
       <span class="results-count">
-        {{ pageData ? pageData.filteredCount : filteredEvents.length }}
-        event{{ (pageData ? pageData.filteredCount : filteredEvents.length) !== 1 ? 's' : '' }}
-        <ng-container *ngIf="pageData && pageData.filteredCount !== pageData.totalCount">
-          (/ {{ pageData.totalCount }})
-        </ng-container>
+        {{ pageData ? pageData.filteredCount : filteredEvents.length }} event{{ (pageData ? pageData.filteredCount : filteredEvents.length) !== 1 ? 's' : '' }}
+        <ng-container *ngIf="pageData && pageData.filteredCount !== pageData.totalCount">(/ {{ pageData.totalCount }})</ng-container>
       </span>
     </div>
   </div>
 
-  <!-- ══ PANNEAU FILTRES AVANCÉS ══ -->
+  <!-- ══ FILTRES AVANCÉS ══ -->
   <div class="advanced-filters-panel" *ngIf="showAdvancedFilters">
     <div class="adv-filters-grid">
-      <div class="adv-filter-group">
-        <label class="adv-label">Location</label>
-        <input type="text" class="adv-input" [(ngModel)]="advLocation" placeholder="Ex: Tunis, Paris…" (input)="applyAdvancedFilters()">
-      </div>
-      <div class="adv-filter-group">
-        <label class="adv-label">Activity (keyword)</label>
-        <input type="text" class="adv-input" [(ngModel)]="advActivity" placeholder="Ex: atelier, coding…" (input)="applyAdvancedFilters()">
-      </div>
-      <div class="adv-filter-group">
-        <label class="adv-label">Start date — from</label>
-        <input type="date" class="adv-input" [(ngModel)]="advStartDateFrom" (change)="applyAdvancedFilters()">
-      </div>
-      <div class="adv-filter-group">
-        <label class="adv-label">Start date — to</label>
-        <input type="date" class="adv-input" [(ngModel)]="advStartDateTo" (change)="applyAdvancedFilters()">
-      </div>
-      <div class="adv-filter-group">
-        <label class="adv-label">Minimum capacity</label>
-        <input type="number" class="adv-input" [(ngModel)]="advCapacityMin" min="0" placeholder="0" (change)="applyAdvancedFilters()">
-      </div>
-      <div class="adv-filter-group">
-        <label class="adv-label">Maximum capacity</label>
-        <input type="number" class="adv-input" [(ngModel)]="advCapacityMax" min="0" placeholder="10000" (change)="applyAdvancedFilters()">
-      </div>
-      <div class="adv-filter-group">
-        <label class="adv-label">Minimum participants</label>
-        <input type="number" class="adv-input" [(ngModel)]="advParticipantsMin" min="0" placeholder="0" (change)="applyAdvancedFilters()">
-      </div>
-      <div class="adv-filter-group">
-        <label class="adv-label">Maximum participants</label>
-        <input type="number" class="adv-input" [(ngModel)]="advParticipantsMax" min="0" placeholder="10000" (change)="applyAdvancedFilters()">
-      </div>
+      <div class="adv-filter-group"><label class="adv-label">Location</label><input type="text" class="adv-input" [(ngModel)]="advLocation" placeholder="Ex: Tunis, Paris…" (input)="applyAdvancedFilters()"></div>
+      <div class="adv-filter-group"><label class="adv-label">Activity (keyword)</label><input type="text" class="adv-input" [(ngModel)]="advActivity" placeholder="Ex: atelier, coding…" (input)="applyAdvancedFilters()"></div>
+      <div class="adv-filter-group"><label class="adv-label">Start date — from</label><input type="date" class="adv-input" [(ngModel)]="advStartDateFrom" (change)="applyAdvancedFilters()"></div>
+      <div class="adv-filter-group"><label class="adv-label">Start date — to</label><input type="date" class="adv-input" [(ngModel)]="advStartDateTo" (change)="applyAdvancedFilters()"></div>
+      <div class="adv-filter-group"><label class="adv-label">Minimum capacity</label><input type="number" class="adv-input" [(ngModel)]="advCapacityMin" min="0" placeholder="0" (change)="applyAdvancedFilters()"></div>
+      <div class="adv-filter-group"><label class="adv-label">Maximum capacity</label><input type="number" class="adv-input" [(ngModel)]="advCapacityMax" min="0" placeholder="10000" (change)="applyAdvancedFilters()"></div>
+      <div class="adv-filter-group"><label class="adv-label">Minimum participants</label><input type="number" class="adv-input" [(ngModel)]="advParticipantsMin" min="0" placeholder="0" (change)="applyAdvancedFilters()"></div>
+      <div class="adv-filter-group"><label class="adv-label">Maximum participants</label><input type="number" class="adv-input" [(ngModel)]="advParticipantsMax" min="0" placeholder="10000" (change)="applyAdvancedFilters()"></div>
       <div class="adv-filter-group">
         <label class="adv-label">Sort by</label>
         <select class="adv-input" [(ngModel)]="sortBy" (change)="applyAdvancedFilters()">
-          <option value="idEvent">ID</option>
-          <option value="title">Title</option>
-          <option value="startDate">Start Date</option>
-          <option value="endDate">End Date</option>
-          <option value="capacity">Capacity</option>
-          <option value="createdAt">Created At</option>
-          <option value="location">Location</option>
+          <option value="idEvent">ID</option><option value="title">Title</option><option value="startDate">Start Date</option>
+          <option value="endDate">End Date</option><option value="capacity">Capacity</option><option value="createdAt">Created At</option><option value="location">Location</option>
         </select>
       </div>
       <div class="adv-filter-group">
         <label class="adv-label">Order</label>
         <select class="adv-input" [(ngModel)]="sortDir" (change)="applyAdvancedFilters()">
-          <option value="desc">Decreasing ↓</option>
-          <option value="asc">Increasing ↑</option>
+          <option value="desc">Decreasing ↓</option><option value="asc">Increasing ↑</option>
         </select>
       </div>
       <div class="adv-filter-group">
         <label class="adv-label">Results per page</label>
         <select class="adv-input" [(ngModel)]="pageSize" (ngModelChange)="goToPage(0)">
-          <option [ngValue]="2">2</option>
-          <option [ngValue]="4">4</option>
-          <option [ngValue]="8">8</option>
-          <option [ngValue]="10">10</option>
+          <option [ngValue]="2">2</option><option [ngValue]="4">4</option><option [ngValue]="8">8</option><option [ngValue]="10">10</option>
         </select>
       </div>
       <div class="adv-filter-group adv-reset-group">
@@ -138,22 +93,15 @@
     </div>
   </div>
 
-  <!-- ══ LOADING ══ -->
-  <div *ngIf="loading" class="loading-state">
-    <div class="spinner"></div><p>Loading events...</p>
-  </div>
-
-  <!-- ══ EMPTY ══ -->
+  <!-- ══ LOADING / EMPTY ══ -->
+  <div *ngIf="loading" class="loading-state"><div class="spinner"></div><p>Loading events...</p></div>
   <div *ngIf="!loading && filteredEvents.length === 0" class="empty-state">
-    <p class="empty-icon">🗓️</p>
-    <p class="empty-text">No events found</p>
-    <p class="empty-sub">Try adjusting your filters or create a new event</p>
+    <p class="empty-icon">🗓️</p><p class="empty-text">No events found</p><p class="empty-sub">Try adjusting your filters or create a new event</p>
   </div>
 
   <!-- ══ CARDS VIEW ══ -->
   <div *ngIf="!loading && filteredEvents.length > 0 && viewMode === 'cards'" class="cards-grid">
-    <div *ngFor="let event of filteredEvents" class="event-card"
-      [class.selected]="selectedEvent?.idEvent === event.idEvent" (click)="selectEvent(event)">
+    <div *ngFor="let event of filteredEvents" class="event-card" [class.selected]="selectedEvent?.idEvent === event.idEvent" (click)="selectEvent(event)">
       <div class="card-banner" [style.background]="event.imageUrl ? 'none' : getCardGradient(event.category)">
         <img *ngIf="event.imageUrl" [src]="event.imageUrl" alt="" class="card-banner-img">
         <div class="card-banner-overlay"></div>
@@ -173,18 +121,13 @@
         <div class="card-capacity">
           <div class="card-capacity-header">
             <span class="card-capacity-label">Participants</span>
-            <span class="card-capacity-count" [style.color]="isEventAlmostFull(event) ? '#f59e0b' : '#a855f7'">
-              {{ event.currentParticipants || 0 }}/{{ event.capacity }}
-            </span>
+            <span class="card-capacity-count" [style.color]="isEventAlmostFull(event) ? '#f59e0b' : '#a855f7'">{{ event.currentParticipants || 0 }}/{{ event.capacity }}</span>
           </div>
-          <div class="card-capacity-bar">
-            <div class="card-capacity-fill" [style.width.%]="getCapacityPercent(event)"
-              [style.background]="getCapacityBarColor(getCapacityPercent(event))"></div>
-          </div>
+          <div class="card-capacity-bar"><div class="card-capacity-fill" [style.width.%]="getCapacityPercent(event)" [style.background]="getCapacityBarColor(getCapacityPercent(event))"></div></div>
         </div>
         <div class="card-actions" (click)="$event.stopPropagation()">
-          <button class="card-btn-edit"   (click)="openEditModal(event)">✏️ Edit</button>
-          <button class="card-btn-delete" (click)="deleteEvent(event)">🗑️</button>
+          <button class="card-btn-edit" (click)="openEditModal(event)">✏️ Edit</button>
+          <button class="card-btn-delete" (click)="deleteEvent(event)" title="Archiver">🗂️</button>
         </div>
       </div>
     </div>
@@ -194,8 +137,7 @@
   <div *ngIf="!loading && filteredEvents.length > 0 && viewMode === 'list'" class="list-layout">
     <div class="events-panel">
       <div class="events-list">
-        <div *ngFor="let event of filteredEvents" class="event-item"
-          [class.active]="selectedEvent?.idEvent === event.idEvent" (click)="selectEvent(event)">
+        <div *ngFor="let event of filteredEvents" class="event-item" [class.active]="selectedEvent?.idEvent === event.idEvent" (click)="selectEvent(event)">
           <div class="event-header">
             <div class="event-title-group">
               <span class="category-badge">{{ getCategoryIcon(event.category) }} {{ event.category }}</span>
@@ -251,37 +193,26 @@
         </div>
         <div class="detail-actions">
           <button class="btn-action-edit" (click)="openEditModal(selectedEvent)">✏️ Edit Event</button>
-          <button class="btn-delete"      (click)="deleteEvent(selectedEvent)">🗑️ Delete Event</button>
+          <button class="btn-delete" (click)="deleteEvent(selectedEvent)">🗂️ Archive Event</button>
         </div>
       </div>
     </div>
-
     <ng-template #noSelection>
-      <div class="details-panel empty">
-        <div class="empty-placeholder"><p class="empty-icon">👈</p><p class="empty-text">Select an event to view details</p></div>
-      </div>
+      <div class="details-panel empty"><div class="empty-placeholder"><p class="empty-icon">👈</p><p class="empty-text">Select an event to view details</p></div></div>
     </ng-template>
   </div>
 
   <!-- ══ PAGINATION ══ -->
   <div class="pagination-bar" *ngIf="pageData && pageData.totalPages > 1">
-    <span class="pagination-info">
-      Page {{ currentPage + 1 }} / {{ pageData.totalPages }}
-      &nbsp;·&nbsp;
-      {{ pageData.filteredCount }} résultat{{ pageData.filteredCount !== 1 ? 's' : '' }}
-    </span>
+    <span class="pagination-info">Page {{ currentPage + 1 }} / {{ pageData.totalPages }} &nbsp;·&nbsp; {{ pageData.filteredCount }} résultat{{ pageData.filteredCount !== 1 ? 's' : '' }}</span>
     <div class="pagination-controls">
-      <button class="pg-btn" (click)="goToPage(0)"                       [disabled]="pageData.first">«</button>
-      <button class="pg-btn" (click)="prevPage()"                        [disabled]="pageData.first">‹</button>
+      <button class="pg-btn" (click)="goToPage(0)" [disabled]="pageData.first">«</button>
+      <button class="pg-btn" (click)="prevPage()" [disabled]="pageData.first">‹</button>
       <ng-container *ngFor="let p of pageNumbers">
-        <button class="pg-btn"
-          *ngIf="p === 0 || p === pageData.totalPages - 1 || (p >= currentPage - 2 && p <= currentPage + 2)"
-          [class.active]="p === currentPage"
-          (click)="goToPage(p)">{{ p + 1 }}</button>
-        <span class="pg-ellipsis"
-          *ngIf="(p === currentPage - 3 && p > 1) || (p === currentPage + 3 && p < pageData.totalPages - 2)">…</span>
+        <button class="pg-btn" *ngIf="p === 0 || p === pageData.totalPages - 1 || (p >= currentPage - 2 && p <= currentPage + 2)" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p + 1 }}</button>
+        <span class="pg-ellipsis" *ngIf="(p === currentPage - 3 && p > 1) || (p === currentPage + 3 && p < pageData.totalPages - 2)">…</span>
       </ng-container>
-      <button class="pg-btn" (click)="nextPage()"                        [disabled]="pageData.last">›</button>
+      <button class="pg-btn" (click)="nextPage()" [disabled]="pageData.last">›</button>
       <button class="pg-btn" (click)="goToPage(pageData.totalPages - 1)" [disabled]="pageData.last">»</button>
     </div>
     <span class="pagination-info">{{ pageSize }} / page</span>
@@ -294,10 +225,8 @@
      MODAL CREATE / EDIT
 ══════════════════════════════════════════════════════ -->
 <div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()"></div>
-
 <div class="modal-container" *ngIf="showModal">
   <div class="modal-box" (click)="$event.stopPropagation()">
-
     <div class="modal-header">
       <div class="modal-title-group">
         <i class="material-icons modal-icon">{{ isEditMode ? 'edit' : 'add_circle' }}</i>
@@ -305,27 +234,19 @@
       </div>
       <button class="modal-close" (click)="closeModal()">✕</button>
     </div>
-
     <div class="modal-alert success" *ngIf="formSuccess"><i class="material-icons">check_circle</i> {{ formSuccess }}</div>
-    <div class="modal-alert danger"  *ngIf="formError">  <i class="material-icons">error</i>        {{ formError }}</div>
-
+    <div class="modal-alert danger"  *ngIf="formError"><i class="material-icons">error</i> {{ formError }}</div>
     <div class="modal-body">
       <form [formGroup]="eventForm" (ngSubmit)="onSubmit()" novalidate>
-
         <div class="modal-section">
-          <div class="modal-section-header purple">
-            <i class="material-icons">event</i>
-            <span>Event Information</span>
-          </div>
+          <div class="modal-section-header purple"><i class="material-icons">event</i><span>Event Information</span></div>
           <div class="modal-section-body">
-
             <div class="form-row">
               <div class="form-group col-8">
                 <label class="form-label">Title <span class="req">*</span></label>
                 <div class="input-wrap" [class.err-state]="fieldInvalid('title')" [class.ok-state]="fieldValid('title')">
                   <input type="text" class="form-control" formControlName="title" placeholder="Ex: AI Hackathon 2025" maxlength="120">
-                  <span class="ico ok"  *ngIf="fieldValid('title')">✔</span>
-                  <span class="ico err" *ngIf="fieldInvalid('title')">✖</span>
+                  <span class="ico ok" *ngIf="fieldValid('title')">✔</span><span class="ico err" *ngIf="fieldInvalid('title')">✖</span>
                 </div>
                 <div class="field-foot">
                   <div class="errs">
@@ -341,21 +262,20 @@
               <div class="form-group col-4">
                 <label class="form-label">Category <span class="req">*</span></label>
                 <div class="input-wrap" [class.ok-state]="fieldValid('category')">
-                  <select class="form-control" formControlName="category">
-                    <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
-                  </select>
+                  <select class="form-control" formControlName="category"><option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option></select>
                   <span class="ico ok" *ngIf="fieldValid('category')">✔</span>
                 </div>
               </div>
             </div>
-
             <div class="form-group">
               <label class="form-label">Description <span class="req">*</span></label>
+              <button type="button" class="btn-ai-generate-all" (click)="generateEventWithActivities()" [disabled]="aiDescLoading || !f('title').value || f('title').value.length < 5">
+                <span *ngIf="!aiDescLoading">🚀 Description + Activités</span>
+                <span *ngIf="aiDescLoading">⏳ Génération complète...</span>
+              </button>
               <div class="input-wrap textarea-wrap" [class.err-state]="fieldInvalid('description')" [class.ok-state]="fieldValid('description')">
-                <textarea class="form-control" formControlName="description" rows="3"
-                  placeholder="Décrivez l'événement (minimum 50 caractères)…" maxlength="2000"></textarea>
-                <span class="ico ok"  *ngIf="fieldValid('description')">✔</span>
-                <span class="ico err" *ngIf="fieldInvalid('description')">✖</span>
+                <textarea class="form-control" formControlName="description" rows="3" placeholder="Décrivez l'événement (minimum 50 caractères)…" maxlength="2000"></textarea>
+                <span class="ico ok" *ngIf="fieldValid('description')">✔</span><span class="ico err" *ngIf="fieldInvalid('description')">✖</span>
               </div>
               <div class="field-foot">
                 <div class="errs">
@@ -371,14 +291,12 @@
                 <span class="desc-progress-label">{{ 50 - charCount('description') }} characters missing</span>
               </div>
             </div>
-
             <div class="form-row">
               <div class="form-group col-6">
                 <label class="form-label">Start Date <span class="req">*</span></label>
                 <div class="input-wrap" [class.err-state]="fieldInvalid('startDate')" [class.ok-state]="fieldValid('startDate')">
                   <input type="datetime-local" class="form-control" formControlName="startDate">
-                  <span class="ico ok"  *ngIf="fieldValid('startDate')">✔</span>
-                  <span class="ico err" *ngIf="fieldInvalid('startDate')">✖</span>
+                  <span class="ico ok" *ngIf="fieldValid('startDate')">✔</span><span class="ico err" *ngIf="fieldInvalid('startDate')">✖</span>
                 </div>
                 <div class="errs">
                   <span *ngIf="fieldInvalid('startDate') && fieldError('startDate','required')">⚠ The start date is required.</span>
@@ -389,8 +307,7 @@
                 <label class="form-label">End Date <span class="req">*</span></label>
                 <div class="input-wrap" [class.err-state]="fieldInvalid('endDate') || dateRangeInvalid" [class.ok-state]="fieldValid('endDate') && !dateRangeInvalid">
                   <input type="datetime-local" class="form-control" formControlName="endDate">
-                  <span class="ico ok"  *ngIf="fieldValid('endDate') && !dateRangeInvalid">✔</span>
-                  <span class="ico err" *ngIf="fieldInvalid('endDate') || dateRangeInvalid">✖</span>
+                  <span class="ico ok" *ngIf="fieldValid('endDate') && !dateRangeInvalid">✔</span><span class="ico err" *ngIf="fieldInvalid('endDate') || dateRangeInvalid">✖</span>
                 </div>
                 <div class="errs">
                   <span *ngIf="fieldInvalid('endDate') && fieldError('endDate','required')">⚠ The end date is required.</span>
@@ -398,14 +315,12 @@
                 </div>
               </div>
             </div>
-
             <div class="form-row">
               <div class="form-group col-5">
                 <label class="form-label">Location <span class="req">*</span></label>
                 <div class="input-wrap" [class.err-state]="fieldInvalid('location')" [class.ok-state]="fieldValid('location')">
                   <input type="text" class="form-control" formControlName="location" placeholder="Ex: Tunis, Esprit…" maxlength="150">
-                  <span class="ico ok"  *ngIf="fieldValid('location')">✔</span>
-                  <span class="ico err" *ngIf="fieldInvalid('location')">✖</span>
+                  <span class="ico ok" *ngIf="fieldValid('location')">✔</span><span class="ico err" *ngIf="fieldInvalid('location')">✖</span>
                 </div>
                 <div class="errs">
                   <span *ngIf="fieldInvalid('location') && fieldError('location','required')">⚠ The location is required.</span>
@@ -418,8 +333,7 @@
                 <label class="form-label">Capacity <span class="req">*</span></label>
                 <div class="input-wrap" [class.err-state]="fieldInvalid('capacity')" [class.ok-state]="fieldValid('capacity')">
                   <input type="number" class="form-control" formControlName="capacity" min="1" max="10000">
-                  <span class="ico ok"  *ngIf="fieldValid('capacity')">✔</span>
-                  <span class="ico err" *ngIf="fieldInvalid('capacity')">✖</span>
+                  <span class="ico ok" *ngIf="fieldValid('capacity')">✔</span><span class="ico err" *ngIf="fieldInvalid('capacity')">✖</span>
                 </div>
                 <div class="errs">
                   <span *ngIf="fieldInvalid('capacity') && (fieldError('capacity','required') || fieldError('capacity','capacityMin') || fieldError('capacity','min'))">⚠ The capacity must be at least 1.</span>
@@ -429,23 +343,15 @@
               <div class="form-group col-4">
                 <label class="form-label">Status <span class="req">*</span></label>
                 <div class="input-wrap" [class.ok-state]="fieldValid('eventStatus')">
-                  <select class="form-control" formControlName="eventStatus">
-                    <option *ngFor="let s of eventStatuses" [value]="s">{{ s }}</option>
-                  </select>
+                  <select class="form-control" formControlName="eventStatus"><option *ngFor="let s of eventStatuses" [value]="s">{{ s }}</option></select>
                   <span class="ico ok" *ngIf="fieldValid('eventStatus')">✔</span>
                 </div>
               </div>
             </div>
-
             <div class="form-group">
               <label class="form-label">Event Image <span class="opt">(Optionnel — max 5 Mo)</span></label>
               <input id="modalImageInput" type="file" accept="image/*" style="display:none" (change)="onFileSelected($event)">
-              <div *ngIf="!imagePreview" class="upload-zone"
-                [class.dragging]="isDragging"
-                (click)="triggerFileInput()"
-                (dragover)="onDragOver($event)"
-                (dragleave)="onDragLeave($event)"
-                (drop)="onDrop($event)">
+              <div *ngIf="!imagePreview" class="upload-zone" [class.dragging]="isDragging" (click)="triggerFileInput()" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
                 <i class="material-icons upload-icon">cloud_upload</i>
                 <p class="upload-text">Drag and drop or <span class="upload-link">browse</span></p>
                 <p class="upload-hint">JPG · PNG · GIF · WEBP</p>
@@ -456,13 +362,9 @@
                   <button type="button" class="btn-change-image" (click)="triggerFileInput()"><i class="material-icons">edit</i> edit</button>
                   <button type="button" class="btn-remove-image" (click)="removeImage()"><i class="material-icons">delete</i> delete</button>
                 </div>
-                <div class="image-preview-filename" *ngIf="selectedFile">
-                  <i class="material-icons">image</i> {{ selectedFile.name }}
-                  <span class="file-size">({{ (selectedFile.size / 1024).toFixed(0) }} KB)</span>
-                </div>
+                <div class="image-preview-filename" *ngIf="selectedFile"><i class="material-icons">image</i> {{ selectedFile.name }} <span class="file-size">({{ (selectedFile.size / 1024).toFixed(0) }} KB)</span></div>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -471,31 +373,23 @@
           <div class="modal-section-header teal">
             <i class="material-icons">local_activity</i>
             <span>Activities ({{ activities.length }})</span>
-            <button type="button" class="btn-add-activity" (click)="addActivity()">
-              <i class="material-icons">add</i> Add
-            </button>
+            <button type="button" class="btn-add-activity" (click)="addActivity()"><i class="material-icons">add</i> Add</button>
           </div>
           <div class="modal-section-body">
-            <div class="no-activities" *ngIf="activities.length === 0">
-              <i class="material-icons">event_note</i>
-              <p>No activities yet. Click "Add" to get started.</p>
-            </div>
+            <div class="no-activities" *ngIf="activities.length === 0"><i class="material-icons">event_note</i><p>No activities yet. Click "Add" to get started.</p></div>
             <div formArrayName="activities">
               <ng-container *ngFor="let ctrl of activities.controls; let i = index">
                 <div class="activity-block" [formGroupName]="i">
                   <div class="activity-block-header">
                     <span><i class="material-icons">play_circle_outline</i> Activity {{ i + 1 }}</span>
-                    <button type="button" class="btn-remove" (click)="removeActivity(i)">
-                      <i class="material-icons">delete_outline</i> Remove
-                    </button>
+                    <button type="button" class="btn-remove" (click)="removeActivity(i)"><i class="material-icons">delete_outline</i> Remove</button>
                   </div>
                   <div class="form-row">
                     <div class="form-group col-8">
                       <label class="form-label">Name <span class="req">*</span></label>
                       <div class="input-wrap" [class.err-state]="actFieldInvalid(i,'name')" [class.ok-state]="actFieldValid(i,'name')">
                         <input type="text" class="form-control" formControlName="name" placeholder="Activity name" maxlength="80">
-                        <span class="ico ok"  *ngIf="actFieldValid(i,'name')">✔</span>
-                        <span class="ico err" *ngIf="actFieldInvalid(i,'name')">✖</span>
+                        <span class="ico ok" *ngIf="actFieldValid(i,'name')">✔</span><span class="ico err" *ngIf="actFieldInvalid(i,'name')">✖</span>
                       </div>
                       <div class="field-foot">
                         <div class="errs">
@@ -513,8 +407,7 @@
                     <label class="form-label">Description <span class="opt">(Optionnel — min 50 car.)</span></label>
                     <div class="input-wrap" [class.err-state]="actFieldInvalid(i,'description')" [class.ok-state]="actFieldValid(i,'description')">
                       <input type="text" class="form-control" formControlName="description" placeholder="Short description" maxlength="500">
-                      <span class="ico ok"  *ngIf="actFieldValid(i,'description')">✔</span>
-                      <span class="ico err" *ngIf="actFieldInvalid(i,'description')">✖</span>
+                      <span class="ico ok" *ngIf="actFieldValid(i,'description')">✔</span><span class="ico err" *ngIf="actFieldInvalid(i,'description')">✖</span>
                     </div>
                     <div class="field-foot">
                       <div class="errs">
@@ -533,8 +426,7 @@
                     <label class="form-label">Requirements <span class="opt">(Optionnel — min 10 car.)</span></label>
                     <div class="input-wrap" [class.err-state]="actFieldInvalid(i,'requirements')" [class.ok-state]="actFieldValid(i,'requirements')">
                       <input type="text" class="form-control" formControlName="requirements" placeholder="Ex: required equipment" maxlength="300">
-                      <span class="ico ok"  *ngIf="actFieldValid(i,'requirements')">✔</span>
-                      <span class="ico err" *ngIf="actFieldInvalid(i,'requirements')">✖</span>
+                      <span class="ico ok" *ngIf="actFieldValid(i,'requirements')">✔</span><span class="ico err" *ngIf="actFieldInvalid(i,'requirements')">✖</span>
                     </div>
                     <div class="field-foot">
                       <div class="errs">
@@ -552,18 +444,13 @@
         </div>
 
         <div class="modal-footer">
-          <div class="validation-pill" *ngIf="submitted && eventForm.invalid">
-            <i class="material-icons">warning_amber</i> Incomplete or invalid form
-          </div>
-          <button type="button" class="btn-cancel" (click)="closeModal()">
-            <i class="material-icons">close</i> Cancel
-          </button>
+          <div class="validation-pill" *ngIf="submitted && eventForm.invalid"><i class="material-icons">warning_amber</i> Incomplete or invalid form</div>
+          <button type="button" class="btn-cancel" (click)="closeModal()"><i class="material-icons">close</i> Cancel</button>
           <button type="submit" class="btn-submit" [disabled]="formLoading">
             <i class="material-icons">{{ formLoading ? 'hourglass_empty' : (isEditMode ? 'save' : 'add_circle') }}</i>
             {{ formLoading ? 'Saving…' : (isEditMode ? 'Save Changes' : 'Create Event') }}
           </button>
         </div>
-
       </form>
     </div>
   </div>
@@ -571,21 +458,16 @@
 
 
 <!-- ══════════════════════════════════════════════════════
-     MODAL SUPPRESSION
+     MODAL ARCHIVE (remplace suppression)
 ══════════════════════════════════════════════════════ -->
 <div class="delete-backdrop" *ngIf="showDeleteModal" (click)="cancelDelete()"></div>
-
 <div class="delete-modal-container" *ngIf="showDeleteModal">
   <div class="delete-modal-box">
-    <div class="delete-icon-ring">
-      <div class="delete-icon-pulse"></div>
-      <div class="delete-icon-inner">🗑️</div>
-    </div>
-    <h2 class="delete-modal-title">Delete Event</h2>
+    <div class="delete-icon-ring"><div class="delete-icon-pulse"></div><div class="delete-icon-inner">🗂️</div></div>
+    <h2 class="delete-modal-title">Archive Event</h2>
     <p class="delete-modal-message">
-      Are you sure you want to permanently delete
-      <span class="delete-event-name">« {{ eventToDelete?.title }} »</span> ?
-      <br><span class="delete-modal-warn">This action is irreversible.</span>
+      Are you sure you want to archive <span class="delete-event-name">« {{ eventToDelete?.title }} »</span> ?
+      <br><span class="delete-modal-warn">The event will be hidden but can be restored at any time.</span>
     </p>
     <div class="delete-event-preview" *ngIf="eventToDelete">
       <span class="delete-preview-icon">{{ getCategoryIcon(eventToDelete.category) }}</span>
@@ -595,14 +477,95 @@
       </div>
     </div>
     <div class="delete-modal-actions">
-      <button class="delete-btn-cancel" (click)="cancelDelete()">
-        <i class="material-icons">close</i> Cancel
-      </button>
+      <button class="delete-btn-cancel" (click)="cancelDelete()"><i class="material-icons">close</i> Cancel</button>
       <button class="delete-btn-confirm" (click)="confirmDelete()" [class.loading]="deleteLoading">
-        <i class="material-icons">{{ deleteLoading ? 'hourglass_empty' : 'delete_forever' }}</i>
-        {{ deleteLoading ? 'Deleting…' : 'Yes, delete' }}
+        <i class="material-icons">{{ deleteLoading ? 'hourglass_empty' : 'archive' }}</i>
+        {{ deleteLoading ? 'Archiving…' : 'Yes, archive' }}
       </button>
     </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL ÉVÉNEMENTS ARCHIVÉS
+══════════════════════════════════════════════════════ -->
+<div class="delete-backdrop" *ngIf="showArchivedModal" (click)="closeArchivedModal()"></div>
+<div class="archived-modal-container" *ngIf="showArchivedModal">
+  <div class="archived-modal-box" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="archived-modal-header">
+      <div class="archived-modal-title-group">
+        <span class="archived-modal-icon">🗂️</span>
+        <div>
+          <h2 class="archived-modal-title">Archived Events</h2>
+          <p class="archived-modal-subtitle">{{ archivedEvents.length }} archived event{{ archivedEvents.length !== 1 ? 's' : '' }}</p>
+        </div>
+      </div>
+      <button class="archived-modal-close" (click)="closeArchivedModal()">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="archived-modal-body">
+
+      <!-- Loading -->
+      <div *ngIf="archivedLoading" class="archived-loading">
+        <div class="spinner"></div>
+        <p>Loading archived events...</p>
+      </div>
+
+      <!-- Empty -->
+      <div *ngIf="!archivedLoading && archivedEvents.length === 0" class="archived-empty">
+        <p class="archived-empty-icon">📭</p>
+        <p class="archived-empty-text">No archived events</p>
+        <p class="archived-empty-sub">Archived events will appear here</p>
+      </div>
+
+      <!-- Liste -->
+      <div class="archived-list" *ngIf="!archivedLoading && archivedEvents.length > 0">
+        <div class="archived-item" *ngFor="let event of archivedEvents">
+
+          <div class="archived-item-left">
+            <span class="archived-item-icon">{{ getCategoryIcon(event.category) }}</span>
+            <div class="archived-item-info">
+              <strong class="archived-item-title">{{ event.title }}</strong>
+              <span class="archived-item-meta">
+                {{ event.category }} &nbsp;·&nbsp; 📍 {{ event.location }}
+              </span>
+              <span class="archived-item-meta">
+                📅 {{ event.startDate | date:'dd MMM yyyy' }}
+                → {{ event.endDate | date:'dd MMM yyyy' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="archived-item-right">
+            <span class="archived-status-badge" [style.background-color]="getStatusColor(event.eventStatus) + '22'" [style.color]="getStatusColor(event.eventStatus)">
+              {{ event.eventStatus }}
+            </span>
+            <button
+              class="btn-restore"
+              (click)="restoreEvent(event)"
+              [disabled]="restoreLoading[event.idEvent!]">
+              <i class="material-icons">restore</i>
+              <span *ngIf="!restoreLoading[event.idEvent!]">Restore</span>
+              <span *ngIf="restoreLoading[event.idEvent!]">Restoring...</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="archived-modal-footer">
+      <span class="archived-footer-info">{{ archivedEvents.length }} archived event{{ archivedEvents.length !== 1 ? 's' : '' }}</span>
+      <button class="archived-btn-close" (click)="closeArchivedModal()">
+        <i class="material-icons">close</i> Close
+      </button>
+    </div>
+
   </div>
 </div>
 
@@ -611,16 +574,13 @@
      MODAL REGISTRATION REQUESTS
 ══════════════════════════════════════════════════════ -->
 <div class="reg-backdrop" *ngIf="showRegistrationsModal" (click)="closeRegistrationsModal()"></div>
-
 <div class="reg-modal-container" *ngIf="showRegistrationsModal">
   <div class="reg-modal-box" (click)="$event.stopPropagation()">
 
     <!-- Header -->
     <div class="reg-modal-header">
       <div class="reg-modal-title-group">
-        <div class="reg-modal-icon-wrap">
-          <i class="material-icons">how_to_reg</i>
-        </div>
+        <div class="reg-modal-icon-wrap"><i class="material-icons">how_to_reg</i></div>
         <div>
           <h2 class="reg-modal-title">Registration Requests</h2>
           <p class="reg-modal-subtitle">Manage all event inscription requests</p>
@@ -640,51 +600,30 @@
     <div class="reg-toolbar">
       <div class="reg-search-box">
         <span class="reg-search-icon">🔍</span>
-        <input type="text" class="reg-search-input"
-          placeholder="Search by name, event, role or domain…"
-          [(ngModel)]="registrationSearch">
+        <input type="text" class="reg-search-input" placeholder="Search by name, event, role or domain…" [(ngModel)]="registrationSearch">
       </div>
       <div class="reg-status-tabs">
-        <button
-          *ngFor="let s of registrationStatusOptions"
-          class="reg-tab"
-          [class.active]="registrationStatusFilter === s"
-          (click)="registrationStatusFilter = s">
+        <button *ngFor="let s of registrationStatusOptions" class="reg-tab" [class.active]="registrationStatusFilter === s" (click)="registrationStatusFilter = s">
           {{ s === 'ALL' ? 'All' : s }}
           <span class="reg-tab-count" *ngIf="s !== 'ALL'">{{ countByStatus(s) }}</span>
         </button>
       </div>
-      <button class="reg-refresh-btn" (click)="loadAllRegistrations()" title="Refresh">
-        <i class="material-icons">refresh</i>
-      </button>
+      <button class="reg-refresh-btn" (click)="loadAllRegistrations()" title="Refresh"><i class="material-icons">refresh</i></button>
     </div>
 
     <!-- Body -->
     <div class="reg-modal-body">
-
-      <!-- Loading -->
-      <div *ngIf="registrationsLoading" class="reg-loading">
-        <div class="reg-spinner"></div>
-        <p>Loading registration requests…</p>
-      </div>
-
-      <!-- Error -->
+      <div *ngIf="registrationsLoading" class="reg-loading"><div class="reg-spinner"></div><p>Loading registration requests…</p></div>
       <div *ngIf="!registrationsLoading && registrationsError" class="reg-error">
-        <i class="material-icons">error_outline</i>
-        <p>{{ registrationsError }}</p>
+        <i class="material-icons">error_outline</i><p>{{ registrationsError }}</p>
         <button class="reg-retry-btn" (click)="loadAllRegistrations()">Retry</button>
       </div>
-
-      <!-- Empty -->
       <div *ngIf="!registrationsLoading && !registrationsError && filteredRegistrations.length === 0" class="reg-empty">
-        <p class="reg-empty-icon">📭</p>
-        <p class="reg-empty-text">No registration requests found</p>
-        <p class="reg-empty-sub">Try adjusting the search or status filter</p>
+        <p class="reg-empty-icon">📭</p><p class="reg-empty-text">No registration requests found</p><p class="reg-empty-sub">Try adjusting the search or status filter</p>
       </div>
 
       <!-- Table -->
-      <div *ngIf="!registrationsLoading && !registrationsError && filteredRegistrations.length > 0"
-           class="reg-table-wrapper">
+      <div *ngIf="!registrationsLoading && !registrationsError && filteredRegistrations.length > 0" class="reg-table-wrapper">
         <table class="reg-table">
           <thead>
             <tr>
@@ -700,44 +639,20 @@
           </thead>
           <tbody>
             <tr *ngFor="let reg of filteredRegistrations" class="reg-tr">
-
-              <!-- ID -->
               <td class="reg-td reg-td-id">{{ reg.id }}</td>
-
-              <!-- Participant -->
               <td class="reg-td">
                 <div class="reg-user-cell">
-                  <div class="reg-avatar">
-                    {{ (reg.participantPrenom || '?').charAt(0).toUpperCase() }}{{ (reg.participantNom || '').charAt(0).toUpperCase() }}
-                  </div>
+                  <div class="reg-avatar">{{ (reg.participantPrenom || '?').charAt(0).toUpperCase() }}{{ (reg.participantNom || '').charAt(0).toUpperCase() }}</div>
                   <div class="reg-user-info">
                     <span class="reg-user-name">{{ reg.participantPrenom }} {{ reg.participantNom }}</span>
                     <span class="reg-user-email" *ngIf="reg.message">💬 {{ reg.message | slice:0:40 }}{{ reg.message.length > 40 ? '…' : '' }}</span>
                   </div>
                 </div>
               </td>
-
-              <!-- Event -->
-              <td class="reg-td">
-                <span class="reg-event-title">{{ reg.eventTitle || '—' }}</span>
-              </td>
-
-              <!-- Role -->
-              <td class="reg-td">
-                <span class="reg-role-badge">{{ reg.participantRole }}</span>
-              </td>
-
-              <!-- Domain -->
-              <td class="reg-td">
-                <span class="reg-domain-badge">{{ reg.domaine }}</span>
-              </td>
-
-              <!-- Date -->
-              <td class="reg-td reg-td-date">
-                {{ reg.registrationDate | date:'d MMM y, HH:mm' }}
-              </td>
-
-              <!-- Status -->
+              <td class="reg-td"><span class="reg-event-title">{{ reg.eventTitle || '—' }}</span></td>
+              <td class="reg-td"><span class="reg-role-badge">{{ reg.participantRole }}</span></td>
+              <td class="reg-td"><span class="reg-domain-badge">{{ reg.domaine }}</span></td>
+              <td class="reg-td reg-td-date">{{ reg.registrationDate | date:'d MMM y, HH:mm' }}</td>
               <td class="reg-td">
                 <span class="reg-status-pill"
                   [style.background-color]="getRegistrationStatusColor(reg.status) + '22'"
@@ -746,45 +661,91 @@
                   {{ getRegistrationStatusIcon(reg.status) }} {{ reg.status }}
                 </span>
               </td>
-
-              <!-- Actions -->
               <td class="reg-td reg-td-actions">
-                <div class="reg-action-group" *ngIf="reg.status === 'PENDING'; else noActions">
-                  <button class="reg-btn-approve"
-                    (click)="approveRegistration(reg.id)"
-                    [disabled]="registrationActionLoading[reg.id]"
-                    title="Accept">
-                    <i class="material-icons">{{ registrationActionLoading[reg.id] ? 'hourglass_empty' : 'check_circle' }}</i>
-                    Accept
+                <!-- PENDING → Accept + Reject -->
+                <div class="reg-action-group" *ngIf="reg.status === 'PENDING'">
+                  <button class="reg-btn-approve" (click)="approveRegistration(reg.id)" [disabled]="registrationActionLoading[reg.id]" title="Accept">
+                    <i class="material-icons">{{ registrationActionLoading[reg.id] ? 'hourglass_empty' : 'check_circle' }}</i> Accept
                   </button>
-                  <button class="reg-btn-reject"
-                    (click)="rejectRegistration(reg.id)"
-                    [disabled]="registrationActionLoading[reg.id]"
-                    title="Reject">
-                    <i class="material-icons">{{ registrationActionLoading[reg.id] ? 'hourglass_empty' : 'cancel' }}</i>
-                    Reject
+                  <button class="reg-btn-reject" (click)="rejectRegistration(reg.id)" [disabled]="registrationActionLoading[reg.id]" title="Reject">
+                    <i class="material-icons">{{ registrationActionLoading[reg.id] ? 'hourglass_empty' : 'cancel' }}</i> Reject
                   </button>
                 </div>
-                <ng-template #noActions>
-                  <span class="reg-no-action">—</span>
-                </ng-template>
+                <!-- ACCEPTED → Badge + Email -->
+                <div class="reg-action-group" *ngIf="reg.status === 'ACCEPTED'">
+                  <button class="reg-btn-badge" (click)="downloadBadge(reg, 'png')" title="PNG"><i class="material-icons">image</i> PNG</button>
+                  <button class="reg-btn-badge" (click)="downloadBadge(reg, 'jpg')" title="JPG"><i class="material-icons">photo</i> JPG</button>
+                  <button class="reg-btn-badge" (click)="downloadBadge(reg, 'pdf')" title="PDF"><i class="material-icons">picture_as_pdf</i> PDF</button>
+                  <button class="reg-btn-email-accept" (click)="openAcceptEmailModal(reg)" title="Envoyer email d'acceptation avec badge">
+                    <i class="material-icons">mail</i> Email
+                  </button>
+                </div>
+                <!-- REJECTED → Email refus -->
+                <div class="reg-action-group" *ngIf="reg.status === 'REJECTED'">
+                  <button class="reg-btn-email-reject" (click)="openRejectEmailModal(reg)" title="Envoyer email de refus">
+                    <i class="material-icons">mail</i> Email Refus
+                  </button>
+                </div>
               </td>
-
             </tr>
           </tbody>
         </table>
       </div>
+    </div>
 
+    <!-- ══ MODAL EMAIL ══ -->
+    <div class="modal-backdrop" *ngIf="showEmailModal" (click)="closeEmailModal()"></div>
+    <div class="email-modal-container" *ngIf="showEmailModal">
+      <div class="email-modal-box" (click)="$event.stopPropagation()">
+        <div class="email-modal-header" [class.accept]="emailModalMode === 'accept'" [class.reject]="emailModalMode === 'reject'">
+          <div class="email-modal-icon">
+            <span *ngIf="emailModalMode === 'accept'">📧 ✅</span>
+            <span *ngIf="emailModalMode === 'reject'">📧 ❌</span>
+          </div>
+          <div>
+            <h3 class="email-modal-title">{{ emailModalMode === 'accept' ? 'Email d\'Acceptation' : 'Email de Refus' }}</h3>
+            <p class="email-modal-subtitle">À : <strong>{{ emailTargetReg?.participantPrenom }} {{ emailTargetReg?.participantNom }}</strong> — {{ emailTargetReg?.eventTitle }}</p>
+          </div>
+          <button class="email-modal-close" (click)="closeEmailModal()">✕</button>
+        </div>
+        <div class="email-modal-body">
+          <div *ngIf="emailModalMode === 'accept'" class="email-preview-box">
+            <div class="preview-label">📨 Message envoyé automatiquement</div>
+            <div class="preview-content">
+              <p>Bonjour <strong>{{ emailTargetReg?.participantPrenom }}</strong>,</p>
+              <p>Votre demande de participation à <strong>« {{ emailTargetReg?.eventTitle }} »</strong> a été <span style="color:#059669;font-weight:bold;">acceptée</span>.</p>
+              <p>Votre <strong>badge personnalisé</strong> est joint à cet email.</p>
+              <p><em>Équipe ProLance Events</em></p>
+            </div>
+            <div class="badge-notice">🎫 Badge généré et joint automatiquement.</div>
+          </div>
+          <div *ngIf="emailModalMode === 'reject'" class="reject-form">
+            <div class="preview-label">✍️ Rédigez la raison du refus</div>
+            <p class="reject-hint">Ce message sera envoyé directement au participant.</p>
+            <textarea class="reject-textarea" rows="6" placeholder="Ex : Votre profil ne correspond pas aux critères requis pour cet événement..." [(ngModel)]="emailRejectionReason" maxlength="1000"></textarea>
+            <div class="char-counter" [class.warn]="emailRejectionReason.length > 800">{{ emailRejectionReason.length }} / 1000</div>
+          </div>
+          <div class="email-success-msg" *ngIf="emailSuccess">{{ emailSuccess }}</div>
+          <div class="email-error-msg"   *ngIf="emailError">{{ emailError }}</div>
+        </div>
+        <div class="email-modal-footer">
+          <button class="btn-cancel" (click)="closeEmailModal()" [disabled]="emailSending">Annuler</button>
+          <button class="btn-send-email"
+            [class.accept]="emailModalMode === 'accept'"
+            [class.reject]="emailModalMode === 'reject'"
+            (click)="sendEmail()"
+            [disabled]="emailSending || (emailModalMode === 'reject' && !emailRejectionReason.trim())">
+            <span *ngIf="!emailSending"><i class="material-icons">send</i> {{ emailModalMode === 'accept' ? 'Envoyer avec Badge' : 'Envoyer le Refus' }}</span>
+            <span *ngIf="emailSending">⏳ Envoi en cours...</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Footer -->
     <div class="reg-modal-footer">
-      <span class="reg-footer-info">
-        Showing {{ filteredRegistrations.length }} of {{ registrations.length }} requests
-      </span>
-      <button class="reg-btn-close" (click)="closeRegistrationsModal()">
-        <i class="material-icons">close</i> Close
-      </button>
+      <span class="reg-footer-info">Showing {{ filteredRegistrations.length }} of {{ registrations.length }} requests</span>
+      <button class="reg-btn-close" (click)="closeRegistrationsModal()"><i class="material-icons">close</i> Close</button>
     </div>
 
   </div>

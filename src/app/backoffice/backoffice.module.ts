@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BackofficeRoutingModule } from './backoffice-routing.module';
 
 import { HeaderComponent } from './components/header/header.component';
@@ -10,10 +11,12 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { BackofficeLayoutComponent } from './backoffice-layout.component';
 import { AdminAdsComponent } from '../pages/admin/ads/admin-ads.component';
 
-// ✅ Composants manquants — ajoutés ici
 import { AdminEventsComponent } from './components/admin-evenement/admin-event.component';
 import { EventFormComponent } from './components/event-form/event-form.component';
 import { ActivityFormComponent } from './components/activity-form/activity-form-component';
+
+// ✅ Import avec le bon chemin (tout en minuscules)
+import { ParticipantBadgeComponent} from './components/participant-badge/participant-badge.component';
 
 @NgModule({
   declarations: [
@@ -23,16 +26,19 @@ import { ActivityFormComponent } from './components/activity-form/activity-form-
     FooterComponent,
     DashboardComponent,
     AdminAdsComponent,
-    // ✅ Ajoutés ici
     AdminEventsComponent,
     EventFormComponent,
-    ActivityFormComponent
+    ActivityFormComponent,
+    ParticipantBadgeComponent
+    
   ],
   imports: [
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    RouterModule,
     BackofficeRoutingModule
+    
   ]
 })
 export class BackofficeModule { }

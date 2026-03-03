@@ -33,6 +33,9 @@ export interface Event {
   endDate: string;
   eventStatus: EventStatus;
   location: string;
+  archived?: boolean; 
+  latitude?:           number;   // ← AJOUTER
+  longitude?:          number; 
   capacity: number;
   currentParticipants?: number;
   imageUrl?: string;

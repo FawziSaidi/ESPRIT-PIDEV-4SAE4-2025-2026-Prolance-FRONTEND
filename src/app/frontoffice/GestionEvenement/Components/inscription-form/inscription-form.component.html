@@ -58,16 +58,31 @@
       </div>
     </div>
 
+    <!-- ✅ CAPACITÉ MAXIMALE ATTEINTE ── -->
+    <div class="insc-full" *ngIf="isEventFull && !alreadyRegistered">
+      <div class="full-icon-wrap">
+        <i class="material-icons">group_off</i>
+      </div>
+      <div class="full-content">
+        <h3>Inscription impossible</h3>
+        <p>Le nombre maximum de participants pour cet événement a été atteint.<br>
+           Aucune nouvelle demande ne peut être acceptée.</p>
+      </div>
+      <div class="already-footer">
+        <button class="insc-btn-primary" (click)="close()">
+          <i class="material-icons">close</i> Fermer
+        </button>
+      </div>
+    </div>
 
-<!-- ── ÉTAT ERREUR ── -->
-<div class="insc-error-block" *ngIf="submitError && !submitSuccess && !alreadyRegistered"
-  style="margin: 0 1.5rem 1rem; padding: 0.85rem 1rem; background: #fff1f0;
-         border-left: 4px solid #ef4444; border-radius: 8px;
-         color: #c0392b; display: flex; align-items: center; gap: 0.5rem;">
-  <i class="material-icons" style="font-size: 20px;">error_outline</i>
-  <span>{{ submitError }}</span>
-</div>
-
+    <!-- ── ÉTAT ERREUR ── -->
+    <div class="insc-error-block" *ngIf="submitError && !submitSuccess && !alreadyRegistered && !isEventFull"
+      style="margin: 0 1.5rem 1rem; padding: 0.85rem 1rem; background: #fff1f0;
+             border-left: 4px solid #ef4444; border-radius: 8px;
+             color: #c0392b; display: flex; align-items: center; gap: 0.5rem;">
+      <i class="material-icons" style="font-size: 20px;">error_outline</i>
+      <span>{{ submitError }}</span>
+    </div>
 
     <!-- ── ÉTAT SUCCÈS ── -->
     <div class="insc-success" *ngIf="submitSuccess && !alreadyRegistered">
@@ -86,7 +101,7 @@
     <form
       [formGroup]="inscriptionForm"
       (ngSubmit)="onSubmit()"
-      *ngIf="!submitSuccess && !alreadyRegistered"
+      *ngIf="!submitSuccess && !alreadyRegistered && !isEventFull"
       novalidate
     >
       <div class="insc-body">
@@ -186,17 +201,17 @@
             <label
               class="domaine-card"
               *ngFor="let d of domaines"
-              [class.domaine-selected]="f['demaine'].value === d"
+              [class.domaine-selected]="f['domaine'].value === d"
             >
-              <input type="radio" formControlName="demaine" [value]="d" hidden />
+              <input type="radio" formControlName="domaine" [value]="d" hidden />
               <i class="material-icons">{{ domaineIcons[d] }}</i>
               <span>{{ domaineLabels[d] }}</span>
-              <span class="check-mark" *ngIf="f['demaine'].value === d">
+              <span class="check-mark" *ngIf="f['domaine'].value === d">
                 <i class="material-icons">check_circle</i>
               </span>
             </label>
           </div>
-          <span class="err-msg" *ngIf="f['demaine'].invalid && f['demaine'].touched">
+          <span class="err-msg" *ngIf="f['domaine'].invalid && f['domaine'].touched">
             <i class="material-icons">error_outline</i> Veuillez sélectionner un domaine
           </span>
         </div>
@@ -278,10 +293,12 @@
         <button type="button" class="insc-btn-secondary" (click)="close()">
           Annuler
         </button>
-        <button type="submit" class="insc-btn-primary" [disabled]="isSubmitting">
+        <!-- ✅ Bouton désactivé si isSubmitting OU isEventFull -->
+        <button type="submit" class="insc-btn-primary" [disabled]="isSubmitting || isEventFull">
           <span class="btn-spinner" *ngIf="isSubmitting"></span>
-          <i class="material-icons" *ngIf="!isSubmitting">send</i>
-          {{ isSubmitting ? 'Envoi en cours...' : 'Envoyer la demande' }}
+          <i class="material-icons" *ngIf="!isSubmitting && !isEventFull">send</i>
+          <i class="material-icons" *ngIf="isEventFull">block</i>
+          {{ isSubmitting ? 'Envoi en cours...' : isEventFull ? 'Maximum participants atteint' : 'Envoyer la demande' }}
         </button>
       </div>
     </form>

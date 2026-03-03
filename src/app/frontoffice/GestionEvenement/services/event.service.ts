@@ -3,15 +3,13 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Event } from '../models/event.model';
 
-// ── Interfaces filtrage/pagination ───────────────────────────────────────────
-
 export interface EventFilterParams {
   titleContains?:       string;
   locationContains?:    string;
   descriptionContains?: string;
   status?:              string;
   category?:            string;
-  startDateFrom?:       string;   // ISO: 2025-01-01T00:00:00
+  startDateFrom?:       string;
   startDateTo?:         string;
   endDateFrom?:         string;
   endDateTo?:           string;
@@ -42,16 +40,12 @@ export interface PageResponse<T> {
   totalCount:    number;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Injectable({ providedIn: 'root' })
 export class EventService {
 
   private apiUrl = 'http://localhost:8089/pidev/api/events';
 
   constructor(private http: HttpClient) {}
-
-  // ── CRUD existant (inchangé) ──────────────────────────────────────────────
 
   getAllEvents(): Observable<Event[]> {
     return this.http.get<Event[]>(this.apiUrl);
@@ -69,12 +63,21 @@ export class EventService {
     return this.http.put<Event>(`${this.apiUrl}/${id}`, event);
   }
 
-  deleteEvent(id: number): Observable<void> {
+  // ── ARCHIVE / RESTORE / ARCHIVED LIST ──
+
+  archiveEvent(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // ── NOUVEAU : GET /api/events/filter ─────────────────────────────────────
-  // N'envoie que les paramètres non-vides, le backend fait le reste.
+  getArchivedEvents(): Observable<Event[]> {
+    return this.http.get<Event[]>(`${this.apiUrl}/archived`);
+  }
+
+  restoreEvent(id: number): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${id}/restore`, {});
+  }
+
+  // ── FILTRAGE AVANCÉ + PAGINATION ──
 
   filterEvents(params: EventFilterParams): Observable<PageResponse<Event>> {
     let httpParams = new HttpParams();

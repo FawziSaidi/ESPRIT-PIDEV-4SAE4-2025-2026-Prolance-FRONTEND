@@ -38,6 +38,9 @@ export class InscriptionFormComponent implements OnInit {
   alreadyRegistered = false;
   existingInscriptionInfo: EventInscriptionResponseDTO | null = null;
 
+  // ✅ NOUVEAU : état "capacité atteinte"
+  isEventFull = false;
+
   conditionsAccepted = false;
   conditionsError    = false;
 
@@ -61,7 +64,7 @@ export class InscriptionFormComponent implements OnInit {
     this.inscriptionForm = this.fb.group({
       participantNom:    ['', [Validators.required, Validators.minLength(2)]],
       participantPrenom: ['', [Validators.required, Validators.minLength(2)]],
-      demaine:           ['', Validators.required],
+      domaine:           ['', Validators.required],
       participantRole:   ['', Validators.required],
       message:           ['']
     });
@@ -106,41 +109,72 @@ export class InscriptionFormComponent implements OnInit {
     if (this.conditionsAccepted) this.conditionsError = false;
   }
 
-  onSubmit(): void {
-    if (this.alreadyRegistered) return;
-    if (this.inscriptionForm.invalid) { this.inscriptionForm.markAllAsTouched(); return; }
-    if (!this.conditionsAccepted) { this.conditionsError = true; return; }
+  // ─── REMPLACE toute la méthode onSubmit() ────────────────────────────────────
 
-    this.isSubmitting = true;
-    this.submitError  = '';
+onSubmit(): void {
+  if (this.alreadyRegistered || this.isEventFull) return;
+  if (this.inscriptionForm.invalid) { this.inscriptionForm.markAllAsTouched(); return; }
+  if (!this.conditionsAccepted)     { this.conditionsError = true; return; }
 
-    const payload: EventInscriptionRequestDTO = {
-      participantNom:    this.inscriptionForm.value.participantNom,
-      participantPrenom: this.inscriptionForm.value.participantPrenom,
-      demaine:           this.inscriptionForm.value.demaine,
-      participantRole:   this.inscriptionForm.value.participantRole,
-      message:           this.inscriptionForm.value.message || undefined,
-      userId:            this.userId,
-      eventId:           this.eventId,
+  this.isSubmitting = true;
+  this.submitError  = '';
+
+  // ── Si une photo est sélectionnée, la convertir en base64 puis soumettre ──
+  if (this.selectedPhotoFile) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string; // "data:image/jpeg;base64,..."
+      this.submitPayload(base64);
     };
-
-    this.inscriptionService.submitInscription(payload).subscribe({
-      next: () => {
-        this.isSubmitting  = false;
-        this.submitSuccess = true;
-        this.formSubmitted.emit(payload);
-      },
-      error: (err) => {
-        this.isSubmitting = false;
-        const msg = err?.error;
-        if (err.status === 409 || (typeof msg === 'string' && msg.includes('déjà'))) {
-          this.alreadyRegistered = true;
-        } else {
-          this.submitError = typeof msg === 'string' ? msg : 'Une erreur est survenue. Veuillez réessayer.';
-        }
-      }
-    });
+    reader.onerror = () => {
+      this.submitError = 'Erreur lors de la lecture de la photo.';
+      this.isSubmitting = false;
+    };
+    reader.readAsDataURL(this.selectedPhotoFile);
+  } else {
+    this.submitPayload(undefined);
   }
+}
+
+// ── Méthode privée qui envoie le payload final ────────────────────────────────
+private submitPayload(imageBase64: string | undefined): void {
+  const msg = this.inscriptionForm.value.message?.trim();
+
+  const payload: EventInscriptionRequestDTO = {
+    participantNom:    this.inscriptionForm.value.participantNom,
+    participantPrenom: this.inscriptionForm.value.participantPrenom,
+    domaine:           this.inscriptionForm.value.domaine,
+    participantRole:   this.inscriptionForm.value.participantRole,
+    message:           msg   ? msg   : null,          // ← null explicite si vide
+    imageUrl:          imageBase64 ? imageBase64 : null, // ← base64 ou null
+    userId:            this.userId,
+    eventId:           this.eventId,
+  };
+
+  this.inscriptionService.submitInscription(payload).subscribe({
+    next: () => {
+      this.isSubmitting  = false;
+      this.submitSuccess = true;
+      this.formSubmitted.emit(payload);
+    },
+    error: (err) => {
+      this.isSubmitting = false;
+      const body   = err?.error;
+      const msgStr: string =
+        typeof body === 'string'
+          ? body
+          : (body?.message ?? body?.error ?? '');
+
+      if (err.status === 409 || msgStr.includes('déjà')) {
+        this.alreadyRegistered = true;
+      } else if (msgStr.includes('Maximum number') || msgStr.includes('capacité')) {
+        this.isEventFull = true;
+      } else {
+        this.submitError = msgStr || 'Une erreur est survenue. Veuillez réessayer.';
+      }
+    }
+  });
+}
 
   resetAndClose(): void {
     this.inscriptionForm.reset();

@@ -22,9 +22,11 @@ export enum Domaine {
 export interface EventInscriptionRequestDTO {
   participantNom: string;
   participantPrenom: string;
-  demaine: Domaine;
+  participantEmail?: string;
+  domaine: Domaine;
   participantRole: ParticipantRole;
-  message?: string;
+  message?: string | null;
+  imageUrl?: string | null;
   userId: number;
   eventId: number;
 }
@@ -33,14 +35,16 @@ export interface EventInscriptionResponseDTO {
   id: number;
   participantNom: string;
   participantPrenom: string;
+  participantEmail?: string;
   registrationDate: string;
   domaine: Domaine;
   participantRole: ParticipantRole;
-  imageUrl: string;
-  message: string;
+  message?: string | null;     // ← présent ?
+  imageUrl?: string;
   status: InscriptionStatus;
   badgeImagePath: string;
   userId: number;
   eventId: number;
   eventTitle: string;
 }
+

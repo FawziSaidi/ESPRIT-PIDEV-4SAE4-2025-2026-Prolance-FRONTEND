@@ -6,6 +6,7 @@ import { AdminAdsComponent } from '../pages/admin/ads/admin-ads.component';
 import { AdminEventsComponent } from './components/admin-evenement/admin-event.component';
 import { EventFormComponent } from './components/event-form/event-form.component';
 
+
 const routes: Routes = [
   {
     path: '',
@@ -35,7 +36,8 @@ const routes: Routes = [
       {
         path: 'events/edit/:id',
         component: EventFormComponent
-      }
+      },
+   
     ]
   }
 ];
