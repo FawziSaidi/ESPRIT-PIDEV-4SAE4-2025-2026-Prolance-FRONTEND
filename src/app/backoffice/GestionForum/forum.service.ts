@@ -12,14 +12,17 @@ export interface Publication {
   pdfs: string[];
   user: { id: number; name: string; lastName: string; email: string; };
   commentaires: Commentaire[];
+  commentCount?: number; // ✅ NOUVEAU : count chargé séparément
 }
 
 export interface Commentaire {
   id: number;
   contenue: string;
   createAt: string;
+  userId?: number;           // ✅ microservice retourne userId directement
+  publicationId?: number;    // ✅ microservice retourne publicationId directement
   user: { id: number; name: string; lastName: string; email: string; };
-  publication: { id: number; titre: string; };
+  publication?: { id: number; titre: string; }; // optionnel (ancien format)
   parent?: { id: number; };
   replies: Commentaire[];
 }
@@ -48,6 +51,26 @@ export class ForumService {
     return this.http.get<Commentaire[]>(`${this.apiBase}/commentaires`);
   }
 
+  // ✅ NOUVEAU : commentaires par publication (direct, sans filtre côté front)
+  getCommentairesByPublication(publicationId: number): Observable<Commentaire[]> {
+    return this.http.get<Commentaire[]>(`${this.apiBase}/commentaires/publication/${publicationId}`);
+  }
+
+  // Compte récursif : roots + toutes leurs replies imbriquées
+  private countTotal(comments: Commentaire[]): number {
+    return comments.reduce((acc, c) => acc + 1 + this.countTotal(c.replies || []), 0);
+  }
+
+  getCommentCountByPublication(publicationId: number): Observable<number> {
+    return new Observable(observer => {
+      this.http.get<Commentaire[]>(`${this.apiBase}/commentaires/publication/${publicationId}`)
+        .subscribe({
+          next: (comments) => { observer.next(this.countTotal(comments)); observer.complete(); },
+          error: () => { observer.next(0); observer.complete(); }
+        });
+    });
+  }
+
   getReactionSummary(publicationId: number): Observable<ReactionSummary> {
     const params = new HttpParams().set('userId', '0');
     return this.http.get<ReactionSummary>(
@@ -56,7 +79,6 @@ export class ForumService {
     );
   }
 
-  // Admin delete — no userId required
   adminDeletePublication(id: number): Observable<any> {
     return this.http.delete(`${this.apiBase}/publications/admin/${id}`, { responseType: 'text' });
   }

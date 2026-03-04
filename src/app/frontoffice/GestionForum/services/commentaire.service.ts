@@ -20,10 +20,15 @@ export class CommentaireService {
     return this.http.get<Commentaire[]>(`${this.baseUrl}/publication/${publicationId}`);
   }
 
-  // ✅ NOUVEAU : récupère le nombre de commentaires d'une publication
+  // Compte récursif : parents + toutes leurs replies imbriquées
+  private countTotal(comments: Commentaire[]): number {
+    return comments.reduce((acc, c) => acc + 1 + this.countTotal(c.replies || []), 0);
+  }
+
+  // Retourne le nombre total : commentaires parents + replies
   getCommentCountByPublicationId(publicationId: number): Observable<number> {
     return this.http.get<Commentaire[]>(`${this.baseUrl}/publication/${publicationId}`)
-      .pipe(map(comments => comments.length));
+      .pipe(map(comments => this.countTotal(comments)));
   }
 
   getCommentaireById(id: number): Observable<Commentaire> {

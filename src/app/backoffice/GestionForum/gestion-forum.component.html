@@ -186,9 +186,9 @@
               <button class="pub-action-btn btn-cmt"
                 [class.btn-active]="selectedPublication?.id === pub.id && activePanel === 'comments'"
                 (click)="openPanel(pub, 'comments', $event)"
-                [title]="(pub.commentaires?.length || 0) + ' comment(s)'">
+                [title]="(pub.commentCount || 0) + ' comment(s)'">
                 💬 Comments
-                <span class="pub-action-badge" *ngIf="pub.commentaires?.length">{{ pub.commentaires.length }}</span>
+                <span class="pub-action-badge" *ngIf="pub.commentCount">{{ pub.commentCount }}</span>
               </button>
 
               <!-- Delete -->
@@ -311,22 +311,59 @@
 
       <!-- ── Comments panel ── -->
       <div *ngIf="activePanel === 'comments'" class="panel-body">
-        <h4 class="panel-section-title">💬 Comments <span class="panel-count">{{ selectedCommentaires.length }}</span></h4>
+        <h4 class="panel-section-title">
+          💬 Comments
+          <span class="panel-count">{{ totalCommentsDisplayed }}</span>
+        </h4>
 
         <div *ngIf="loadingComments" class="sd-loading">
           <div class="spinner sm"></div> Loading…
         </div>
+
         <p *ngIf="!loadingComments && selectedCommentaires.length === 0" class="panel-empty">No comments yet.</p>
+
         <div *ngIf="!loadingComments && selectedCommentaires.length > 0" class="cmt-list">
+
+          <!-- ── Commentaire root ── -->
           <div *ngFor="let c of selectedCommentaires" class="cmt-card">
+
+            <!-- Header du commentaire -->
             <div class="cmt-head">
               <span class="cmt-avatar">{{ getInitials(c.user) }}</span>
-              <div>
+              <div style="flex:1">
                 <p class="cmt-author">{{ getUserLabel(c.user) }}</p>
-                <p class="cmt-date">{{ formatDate(c.createAt) }} · {{ c.replies?.length || 0 }} replies</p>
+                <p class="cmt-date">{{ formatDate(c.createAt) }}</p>
               </div>
             </div>
+
+            <!-- Texte du commentaire -->
             <p class="cmt-text">{{ c.contenue }}</p>
+
+            <!-- Bouton toggle replies -->
+            <button
+              *ngIf="c.replies && c.replies.length > 0"
+              class="cmt-replies-toggle"
+              (click)="toggleReplies(c.id)">
+              {{ isRepliesExpanded(c.id) ? '▲ Hide' : '▶ Show' }}
+              {{ c.replies.length }} repl{{ c.replies.length > 1 ? 'ies' : 'y' }}
+            </button>
+
+            <p *ngIf="!c.replies || c.replies.length === 0" class="cmt-no-reply">No replies</p>
+
+            <!-- ── Replies (affichées si toggle ouvert) ── -->
+            <div *ngIf="c.replies && c.replies.length > 0 && isRepliesExpanded(c.id)" class="replies-list">
+              <div *ngFor="let r of c.replies" class="reply-card">
+                <div class="cmt-head">
+                  <span class="reply-avatar">{{ getInitials(r.user) }}</span>
+                  <div style="flex:1">
+                    <p class="cmt-author">↳ {{ getUserLabel(r.user) }}</p>
+                    <p class="cmt-date">{{ formatDate(r.createAt) }}</p>
+                  </div>
+                </div>
+                <p class="cmt-text">{{ r.contenue }}</p>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
