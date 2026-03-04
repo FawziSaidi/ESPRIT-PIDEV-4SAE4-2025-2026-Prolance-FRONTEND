@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FreelancerService } from '../../services/freelancer.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
-// Map skill names → icon URL (devicons CDN)
 const SKILL_ICONS: Record<string, string> = {
   angular:     'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/angular/angular-original.svg',
   react:       'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
@@ -52,10 +52,17 @@ export class FreelancerSkillsSetupComponent implements OnInit {
   isUploadingResume = false;
   resumeUrl = '';
   isGeneratingResume = false;
+  generatedResumeUrl: SafeResourceUrl | null = null;
+  generatedResumeRawUrl: string | null = null;
+  skillsAlreadySaved = false;
 
   skillLevels = ['BEGINNER', 'INTERMEDIATE', 'EXPERT'];
 
-  constructor(private fb: FormBuilder, private freelancerService: FreelancerService) {
+  constructor(
+    private fb: FormBuilder,
+    private freelancerService: FreelancerService,
+    private sanitizer: DomSanitizer
+  ) {
     this.skillForm = this.fb.group({
       skillName: ['', Validators.required],
       level: ['INTERMEDIATE', Validators.required],
@@ -65,13 +72,11 @@ export class FreelancerSkillsSetupComponent implements OnInit {
 
   ngOnInit(): void {}
 
-  /** Retourne l'icône devicon ou null */
   getSkillIcon(name: string): string | null {
     const key = name.toLowerCase().trim();
     return SKILL_ICONS[key] || null;
   }
 
-  /** Initiale du skill si pas d'icône */
   getInitial(name: string): string {
     return name.charAt(0).toUpperCase();
   }
@@ -121,33 +126,74 @@ export class FreelancerSkillsSetupComponent implements OnInit {
     });
   }
 
+  // ─── Generate Resume ──────────────────────────────────────
   generateResume(): void {
     if (!this.freelancerId) return;
     this.isGeneratingResume = true;
-    this.freelancerService.generateResumePdf(this.freelancerId).subscribe({
+    this.generatedResumeUrl = null;
+    this.generatedResumeRawUrl = null;
+
+    if (this.addedSkills.length > 0) {
+      let saved = 0;
+      this.addedSkills.forEach(skill => {
+        const payload = { ...skill, resumeUrl: this.resumeUrl };
+        this.freelancerService.createSkillForFreelancer(this.freelancerId!, payload).subscribe({
+          next: () => {
+  saved++;
+  if (saved === this.addedSkills.length) {
+    this.skillsAlreadySaved = true;
+    this.addedSkills = []; // Clear after saving so Save & Continue won't re-save
+    this.doGenerateResume();
+  }
+
+          },
+          error: () => {
+            this.isGeneratingResume = false;
+            alert('Error saving skills before generating resume.');
+          }
+        });
+      });
+    } else {
+      this.doGenerateResume();
+    }
+  }
+
+  private doGenerateResume(): void {
+    this.freelancerService.generateResumePdf(this.freelancerId!).subscribe({
       next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'resume.pdf';
-        a.click();
-        URL.revokeObjectURL(url);
+        const rawUrl = URL.createObjectURL(blob);
+        this.generatedResumeRawUrl = rawUrl;
+        this.generatedResumeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl);
         this.isGeneratingResume = false;
       },
       error: () => {
         this.isGeneratingResume = false;
-        alert('Error generating resume. Make sure you have added skills first.');
+        alert('Error generating resume. Please try again.');
       }
     });
   }
-
+downloadResume(): void {
+  if (!this.generatedResumeRawUrl) return;
+  const a = document.createElement('a');
+  a.href = this.generatedResumeRawUrl;
+  a.download = 'resume.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
   // ─── Save ─────────────────────────────────────────────────
   save(): void {
-    if (this.addedSkills.length === 0) {
-      this.errorMessage = 'Please add at least one skill.';
-      return;
-    }
-    if (!this.freelancerId) return;
+  if (!this.freelancerId) return;
+
+  if (this.skillsAlreadySaved || this.addedSkills.length === 0) {
+    this.skillsSaved.emit();
+    return;
+  }
+
+  if (this.addedSkills.length === 0) {
+    this.errorMessage = 'Please add at least one skill.';
+    return;
+  }
 
     this.isSubmitting = true;
     let saved = 0;

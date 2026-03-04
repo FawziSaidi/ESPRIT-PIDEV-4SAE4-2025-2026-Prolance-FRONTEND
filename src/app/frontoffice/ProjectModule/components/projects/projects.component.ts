@@ -5,6 +5,7 @@ import { Project } from '../../models/project.model';
 import { FreelancerService } from '../../services/freelancer.service';
 import { ToastService } from '../../services/toast.service'; // adapte le chemin
 import { EmailNotificationService } from '../../services/email-notification.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-projects',
@@ -80,16 +81,19 @@ export class ProjectsComponent implements OnInit {
   }
 
   // Charge toutes les applications du freelancer pour savoir lesquels il a déjà appliqué
-  loadMyApplications(): void {
-    if (!this.currentUserId) return;
-    this.freelancerService.getFreelancerApplications(this.currentUserId).subscribe({
-      next: (apps) => {
-        this.applicationCount = apps.length;
-        this.appliedProjectIds = new Set(apps.map((a: any) => a.project?.id).filter(Boolean));
-      },
-      error: () => {}
-    });
-  }
+ loadMyApplications(): void {
+  if (!this.currentUserId) return;
+  this.freelancerService.getFreelancerApplications(this.currentUserId).subscribe({
+    next: (apps) => {
+      console.log('Applied IDs:', apps);
+      this.applicationCount = apps.length;
+      this.appliedProjectIds = new Set(
+        apps.map((a: any) => a.project?.id ?? a.projectId).filter(Boolean)
+      );
+    },
+    error: () => {}
+  });
+}
 
   hasApplied(project: Project): boolean {
     return !!project.id && this.appliedProjectIds.has(project.id);
@@ -223,12 +227,31 @@ export class ProjectsComponent implements OnInit {
 
   openProjectDetails(project: Project): void { this.selectedProject = project; this.showDetailsModal = true; }
   closeDetailsModal(): void { this.showDetailsModal = false; this.selectedProject = undefined; }
+  
 
   openDeleteModal(project: Project): void {
-    if (!this.isMyProject(project)) { this.errorMessage = 'Vous ne pouvez supprimer que vos propres projets.'; return; }
-    this.projectToDelete = project;
-    this.showDeleteModal = true;
+  if (!this.isMyProject(project)) {
+    this.errorMessage = 'Vous ne pouvez supprimer que vos propres projets.';
+    return;
   }
+
+  // Check if this project has any applications before showing delete modal
+  this.freelancerService.getApplicationsByProjectId(project.id!).subscribe({
+    next: (apps) => {
+      if (apps && apps.length > 0) {
+        this.showBlockedAlert = true;
+      } else {
+        this.projectToDelete = project;
+        this.showDeleteModal = true;
+      }
+    },
+    error: () => {
+      // If check fails, just proceed and let backend handle it
+      this.projectToDelete = project;
+      this.showDeleteModal = true;
+    }
+  });
+}
   closeDeleteModal(): void { this.showDeleteModal = false; this.projectToDelete = undefined; }
 
   confirmDelete(): void {

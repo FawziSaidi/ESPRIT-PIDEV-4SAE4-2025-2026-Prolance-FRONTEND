@@ -4,26 +4,32 @@ import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class FreelancerService {
-  private apiUrl = 'http://localhost:8089/pidev/api';
+
+  // ✅ MICROSERVICE — toutes les requêtes passent par l'API Gateway (port 8222)
+  // skill-service tourne sur 8093, mais on passe TOUJOURS par le gateway
+  private apiUrl = 'http://localhost:8222/api';
 
   constructor(private http: HttpClient) {}
 
-  // ─── SKILLS ───────────────────────────────────────────────
+  // ─── SKILLS ───────────────────────────────────────────────────────────────
 
   getFreelancerSkills(freelancerId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/skills/freelancer/${freelancerId}`);
   }
+  getApplicationsByProjectId(projectId: number): Observable<any[]> {
+  return this.http.get<any[]>(`${this.apiUrl}/applications/project/${projectId}`);
+
+}
 
   createSkillForFreelancer(freelancerId: number, skill: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/skills/freelancer/${freelancerId}`, skill);
   }
 
-  // ─── CV / RESUME ──────────────────────────────────────────
+  // ─── CV / RESUME ──────────────────────────────────────────────────────────
 
   uploadResume(freelancerId: number, file: File): Observable<string> {
     const form = new FormData();
     form.append('file', file);
-    // Backend retourne une string (path), pas du JSON
     return this.http.post(
       `${this.apiUrl}/skills/resume/upload/${freelancerId}`,
       form,
@@ -38,7 +44,7 @@ export class FreelancerService {
     );
   }
 
-  // ─── APPLICATIONS ─────────────────────────────────────────
+  // ─── APPLICATIONS ─────────────────────────────────────────────────────────
 
   checkAlreadyApplied(freelancerId: number, projectId: number): Observable<boolean> {
     return this.http.get<boolean>(
@@ -46,15 +52,10 @@ export class FreelancerService {
     );
   }
 
-  /** Toujours du JSON — le backend attend { freelancerId, projectId, coverLetterUrl } */
   submitApplication(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/applications`, data);
   }
 
-  /**
-   * Backend retourne une STRING : "/uploads/cover-letters/cover_generated_1_xxx.pdf"
-   * On utilise responseType: 'text' pour éviter l'erreur JSON parse.
-   */
   generateCoverLetterAsString(freelancerId: number, projectId: number): Observable<string> {
     return this.http.post(
       `${this.apiUrl}/applications/generate-cover-letter`,
@@ -63,18 +64,13 @@ export class FreelancerService {
     );
   }
 
-  /**
-   * Upload PDF lettre de motivation.
-   * Backend retourne une STRING : "/uploads/cover-letters/cover_1_xxx.pdf"
-   * responseType: 'text' obligatoire sinon Angular essaie de parser du JSON et échoue.
-   */
   uploadCoverLetter(freelancerId: number, file: File): Observable<string> {
     const form = new FormData();
     form.append('file', file);
     return this.http.post(
       `${this.apiUrl}/applications/cover-letter/upload/${freelancerId}`,
       form,
-      { responseType: 'text' }  // ← FIX : backend retourne plain text, pas JSON
+      { responseType: 'text' }
     );
   }
 

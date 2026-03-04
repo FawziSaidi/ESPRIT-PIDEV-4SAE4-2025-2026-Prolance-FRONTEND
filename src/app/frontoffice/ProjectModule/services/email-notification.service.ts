@@ -49,44 +49,55 @@ L'équipe ProLance
    /**
    * ✅ Envoyer email d'approbation (COMPLETED)
    */
-  sendProjectApprovedEmail(projectId: number, clientEmail: string, projectTitle: string): Observable<any> {
-    
-    const message = `
+  
+
+   sendProjectApprovedEmail(projectId: number, clientEmail: string, projectTitle: string): Observable<any> {
+  const message = `
 Bonjour,
 
-🎉 Bonne nouvelle!
+Votre projet "${projectTitle}" a été approuvé avec succès !
 
-Votre projet "${projectTitle}" a été approuvé et est maintenant PUBLIÉ sur ProLance!
+📋 Statut: APPROUVÉ ✅
 
-✅ Les freelancers peuvent maintenant consulter votre projet et envoyer leurs propositions.
-
-Vous recevrez des notifications pour chaque nouvelle candidature.
+Votre projet est maintenant visible par tous les freelancers sur la plateforme.
 
 ID du projet: ${projectId}
 
-Merci d'utiliser ProLance!
+Cordialement,
+L'équipe ProLance
+  `;
+
+  const emailData = {
+    email: clientEmail,
+    subject: `Votre projet "${projectTitle}" a été approuvé ✅`,
+    message: message
+  };
+
+  return this.http.post(`https://formspree.io/${this.formspreeId}`, emailData);
+}
+  sendValidationEmail(adminEmail: string, projectTitle: string, projectId: number): Observable<any> {
+  const message = `
+Bonjour Admin,
+
+Un nouveau projet nécessite votre validation sur ProLance.
+
+📋 Projet: "${projectTitle}"
+🆔 ID: ${projectId}
+
+Veuillez vous connecter à la plateforme pour valider ou rejeter ce projet.
 
 Cordialement,
 L'équipe ProLance
-    `;
+  `;
 
-    const emailData = {
-      email: clientEmail,
-      subject: 'Votre projet a été approuvé! 🎉',
-      message: message
-    };
+  const emailData = {
+    email: adminEmail,
+    subject: `Nouveau projet à valider: "${projectTitle}" 🔔`,
+    message: message
+  };
 
-    return this.http.post(`https://formspree.io/${this.formspreeId}`, emailData);
-  }
-
-  sendValidationEmail(adminEmail: string, projectTitle: string, projectId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/validation-request`, {
-      adminEmail,
-      projectTitle,
-      projectId,
-      message: `Un nouveau projet nécessite votre validation`
-    });
-  }
+  return this.http.post(`https://formspree.io/${this.formspreeId}`, emailData);
+}
   sendDeleteNotification(params: {
     clientName:    string;
     clientEmail:   string;
@@ -130,4 +141,29 @@ L'équipe ProLance
       })
       .catch(err => console.error('❌ EmailJS network error:', err));
   }
+  sendProjectApprovedEmailToFreelancer(freelancerEmail: string, projectTitle: string, projectId: number): Observable<any> {
+  const message = `
+Bonjour,
+
+Bonne nouvelle ! Le projet "${projectTitle}" auquel vous avez postulé a été approuvé !
+
+📋 Statut: APPROUVÉ ✅
+
+Votre candidature est en cours d'examen par le client.
+Connectez-vous à la plateforme pour voir les détails.
+
+ID du projet: ${projectId}
+
+Cordialement,
+L'équipe ProLance
+  `;
+
+  const emailData = {
+    email: freelancerEmail,
+    subject: `Le projet "${projectTitle}" a été approuvé ✅`,
+    message: message
+  };
+
+  return this.http.post(`https://formspree.io/${this.formspreeId}`, emailData);
+}
 }

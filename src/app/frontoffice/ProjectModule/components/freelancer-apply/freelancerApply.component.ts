@@ -69,7 +69,7 @@ export class FreelancerApplyComponent implements OnInit {
 
   currentUserId: number | null = null;
 
-  private readonly backendBase = 'http://localhost:8089/pidev';
+ private readonly backendBase = 'http://localhost:8222';
 
   constructor(
     private fb: FormBuilder,

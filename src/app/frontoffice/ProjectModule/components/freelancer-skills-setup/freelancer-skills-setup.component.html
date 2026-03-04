@@ -100,49 +100,41 @@
         </div>
 
         <div class="cv-area">
+
           <!-- Upload -->
-          <!-- Upload -->
-<div class="cv-card">
-  <div class="cv-card-icon">📤</div>
-  <div class="cv-card-body">
-    <p class="cv-card-title">Upload your CV</p>
-    <p class="cv-card-sub">PDF format recommended</p>
+          <div class="cv-card">
+            <div class="cv-card-icon">📤</div>
+            <div class="cv-card-body">
+              <p class="cv-card-title">Upload your CV</p>
+              <p class="cv-card-sub">PDF format recommended</p>
 
-    <!-- Drop zone -->
-    <label class="drop-zone" [class.drop-zone--selected]="resumeFile">
-      <input type="file" accept=".pdf" (change)="onResumeFileChange($event)" hidden />
+              <label class="drop-zone" [class.drop-zone--selected]="resumeFile">
+                <input type="file" accept=".pdf" (change)="onResumeFileChange($event)" hidden />
+                <div class="drop-empty" *ngIf="!resumeFile">
+                  <div class="drop-icon">📁</div>
+                  <span class="drop-text">Click to choose a PDF</span>
+                  <span class="drop-hint">or drag & drop here</span>
+                </div>
+                <div class="drop-preview" *ngIf="resumeFile">
+                  <div class="pdf-thumb"><span class="pdf-ext">PDF</span></div>
+                  <div class="drop-preview-info">
+                    <span class="drop-preview-name">{{ resumeFileName }}</span>
+                    <span class="drop-preview-size">{{ (resumeFile.size / 1024).toFixed(0) }} KB</span>
+                  </div>
+                  <span class="drop-change">Change</span>
+                </div>
+              </label>
 
-      <!-- État vide -->
-      <div class="drop-empty" *ngIf="!resumeFile">
-        <div class="drop-icon">📁</div>
-        <span class="drop-text">Click to choose a PDF</span>
-        <span class="drop-hint">or drag & drop here</span>
-      </div>
-
-      <!-- Preview fichier sélectionné -->
-      <div class="drop-preview" *ngIf="resumeFile">
-        <div class="pdf-thumb">
-          <span class="pdf-ext">PDF</span>
-        </div>
-        <div class="drop-preview-info">
-          <span class="drop-preview-name">{{ resumeFileName }}</span>
-          <span class="drop-preview-size">{{ (resumeFile.size / 1024).toFixed(0) }} KB</span>
-        </div>
-        <span class="drop-change">Change</span>
-      </div>
-    </label>
-
-    <button
-      class="btn-upload"
-      (click)="uploadResume()"
-      [disabled]="!resumeFile || isUploadingResume || !!resumeUrl">
-      <span *ngIf="!isUploadingResume && !resumeUrl">⬆️ Upload</span>
-      <span *ngIf="isUploadingResume">⏳ Uploading...</span>
-      <span *ngIf="resumeUrl && !isUploadingResume">✅ Uploaded</span>
-    </button>
-
-  </div>
-</div>
+              <button
+                class="btn-upload"
+                (click)="uploadResume()"
+                [disabled]="!resumeFile || isUploadingResume || !!resumeUrl">
+                <span *ngIf="!isUploadingResume && !resumeUrl">⬆️ Upload</span>
+                <span *ngIf="isUploadingResume">⏳ Uploading...</span>
+                <span *ngIf="resumeUrl && !isUploadingResume">✅ Uploaded</span>
+              </button>
+            </div>
+          </div>
 
           <!-- Generate -->
           <div class="cv-card">
@@ -150,15 +142,37 @@
             <div class="cv-card-body">
               <p class="cv-card-title">Generate from skills</p>
               <p class="cv-card-sub">Auto-creates a PDF resume from your profile</p>
+
               <button
                 class="btn-generate"
                 (click)="generateResume()"
-                [disabled]="addedSkills.length === 0 || isGeneratingResume"
+                [disabled]="(addedSkills.length === 0 && !generatedResumeUrl) || isGeneratingResume"
               >
-                {{ isGeneratingResume ? 'Generating...' : '📄 Generate PDF' }}
+                <span *ngIf="!isGeneratingResume && !generatedResumeUrl">📄 Generate PDF</span>
+                <span *ngIf="isGeneratingResume">⏳ Generating...</span>
+                <span *ngIf="generatedResumeUrl && !isGeneratingResume">🔄 Regenerate PDF</span>
               </button>
+
+              <!-- PDF Preview -->
+              <div *ngIf="generatedResumeUrl" style="margin-top: 14px;">
+                <iframe
+                  [src]="generatedResumeUrl"
+                  width="100%"
+                  height="280px"
+                  style="border: 1px solid #e5e7eb; border-radius: 8px; display: block;"
+                ></iframe>
+                <button
+  (click)="downloadResume()"
+  style="display:block; width:100%; margin-top:8px; padding:8px; text-align:center; 
+         color:#7c3aed; background:none; border:1px solid #7c3aed; 
+         border-radius:6px; cursor:pointer; font-size:13px;">
+  ⬇ Download Resume
+</button>
+              </div>
+
             </div>
           </div>
+
         </div>
       </div>
 
@@ -170,7 +184,7 @@
       <button
         class="btn-save"
         (click)="save()"
-        [disabled]="isSubmitting || addedSkills.length === 0"
+        [disabled]="isSubmitting"
       >
         <span *ngIf="!isSubmitting">Save & Continue →</span>
         <span *ngIf="isSubmitting">Saving...</span>

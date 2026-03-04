@@ -3,6 +3,7 @@ import { ProjectsService } from '../../../frontoffice/ProjectModule/services/pro
 import { Project } from '../../../frontoffice/ProjectModule/models/project.model';
 import { EmailNotificationService } from 'app/frontoffice/ProjectModule/services/email-notification.service';
 import { ProjectStatus } from 'app/frontoffice/ProjectModule/models/enums.model';
+import { FreelancerService } from 'app/frontoffice/ProjectModule/services/freelancer.service';
 
 @Component({
   selector: 'app-admin-projects',
@@ -23,7 +24,11 @@ export class AdminProjectsComponent implements OnInit {
   categoryOptions = ['ALL', 'DEV', 'DESIGN'];
 
   approvingProjectId?: number;
-
+constructor(
+  private projectsService: ProjectsService,
+  private emailService: EmailNotificationService,
+  private freelancerService: FreelancerService  // ✅ ajoute ceci
+) {}
   // ── Pagination ────────────────────────────────────────────
   currentPage = 1;
   readonly PAGE_SIZE = 5;
@@ -56,10 +61,7 @@ export class AdminProjectsComponent implements OnInit {
   confirmModalType: 'approve' | 'delete' = 'approve';
   pendingProject?: Project;
 
-  constructor(
-    private projectsService: ProjectsService,
-    private emailService: EmailNotificationService
-  ) {}
+ 
 
   ngOnInit(): void {
     this.loadProjects();
@@ -111,39 +113,62 @@ export class AdminProjectsComponent implements OnInit {
     this.showConfirmModal = true;
   }
 
-  private doApprove(project: Project): void {
-    if (!project.id) return;
-    this.approvingProjectId = project.id;
+ private doApprove(project: Project): void {
+  if (!project.id) return;
+  this.approvingProjectId = project.id;
 
-    this.projectsService.approveProject(project.id).subscribe({
-      next: () => {
-        const updateStatus = () => {
-          if (this.selectedProject?.id === project.id) {
-            this.selectedProject!.status = ProjectStatus.COMPLETED;
-          }
-          const p = this.projects.find(p => p.id === project.id);
-          if (p) p.status = ProjectStatus.COMPLETED;
-          this.applyFilters();
-          this.approvingProjectId = undefined;
-        };
-
-        const clientEmail = project.client?.email;
-        if (clientEmail) {
-          this.emailService.sendProjectApprovedEmail(project.id!, clientEmail, project.title).subscribe({
-            next: () => { updateStatus(); this.showSuccess('✅ Projet approuvé !', project.title, clientEmail); },
-            error: () => { updateStatus(); this.showSuccess('✅ Projet approuvé !', project.title, ''); }
-          });
-        } else {
-          updateStatus();
-          this.showSuccess('✅ Projet approuvé !', project.title, '');
+  this.projectsService.approveProject(project.id).subscribe({
+    next: () => {
+      const updateStatus = () => {
+        if (this.selectedProject?.id === project.id) {
+          this.selectedProject!.status = ProjectStatus.COMPLETED;
         }
-      },
-      error: (err) => {
-        console.error('Error approving:', err);
+        const p = this.projects.find(p => p.id === project.id);
+        if (p) p.status = ProjectStatus.COMPLETED;
+        this.applyFilters();
         this.approvingProjectId = undefined;
+      };
+
+      // ✅ Récupérer les applications du projet pour avoir les emails des freelancers
+      this.freelancerService.getApplicationsByProjectId(project.id!).subscribe({
+        next: (apps) => {
+             console.log('APPLICATIONS:', apps); 
+          // Envoyer un email à chaque freelancer qui a postulé
+          apps.forEach((app: any) => {
+            const freelancerEmail = app.freelancer?.email ?? app.freelancerEmail;
+            if (freelancerEmail) {
+              this.emailService.sendProjectApprovedEmailToFreelancer(
+                freelancerEmail,
+                project.title,
+                project.id!
+              ).subscribe({
+                next: () => console.log('✅ Email envoyé à', freelancerEmail),
+                error: (e) => console.warn('⚠️ Email failed for', freelancerEmail, e)
+              });
+            }
+          });
+        },
+        error: () => console.warn('⚠️ Could not fetch applications for project', project.id)
+      });
+
+      // ✅ Email au client (déjà existant)
+      const clientEmail = project.client?.email;
+      if (clientEmail) {
+        this.emailService.sendProjectApprovedEmail(project.id!, clientEmail, project.title).subscribe({
+          next: () => { updateStatus(); this.showSuccess('✅ Projet approuvé !', project.title, clientEmail); },
+          error: () => { updateStatus(); this.showSuccess('✅ Projet approuvé !', project.title, ''); }
+        });
+      } else {
+        updateStatus();
+        this.showSuccess('✅ Projet approuvé !', project.title, '');
       }
-    });
-  }
+    },
+    error: (err) => {
+      console.error('Error approving:', err);
+      this.approvingProjectId = undefined;
+    }
+  });
+}
 
   applyFilters(): void {
     let filtered = this.projects;

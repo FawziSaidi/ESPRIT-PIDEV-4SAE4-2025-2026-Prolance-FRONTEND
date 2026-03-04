@@ -55,7 +55,7 @@ export class ProjectFormComponent implements OnInit {
     this.form = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(5)]],
       description: ['', [Validators.required, Validators.minLength(20)]],
-      budget: [0, [Validators.required, Validators.min(100)]],
+      budget: [null, [Validators.required, Validators.min(100)]],
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
       category: ['DEV', Validators.required]
@@ -115,18 +115,16 @@ export class ProjectFormComponent implements OnInit {
         this.form.patchValue({
           title: generated.title,
           description: generated.description,
-          budget: generated.budget,
-          category: generated.category,
-          startDate: generated.startDate,
-          endDate: generated.endDate
+          category: generated.category
+          // no budget, no startDate, no endDate — user fills manually
         });
         this.tasks = generated.tasks.map(t => ({
           taskName: t.taskName,
           description: t.description,
           priority: t.priority as any,
           milestone: '',
-          startDate: generated.startDate,
-          endDate: generated.endDate
+          startDate: '',
+          endDate: ''
         }));
         this.isGenerating = false;
         this.selectedTab = 'details';
@@ -214,7 +212,12 @@ export class ProjectFormComponent implements OnInit {
     if (this.tasks.length === 0) { alert('Please add at least one task'); return; }
     this.isSubmitting = true;
 
-    const projectData = { ...this.form.value, status: 'IN_PROGRESS', tasks: this.tasks, requiredSkills: [] } as Project;
+    const projectData = {
+      ...this.form.value,
+      status: 'IN_PROGRESS',
+      tasks: this.tasks,
+      requiredSkills: []
+    } as Project;
 
     if (this.project?.id) {
       projectData.id = this.project.id;
@@ -225,21 +228,17 @@ export class ProjectFormComponent implements OnInit {
     } else {
       this.projectsService.createProject(projectData).subscribe({
         next: (createdProject) => {
-          // ✅ Email envoyé au CLIENT QUI CRÉE le projet (il est le owner)
-          // authService.getCurrentUser() est fiable car c'est lui qui est connecté et qui publie
           const currentUser = this.authService.getCurrentUser();
-
           if (currentUser?.email) {
             this.emailService.sendProjectCreatedEmail(
               createdProject.id!,
-              currentUser.email,  // ✅ email du owner = client connecté qui crée
+              currentUser.email,
               projectData.title
             ).subscribe({
               next: () => console.log('✅ Email de création envoyé à', currentUser.email),
               error: (err) => console.warn('⚠️ Email non envoyé:', err)
             });
           }
-
           this.saved.emit();
           this.closeModal();
           this.isSubmitting = false;
@@ -248,7 +247,6 @@ export class ProjectFormComponent implements OnInit {
       });
     }
   }
-
 
   closeModal(): void {
     this.close.emit();
