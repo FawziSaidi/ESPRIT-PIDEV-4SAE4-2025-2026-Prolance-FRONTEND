@@ -70,7 +70,6 @@
     <div class="events-grid" *ngIf="!loading && filteredEvents.length > 0">
       <div class="event-card" *ngFor="let event of filteredEvents">
 
-        <!-- Bannière cliquable → modal détails -->
         <div
           class="event-card-banner"
           [style.background-image]="event.imageUrl ? 'url(' + event.imageUrl + ')' : 'none'"
@@ -85,7 +84,6 @@
           </div>
         </div>
 
-        <!-- Corps cliquable → modal détails -->
         <div class="event-card-body" (click)="openModal(event)" style="cursor:pointer">
           <h3 class="event-title">{{ event.title }}</h3>
           <p class="event-description">{{ event.description }}</p>
@@ -121,7 +119,6 @@
           </div>
         </div>
 
-        <!-- Bouton Participer → ouvre le formulaire d'inscription -->
         <div class="event-card-actions">
           <button class="btn-participate"
             [disabled]="isParticipateDisabled(event.idEvent!)"
@@ -212,14 +209,11 @@
         ></div>
       </div>
 
-      <!-- ═══════════════════════════════════════════════════════ -->
-      <!--  SECTION CARTE LEAFLET                                  -->
-      <!-- ═══════════════════════════════════════════════════════ -->
+      <!-- ─── CARTE ─── -->
       <div class="modal-section-title">
         <i class="material-icons">map</i>
         Localisation
       </div>
-
       <app-event-map
         [lat]="selectedEvent.latitude"
         [lng]="selectedEvent.longitude"
@@ -227,33 +221,35 @@
         [eventTitle]="selectedEvent.title"
       ></app-event-map>
 
-      <!-- ═══════════════════════════════════════════════════════ -->
-      <!--  SECTION ACTIVITÉS                                      -->
-      <!-- ═══════════════════════════════════════════════════════ -->
+      <!-- ─── ACTIVITÉS ─── -->
       <div class="modal-section-title">
         <i class="material-icons">list_alt</i>
         Activités ({{ selectedEvent.activities?.length || 0 }})
       </div>
 
+      <!-- Spinner pendant le chargement -->
+      <div *ngIf="activityLoading" style="text-align:center; padding:16px; color:#888;">
+        <i class="material-icons spin">autorenew</i> Chargement des activités...
+      </div>
+
+      <!-- Aucune activité -->
       <div
-        *ngIf="!selectedEvent.activities || selectedEvent.activities.length === 0"
+        *ngIf="!activityLoading && (!selectedEvent.activities || selectedEvent.activities.length === 0)"
         class="no-activities-modal"
       >
         <i class="material-icons">event_note</i>
         Aucune activité pour cet événement.
       </div>
 
+      <!-- Liste des activités -->
       <div
         class="modal-activities-list"
-        *ngIf="selectedEvent.activities && selectedEvent.activities.length > 0"
+        *ngIf="!activityLoading && selectedEvent.activities && selectedEvent.activities.length > 0"
       >
         <div class="modal-activity-card" *ngFor="let act of selectedEvent.activities">
           <div class="modal-activity-header">
             <i class="material-icons">bolt</i>
             <strong>{{ act.name }}</strong>
-            <span class="act-max">
-              <i class="material-icons">group</i> {{ act.maxParticipants }} max
-            </span>
           </div>
           <p class="act-description">{{ act.description }}</p>
           <div class="act-requirements" *ngIf="act.requirements">
@@ -263,6 +259,7 @@
         </div>
       </div>
 
+      <!-- ─── ACTIONS ─── -->
       <div class="modal-actions">
         <button class="btn-modal-participate"
           [disabled]="isParticipateDisabled(selectedEvent.idEvent!)"

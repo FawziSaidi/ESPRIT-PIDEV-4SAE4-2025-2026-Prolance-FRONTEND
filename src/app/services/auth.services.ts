@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { AuthRequest, AuthResponse, RegisterRequest } from '../authentification/auth/auth.module';
+import { environment } from '../../environments/environment';  // ← AJOUT
 
 export interface SessionUser {
   email: string;
@@ -15,9 +16,8 @@ export interface SessionUser {
 })
 export class AuthService {
 
-  private apiUrl = 'http://localhost:8089/pidev/api/auth';
+  private apiUrl = environment.authServiceUrl;  // ← était hardcodé 'http://localhost:8089/pidev/api/auth'
 
-  // 🔐 session state (single source of truth)
   private currentUserSubject = new BehaviorSubject<SessionUser | null>(
     this.getUserFromStorage()
   );
@@ -43,7 +43,6 @@ export class AuthService {
       token: res.token,
       userId: res.userId
     };
-
     localStorage.setItem('sessionUser', JSON.stringify(user));
     this.currentUserSubject.next(user);
   }
@@ -75,7 +74,6 @@ export class AuthService {
 
     const parsed: SessionUser = JSON.parse(stored);
 
-    // Si la session ne contient pas userId (ancienne session), on la supprime
     if (!parsed.userId) {
       localStorage.removeItem('sessionUser');
       localStorage.removeItem('token');

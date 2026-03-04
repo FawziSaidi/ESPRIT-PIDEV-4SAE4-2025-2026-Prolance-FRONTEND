@@ -2,6 +2,7 @@
 import { Router } from '@angular/router';
 import { Event } from '../../models/event.model';
 import { EventService } from '../../services/event.service';
+import { ActivityService } from '../../services/activity.service';          // ← AJOUTÉ
 import { AuthService } from '../../../../services/auth.services';
 import { CategoryEvent, EventStatus } from '../../models/event.model';
 import { InscriptionService } from '../../services/inscription.service';
@@ -16,9 +17,10 @@ export class EventListComponent implements OnInit {
 
   events:         Event[] = [];
   filteredEvents: Event[] = [];
-  loading    = false;
-  errorMsg   = '';
-  successMsg = '';
+  loading           = false;
+  activityLoading   = false;                                                 // ← AJOUTÉ
+  errorMsg          = '';
+  successMsg        = '';
 
   searchText     = '';
   filterCategory = '';
@@ -34,10 +36,11 @@ export class EventListComponent implements OnInit {
   categories    = Object.values(CategoryEvent);
 
   constructor(
-    private eventService: EventService,
+    private eventService:       EventService,
+    private activityService:    ActivityService,                            // ← AJOUTÉ
     private inscriptionService: InscriptionService,
-    private router:       Router,
-    private authService:  AuthService
+    private router:             Router,
+    private authService:        AuthService
   ) {}
 
   ngOnInit(): void {
@@ -107,9 +110,23 @@ export class EventListComponent implements OnInit {
     setTimeout(() => this.successMsg = '', 4000);
   }
 
+  // ── MODIFIÉ : charge les activités depuis activity-service ──────────────
   openModal(event: Event): void {
-    this.selectedEvent = event;
+    this.selectedEvent    = { ...event, activities: [] };
+    this.activityLoading  = true;
+
+    this.activityService.getActivitiesByEvent(event.idEvent!).subscribe({
+      next: (activities) => {
+        this.selectedEvent  = { ...event, activities };
+        this.activityLoading = false;
+      },
+      error: () => {
+        this.selectedEvent  = { ...event, activities: [] };
+        this.activityLoading = false;
+      }
+    });
   }
+  // ────────────────────────────────────────────────────────────────────────
 
   closeModal(): void {
     this.selectedEvent = null;
@@ -121,27 +138,16 @@ export class EventListComponent implements OnInit {
     }
   }
 
-  /**
-   * Retourne le statut d'inscription de l'utilisateur pour un événement donné.
-   * null = pas encore inscrit
-   */
   getUserInscriptionStatus(eventId: number): string | null {
     const found = this.userInscriptions.find(i => i.eventId === eventId);
     return found ? found.status : null;
   }
 
-  /**
-   * Le bouton "Participer" est disabled si l'utilisateur a une inscription PENDING ou ACCEPTED.
-   * Il reste actif si REJECTED (peut re-soumettre) ou null (jamais inscrit).
-   */
   isParticipateDisabled(eventId: number): boolean {
     const status = this.getUserInscriptionStatus(eventId);
     return status === 'PENDING' || status === 'ACCEPTED';
   }
 
-  /**
-   * Texte et icône du bouton selon le statut.
-   */
   getParticipateLabel(eventId: number): string {
     const status = this.getUserInscriptionStatus(eventId);
     if (status === 'PENDING')  return '⏳ En attente';

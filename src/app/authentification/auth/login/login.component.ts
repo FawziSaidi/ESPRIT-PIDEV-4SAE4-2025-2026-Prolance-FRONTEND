@@ -15,26 +15,20 @@ export class LoginComponent implements OnInit, OnDestroy {
   showPassword = false;
   currentYear = new Date().getFullYear();
 
-  // Session-aware user property
-  user: { email: string; role: string } | null = null;
-
-  constructor(private fb: FormBuilder, private router: Router, private authService: AuthService) {
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private authService: AuthService
+  ) {
     this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      email:      ['', [Validators.required, Validators.email]],
+      password:   ['', [Validators.required, Validators.minLength(6)]],
       rememberMe: [false]
     });
   }
 
   ngOnInit(): void {
     document.body.classList.add('auth-page');
-
-    // Load existing session if present
-    const email = localStorage.getItem('userName');
-    const role = localStorage.getItem('role');
-    if (email && role) {
-      this.user = { email, role };
-    }
   }
 
   ngOnDestroy(): void {
@@ -46,11 +40,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    // Clear session
-    localStorage.removeItem('token');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('role');
-    this.user = null;
+    this.authService.logout();  // ← utilise AuthService, pas localStorage directement
   }
 
   onSubmit(): void {
@@ -62,24 +52,19 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.isLoading = true;
 
     const authRequest: AuthRequest = {
-      email: this.loginForm.value.email,
+      email:    this.loginForm.value.email,
       password: this.loginForm.value.password
     };
 
     this.authService.login(authRequest).subscribe({
       next: (res: AuthResponse) => {
         this.isLoading = false;
-
-        // Save session via AuthService (stocke token + role + userId)
         this.authService.setSession(res, authRequest.email);
 
-        this.user = { email: authRequest.email, role: res.role };
-
-        // Conditional navigation based on role
         if (res.role === 'ADMIN') {
-          this.router.navigate(['/admin/dashboard']); // Admin landing page
+          this.router.navigate(['/admin/dashboard']);
         } else {
-          this.router.navigate(['/app']); // Normal user dashboard
+          this.router.navigate(['/app']);
         }
       },
       error: (err) => {

@@ -5,5 +5,13 @@
 
 export const environment = {
   production: false,
-  adsServiceUrl: 'http://localhost:8090/ads-service/api'
+
+  // Tout passe par l'API Gateway (port 8222)
+  authServiceUrl:        'http://localhost:8222/api/auth',
+  eventServiceUrl:       'http://localhost:8222/api/events',
+  activityServiceUrl:    'http://localhost:8222/api/activities',
+  inscriptionServiceUrl: 'http://localhost:8222/api/inscriptions',
+
+  // Ads service (pas dans le gateway, port direct)
+  adsServiceUrl:         'http://localhost:8090/ads-service/api'
 };

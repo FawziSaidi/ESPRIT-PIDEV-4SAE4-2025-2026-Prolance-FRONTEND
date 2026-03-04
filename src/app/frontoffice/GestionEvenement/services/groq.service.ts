@@ -15,8 +15,8 @@ export interface GeneratedActivity {
 @Injectable({ providedIn: 'root' })
 export class GroqService {
 
-  private readonly API_KEY = '';
-  private readonly API_URL = '';
+  private readonly API_KEY = '#';
+  private readonly API_URL = '#';
 
   constructor() {}
 

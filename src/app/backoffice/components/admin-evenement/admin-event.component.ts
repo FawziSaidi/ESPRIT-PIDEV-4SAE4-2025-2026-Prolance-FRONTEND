@@ -10,6 +10,7 @@ import { InscriptionService } from '../../../frontoffice/GestionEvenement/servic
 import { BadgeGeneratorService } from '../../../frontoffice/GestionEvenement/services/badge-generator.service';
 import { GroqService  } from '../../../frontoffice/GestionEvenement/services/groq.service';
 import emailjs from '@emailjs/browser';
+import { ActivityService } from 'app/frontoffice/GestionEvenement/services/activity.service';
 
 const ALPHANUMERIC_PATTERN = /^[a-zA-Z0-9\u00C0-\u024F\s.,:''\-]+$/;
 const NAME_PATTERN          = /^[a-zA-Z0-9\u00C0-\u024F\s]+$/;
@@ -103,6 +104,7 @@ export class AdminEventsComponent implements OnInit, OnDestroy {
 
   eventStatuses = Object.values(EventStatus);
   categories    = Object.values(CategoryEvent);
+  activityLoading = false;
 
   // ── Delete/Archive Modal ──
   showDeleteModal = false;
@@ -147,6 +149,7 @@ export class AdminEventsComponent implements OnInit, OnDestroy {
 
   constructor(
     private eventService: EventService,
+      private activityService: ActivityService, 
     private inscriptionService: InscriptionService,
     private authService: AuthService,
     private fb: FormBuilder,
@@ -243,7 +246,22 @@ export class AdminEventsComponent implements OnInit, OnDestroy {
   get pageNumbers(): number[] { return Array.from({ length: this.totalPages }, (_, i) => i); }
 
   setView(m: 'list' | 'cards'): void { this.viewMode = m; }
-  selectEvent(e: Event): void         { this.selectedEvent = e; }
+  selectEvent(e: Event): void {
+  this.selectedEvent = e;
+  this.activityLoading = true;
+
+  this.activityService.getActivitiesByEvent(e.idEvent!).subscribe({
+    next: (activities) => {
+      this.selectedEvent = { ...e, activities };
+      this.activityLoading = false;
+    },
+    error: () => {
+      this.selectedEvent = { ...e, activities: [] };
+      this.activityLoading = false;
+    }
+  });
+}
+
   closeEvent(): void                  { this.selectedEvent = undefined; }
 
   // ══════════════════════════════════════════════════
@@ -628,22 +646,43 @@ export class AdminEventsComponent implements OnInit, OnDestroy {
   }
 
   openEditModal(event: Event): void {
-    this.isEditMode = true; this.editEventId = event.idEvent;
-    this.formSuccess = ''; this.formError = '';
-    this.selectedFile = null; this.imagePreview = event.imageUrl || null;
-    this.initForm();
-    this.eventForm.patchValue({
-      title: event.title, description: event.description,
-      startDate: event.startDate ? (event.startDate as string).substring(0, 16) : '',
-      endDate:   event.endDate   ? (event.endDate   as string).substring(0, 16) : '',
-      eventStatus: event.eventStatus, location: event.location,
-      capacity: event.capacity, imageUrl: event.imageUrl || '', category: event.category
-    });
-    if (event.activities?.length) {
-      event.activities.forEach(act => { const g = this.createActivityGroup(); g.patchValue(act); this.activities.push(g); });
+  this.isEditMode   = true;
+  this.editEventId  = event.idEvent;
+  this.formSuccess  = '';
+  this.formError    = '';
+  this.selectedFile = null;
+  this.imagePreview = event.imageUrl || null;
+  this.initForm();
+
+  // Patch les champs de l'event
+  this.eventForm.patchValue({
+    title:       event.title,
+    description: event.description,
+    startDate:   event.startDate ? (event.startDate as string).substring(0, 16) : '',
+    endDate:     event.endDate   ? (event.endDate   as string).substring(0, 16) : '',
+    eventStatus: event.eventStatus,
+    location:    event.location,
+    capacity:    event.capacity,
+    imageUrl:    event.imageUrl || '',
+    category:    event.category
+  });
+
+  // Charge les activités depuis activity-service
+  this.activityService.getActivitiesByEvent(event.idEvent!).subscribe({
+    next: (activities) => {
+      this.activities.clear();
+      activities.forEach(act => {
+        const g = this.createActivityGroup();
+        g.patchValue(act);
+        this.activities.push(g);
+      });
+      this.showModal = true;   // ← ouvre le modal seulement après que les activités sont chargées
+    },
+    error: () => {
+      this.showModal = true;   // ouvre quand même même si activités vides
     }
-    this.showModal = true;
-  }
+  });
+}
 
   closeModal(): void {
     this.showModal = false; this.submitted = false;

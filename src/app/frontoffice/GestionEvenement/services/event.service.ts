@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Event } from '../models/event.model';
+import { environment } from 'environments/environment';  // ← corrigé
 
 export interface EventFilterParams {
   titleContains?:       string;
@@ -43,7 +44,7 @@ export interface PageResponse<T> {
 @Injectable({ providedIn: 'root' })
 export class EventService {
 
-  private apiUrl = 'http://localhost:8089/pidev/api/events';
+  private apiUrl = environment.eventServiceUrl;
 
   constructor(private http: HttpClient) {}
 
