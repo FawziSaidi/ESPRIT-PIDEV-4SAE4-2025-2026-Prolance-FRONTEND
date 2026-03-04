@@ -1,9 +1,8 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { Publication, TypePublication } from '../../models/publication.model';
 import { PublicationService } from '../../services/publication.service';
+import { CommentaireService } from '../../services/commentaire.service';
 import { AuthService } from '../../../../services/auth.services';
-
-
 
 @Component({
   selector: 'app-forum-list',
@@ -31,37 +30,24 @@ export class ForumListComponent implements OnInit {
   lightboxIndex: number = 0;
   showLightbox: boolean = false;
 
-  isExpanded(id: number): boolean {
-    return this.expandedPosts.has(id);
-  }
-
+  isExpanded(id: number): boolean { return this.expandedPosts.has(id); }
   toggleExpand(id: number): void {
-    if (this.expandedPosts.has(id)) {
-      this.expandedPosts.delete(id);
-    } else {
-      this.expandedPosts.add(id);
-    }
+    if (this.expandedPosts.has(id)) this.expandedPosts.delete(id);
+    else this.expandedPosts.add(id);
   }
 
-  // ✅ Recherche en temps réel par nom d'auteur
   searchQuery: string = '';
 
   // ── Pagination ────────────────────────────────────────
   currentPage: number = 1;
   pageSize: number = 5;
 
-  get totalPages(): number {
-    return Math.ceil(this.filteredPublications.length / this.pageSize);
-  }
-
+  get totalPages(): number { return Math.ceil(this.filteredPublications.length / this.pageSize); }
   get paginatedPublications(): Publication[] {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.filteredPublications.slice(start, start + this.pageSize);
   }
-
-  get pageNumbers(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
-  }
+  get pageNumbers(): number[] { return Array.from({ length: this.totalPages }, (_, i) => i + 1); }
 
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages) {
@@ -69,7 +55,6 @@ export class ForumListComponent implements OnInit {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
-
   prevPage(): void { this.goToPage(this.currentPage - 1); }
   nextPage(): void { this.goToPage(this.currentPage + 1); }
 
@@ -82,15 +67,14 @@ export class ForumListComponent implements OnInit {
 
   constructor(
     private publicationService: PublicationService,
+    private commentaireService: CommentaireService,
     private authService: AuthService
   ) {}
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (!target.closest('.actions-right')) {
-      this.activeMenuId = null;
-    }
+    if (!target.closest('.actions-right')) this.activeMenuId = null;
   }
 
   ngOnInit(): void {
@@ -110,6 +94,8 @@ export class ForumListComponent implements OnInit {
         this.publications = data;
         this.filterPublications();
         this.loading = false;
+        // ✅ Charger le nombre de commentaires pour chaque publication
+        this.loadCommentCounts();
       },
       error: () => {
         this.errorMessage = 'Error loading posts';
@@ -118,17 +104,29 @@ export class ForumListComponent implements OnInit {
     });
   }
 
+  // ✅ NOUVEAU : charge le count de commentaires pour chaque publication
+  loadCommentCounts(): void {
+    this.publications.forEach(pub => {
+      if (!pub.id) return;
+      this.commentaireService.getCommentCountByPublicationId(pub.id).subscribe({
+        next: (count) => {
+          pub.commentaires = Array(count).fill({});
+          // Mettre à jour aussi dans filteredPublications
+          const fpub = this.filteredPublications.find(p => p.id === pub.id);
+          if (fpub) fpub.commentaires = Array(count).fill({});
+        },
+        error: () => {} // silencieux si le service est down
+      });
+    });
+  }
+
   filterPublications(): void {
     let result = this.publications;
-
-    // Filtre par onglet
     if (this.selectedType === 'MYPOSTS') {
       result = result.filter(pub => pub.user?.id === this.currentUserId);
     } else if (this.selectedType !== 'TOUS') {
       result = result.filter(pub => pub.type === this.selectedType);
     }
-
-    // ✅ Filtre en temps réel par nom d'auteur
     const q = this.searchQuery.trim().toLowerCase();
     if (q) {
       result = result.filter(pub => {
@@ -136,25 +134,13 @@ export class ForumListComponent implements OnInit {
         return fullName.includes(q);
       });
     }
-
     this.filteredPublications = result;
-    this.currentPage = 1; // reset pagination on filter/search change
+    this.currentPage = 1;
   }
 
-  onTypeChange(type: string): void {
-    this.selectedType = type;
-    this.filterPublications();
-  }
-
-  // ✅ Appelé à chaque frappe dans la barre de recherche
-  onSearchChange(): void {
-    this.filterPublications();
-  }
-
-  clearSearch(): void {
-    this.searchQuery = '';
-    this.filterPublications();
-  }
+  onTypeChange(type: string): void { this.selectedType = type; this.filterPublications(); }
+  onSearchChange(): void { this.filterPublications(); }
+  clearSearch(): void { this.searchQuery = ''; this.filterPublications(); }
 
   openAddModal(): void { this.showAddModal = true; }
   closeAddModal(): void { this.showAddModal = false; }
@@ -165,19 +151,13 @@ export class ForumListComponent implements OnInit {
       this.showEditModal = true;
     }
   }
-  closeEditModal(): void {
-    this.showEditModal = false;
-    this.selectedPublication = null;
-  }
+  closeEditModal(): void { this.showEditModal = false; this.selectedPublication = null; }
 
   openCommentModal(publication: Publication): void {
     this.selectedPublication = publication;
     this.showCommentModal = true;
   }
-  closeCommentModal(): void {
-    this.showCommentModal = false;
-    this.selectedPublication = null;
-  }
+  closeCommentModal(): void { this.showCommentModal = false; this.selectedPublication = null; }
 
   onCommentCountChanged(count: number): void {
     if (!this.selectedPublication) return;
@@ -201,22 +181,11 @@ export class ForumListComponent implements OnInit {
   confirmDelete(): void {
     if (!this.publicationToDelete) return;
     this.publicationService.deletePublication(this.publicationToDelete.id!, this.currentUserId).subscribe({
-      next: () => {
-        this.showDeleteModal = false;
-        this.publicationToDelete = null;
-        this.loadPublications();
-      },
-      error: () => {
-        this.showDeleteModal = false;
-        this.publicationToDelete = null;
-      }
+      next: () => { this.showDeleteModal = false; this.publicationToDelete = null; this.loadPublications(); },
+      error: () => { this.showDeleteModal = false; this.publicationToDelete = null; }
     });
   }
-
-  cancelDelete(): void {
-    this.showDeleteModal = false;
-    this.publicationToDelete = null;
-  }
+  cancelDelete(): void { this.showDeleteModal = false; this.publicationToDelete = null; }
 
   canModifyPublication(publication: Publication): boolean {
     return publication.user?.id === this.currentUserId;
@@ -228,8 +197,7 @@ export class ForumListComponent implements OnInit {
   closeActionMenu(): void { this.activeMenuId = null; }
 
   getTimeAgo(date: string): string {
-    const now = new Date();
-    const d = new Date(date);
+    const now = new Date(); const d = new Date(date);
     const diffMs = now.getTime() - d.getTime();
     const mins = Math.floor(diffMs / 60000);
     const hours = Math.floor(diffMs / 3600000);
@@ -260,28 +228,14 @@ export class ForumListComponent implements OnInit {
     return `http://localhost:8222/uploads/publications/${pdfName}`;
   }
 
-  onImageError(event: any): void {
-    event.target.style.display = 'none';
-  }
+  onImageError(event: any): void { event.target.style.display = 'none'; }
 
-  // ── Lightbox methods ──────────────────────────────────
   openLightbox(images: string[], index: number): void {
-    this.lightboxImages = images;
-    this.lightboxIndex = index;
-    this.showLightbox = true;
+    this.lightboxImages = images; this.lightboxIndex = index; this.showLightbox = true;
   }
-
-  closeLightbox(): void {
-    this.showLightbox = false;
-  }
-
-  lightboxPrev(): void {
-    this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxImages.length) % this.lightboxImages.length;
-  }
-
-  lightboxNext(): void {
-    this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxImages.length;
-  }
+  closeLightbox(): void { this.showLightbox = false; }
+  lightboxPrev(): void { this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxImages.length) % this.lightboxImages.length; }
+  lightboxNext(): void { this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxImages.length; }
 
   @HostListener('document:keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
@@ -291,19 +245,16 @@ export class ForumListComponent implements OnInit {
     if (event.key === 'Escape') this.closeLightbox();
   }
 
-  // ✅ Génère un fond de card pastel à partir de la couleur du titre
   getCardBg(titleColor?: string): string {
     if (!titleColor || titleColor === '#2d1f4e') return 'rgba(255,255,255,0.82)';
-    return `${titleColor}12`; // couleur + 7% opacité
+    return `${titleColor}12`;
   }
 
-  // ✅ Génère un fond d'avatar assorti
   getAvatarBg(titleColor?: string): string {
     if (!titleColor || titleColor === '#2d1f4e') return 'linear-gradient(135deg, #ddd6fe, #c4b5fd)';
     return `${titleColor}30`;
   }
 
-  // ✅ Surligne la partie du nom qui correspond à la recherche
   highlightName(fullName: string): string {
     const q = this.searchQuery.trim();
     if (!q) return fullName;
