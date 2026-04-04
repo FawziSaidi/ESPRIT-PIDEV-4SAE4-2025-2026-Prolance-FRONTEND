@@ -3,14 +3,15 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Publication, TypePublication } from '../models/publication.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class PublicationService {
   private baseUrl = 'http://localhost:8222/api/publications';
 
   constructor(private http: HttpClient) {}
 
+  // ── Lecture ───────────────────────────────────────────────────
+
+  /** Feed public : seulement les publications ACTIVES */
   getAllPublications(): Observable<Publication[]> {
     return this.http.get<Publication[]>(this.baseUrl);
   }
@@ -23,9 +24,32 @@ export class PublicationService {
     return this.http.get<Publication[]>(`${this.baseUrl}/user/${userId}`);
   }
 
+  /** Publications archivées/en-attente de l'utilisateur */
+  getArchivedByUserId(userId: number): Observable<Publication[]> {
+    return this.http.get<Publication[]>(`${this.baseUrl}/user/${userId}/archived`);
+  }
+
   getPublicationById(id: number): Observable<Publication> {
     return this.http.get<Publication>(`${this.baseUrl}/${id}`);
   }
+
+  // ── Signalement ───────────────────────────────────────────────
+
+  /** Signale une publication. 3 signalements → archivage auto */
+  signalerPublication(id: number, userId: number): Observable<Publication> {
+    const params = new HttpParams().set('userId', userId.toString());
+    return this.http.post<Publication>(`${this.baseUrl}/${id}/signaler`, null, { params });
+  }
+
+  // ── Réactivation (user) ───────────────────────────────────────
+
+  /** L'auteur demande la réactivation → statut PENDING */
+  demanderReactivation(id: number, userId: number): Observable<Publication> {
+    const params = new HttpParams().set('userId', userId.toString());
+    return this.http.post<Publication>(`${this.baseUrl}/${id}/reactiver`, null, { params });
+  }
+
+  // ── CRUD existant ─────────────────────────────────────────────
 
   createPublication(formData: FormData): Observable<Publication> {
     return this.http.post<Publication>(this.baseUrl, formData);

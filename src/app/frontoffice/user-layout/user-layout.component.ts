@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.services';
 
 @Component({
@@ -13,10 +14,10 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   mobileMenuOpen = false;
   currentYear = new Date().getFullYear();
 
-  /**
-   * Retourne le rôle de l'utilisateur connecté (FREELANCER ou CLIENT)
-   * normalisé en minuscules pour les comparaisons dans le template.
-   */
+  // Infos utilisateur connecté
+  userName = '';
+  userEmail = '';
+
   get currentRole(): string {
     const role = this.authService.getRole();
     return role ? role.toLowerCase() : '';
@@ -30,7 +31,18 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
     return this.currentRole === 'client';
   }
 
-  constructor(private router: Router, private authService: AuthService) {}
+  // Initiales pour l'avatar
+  get userInitials(): string {
+    if (!this.userName) return '?';
+    const parts = this.userName.trim().split(' ');
+    return parts.map(p => p.charAt(0).toUpperCase()).slice(0, 2).join('');
+  }
+
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private http: HttpClient
+  ) {}
 
   @HostListener('window:scroll')
   onScroll(): void {
@@ -47,10 +59,31 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     document.body.classList.add('user-portal');
+    this.loadCurrentUser();
   }
 
   ngOnDestroy(): void {
     document.body.classList.remove('user-portal');
+  }
+
+  loadCurrentUser(): void {
+    const session = this.authService.getCurrentUser();
+    if (!session) return;
+
+    // L'email est déjà dans la session
+    this.userEmail = session.email;
+
+    // Charger le nom depuis l'API users
+    this.http.get<any>(`http://localhost:8222/users/${session.userId}`).subscribe({
+      next: (user) => {
+        const full = [user.name, user.lastName].filter(Boolean).join(' ').trim();
+        this.userName = full || session.email;
+      },
+      error: () => {
+        // Fallback sur l'email si l'API échoue
+        this.userName = session.email;
+      }
+    });
   }
 
   toggleProfileDropdown(): void {

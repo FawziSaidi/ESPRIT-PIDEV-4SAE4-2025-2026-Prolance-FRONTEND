@@ -136,6 +136,14 @@
   border-color: rgba(168,85,247,.45) !important;
   color: #c084fc !important;
 }
+/* Bouton Archived dans la search bar */
+.sbt-archived { border-color: rgba(239,68,68,.3); color: #f87171; }
+.sbt-archived:hover { background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.5); color: #fca5a5; }
+.sbt-archived.sbt-active {
+  background: rgba(239,68,68,.15) !important;
+  border-color: rgba(239,68,68,.5) !important;
+  color: #fca5a5 !important;
+}
 .sbar-info { display: flex; align-items: center; gap: .6rem; margin-left: auto; }
 .sbar-count { font-size: .8rem; color: #a855f7; font-weight: 700; }
 .sbar-reset {
@@ -502,3 +510,181 @@
   align-items: center;
   justify-content: center;
 }
+/* ══════════════════════════════════════════════════════════════
+   NOUVELLES RÈGLES : Tabs admin + Statut + Pending
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Tabs admin ──────────────────────────────────────────────── */
+.admin-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.6rem;
+}
+.admin-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 50px;
+  border: 2px solid rgba(124, 58, 237, 0.2);
+  background: #fff;
+  color: #7c3aed;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.admin-tab:hover { background: rgba(124, 58, 237, 0.06); }
+.admin-tab.active {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+}
+.admin-tab-pending { border-color: rgba(245, 158, 11, 0.3); color: #b45309; }
+.admin-tab-pending.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+}
+.tab-badge {
+  background: rgba(124, 58, 237, 0.15);
+  color: #7c3aed;
+  border-radius: 50px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.admin-tab.active .tab-badge { background: rgba(255,255,255,0.25); color: #fff; }
+.tab-badge-pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #b45309;
+  border-radius: 50px;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+/* ── Badge statut sur les cartes ─────────────────────────────── */
+.pub-statut-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 50px;
+}
+.chip-archived {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.chip-pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+/* ── Compteur signalements ────────────────────────────────────── */
+.pub-signals {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 3px 9px;
+  border-radius: 50px;
+}
+
+/* ── Carte archivée / pending dans la liste ───────────────────── */
+.pub-archived { border-left: 4px solid #ef4444 !important; opacity: 0.88; }
+.pub-pending { border-left: 4px solid #f59e0b !important; }
+
+/* ── Stat card : Archivées ────────────────────────────────────── */
+.sc-arch { cursor: pointer; }
+.sc-arch:hover, .sc-arch.active {
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.15);
+}
+.sc-arch.active { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(220,38,38,0.04)); }
+
+/* ── Section Pending ─────────────────────────────────────────── */
+.pending-section { width: 100%; }
+.pending-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pending-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  padding: 20px 22px;
+  box-shadow: 0 2px 12px rgba(245, 158, 11, 0.1);
+}
+.pending-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.pending-titre {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e1b4b;
+}
+.pending-contenue {
+  margin: 0 0 16px;
+  font-size: 0.87rem;
+  color: #555;
+  line-height: 1.55;
+}
+.pending-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Bouton Accepter */
+.btn-accepter {
+  padding: 9px 20px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  border-radius: 50px;
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+}
+.btn-accepter:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45); }
+
+/* Bouton Refuser */
+.btn-refuser {
+  padding: 9px 20px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: none;
+  border-radius: 50px;
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
+}
+.btn-refuser:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(239, 68, 68, 0.45); }
+
+/* Bouton Delete pending */
+.btn-del-pending {
+  padding: 9px 16px;
+  background: rgba(107, 114, 128, 0.1);
+  border: 1.5px solid rgba(107, 114, 128, 0.25);
+  border-radius: 50px;
+  color: #6b7280;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-del-pending:hover { background: rgba(239, 68, 68, 0.08); border-color: #ef4444; color: #dc2626; }

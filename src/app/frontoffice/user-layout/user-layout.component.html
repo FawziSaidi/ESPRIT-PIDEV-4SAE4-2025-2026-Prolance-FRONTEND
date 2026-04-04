@@ -4,7 +4,7 @@
 
     <!-- Brand -->
     <a class="navbar-brand" routerLink="/app/dashboard">
-      <i class="material-icons brand-icon">hub</i>
+      <img src="assets/img/prolance.png" alt="Prolance" class="brand-logo" />
       <span class="brand-text">Prolance</span>
     </a>
 
@@ -47,8 +47,12 @@
         </button>
         <div class="profile-dropdown" [class.open]="profileDropdownOpen">
           <div class="dropdown-header">
-            <span class="dropdown-name">Alex Johnson</span>
-            <span class="dropdown-role">{{ currentRole | titlecase }}</span>
+            <div class="dropdown-avatar">{{ userInitials }}</div>
+            <div class="dropdown-user-info">
+              <span class="dropdown-name">{{ userName || 'Chargement…' }}</span>
+              <span class="dropdown-email">{{ userEmail }}</span>
+              <span class="dropdown-role">{{ currentRole | titlecase }}</span>
+            </div>
           </div>
 
           <div class="dropdown-divider"></div>

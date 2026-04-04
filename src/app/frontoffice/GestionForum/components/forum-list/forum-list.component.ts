@@ -1,5 +1,5 @@
 import { Component, OnInit, HostListener } from '@angular/core';
-import { Publication, TypePublication } from '../../models/publication.model';
+import { Publication, TypePublication, StatutPublication } from '../../models/publication.model';
 import { PublicationService } from '../../services/publication.service';
 import { CommentaireService } from '../../services/commentaire.service';
 import { AuthService } from '../../../../services/auth.services';
@@ -10,37 +10,41 @@ import { AuthService } from '../../../../services/auth.services';
   styleUrls: ['./forum-list.component.css']
 })
 export class ForumListComponent implements OnInit {
+
   publications: Publication[] = [];
   filteredPublications: Publication[] = [];
+
+  /** Publications archivées/en-attente de l'utilisateur courant */
+  archivedPublications: Publication[] = [];
+
   selectedType: string = 'TOUS';
-  showAddModal: boolean = false;
-  showEditModal: boolean = false;
-  showCommentModal: boolean = false;
-  showDeleteModal: boolean = false;
+  showAddModal = false;
+  showEditModal = false;
+  showCommentModal = false;
+  showDeleteModal = false;
   publicationToDelete: Publication | null = null;
   selectedPublication: Publication | null = null;
   currentUserId: number = 0;
-  loading: boolean = false;
-  errorMessage: string = '';
+  loading = false;
+  errorMessage = '';
   activeMenuId: number | null = null;
   expandedPosts = new Set<number>();
 
-  // ── Lightbox ──────────────────────────────────────────
+  // Toast
+  toastMessage = '';
+  toastIsError = false;
+  private toastTimer: any;
+
+  // Lightbox
   lightboxImages: string[] = [];
-  lightboxIndex: number = 0;
-  showLightbox: boolean = false;
+  lightboxIndex = 0;
+  showLightbox = false;
 
-  isExpanded(id: number): boolean { return this.expandedPosts.has(id); }
-  toggleExpand(id: number): void {
-    if (this.expandedPosts.has(id)) this.expandedPosts.delete(id);
-    else this.expandedPosts.add(id);
-  }
+  searchQuery = '';
 
-  searchQuery: string = '';
-
-  // ── Pagination ────────────────────────────────────────
-  currentPage: number = 1;
-  pageSize: number = 5;
+  // Pagination
+  currentPage = 1;
+  pageSize = 5;
 
   get totalPages(): number { return Math.ceil(this.filteredPublications.length / this.pageSize); }
   get paginatedPublications(): Publication[] {
@@ -64,6 +68,11 @@ export class ForumListComponent implements OnInit {
     { value: 'ARTICLE', label: 'Articles' },
     { value: 'REVIEW', label: 'Reviews' }
   ];
+
+  isExpanded(id: number): boolean { return this.expandedPosts.has(id); }
+  toggleExpand(id: number): void {
+    this.expandedPosts.has(id) ? this.expandedPosts.delete(id) : this.expandedPosts.add(id);
+  }
 
   constructor(
     private publicationService: PublicationService,
@@ -94,7 +103,6 @@ export class ForumListComponent implements OnInit {
         this.publications = data;
         this.filterPublications();
         this.loading = false;
-        // ✅ Charger le nombre de commentaires pour chaque publication
         this.loadCommentCounts();
       },
       error: () => {
@@ -104,18 +112,32 @@ export class ForumListComponent implements OnInit {
     });
   }
 
-  // ✅ NOUVEAU : charge le count de commentaires pour chaque publication
+  /** Charge les publications archivées/en-attente de l'utilisateur */
+  loadArchivedPublications(): void {
+    if (!this.currentUserId) return;
+    this.loading = true;
+    this.publicationService.getArchivedByUserId(this.currentUserId).subscribe({
+      next: (data) => {
+        this.archivedPublications = data;
+        this.loading = false;
+      },
+      error: () => {
+        this.archivedPublications = [];
+        this.loading = false;
+      }
+    });
+  }
+
   loadCommentCounts(): void {
     this.publications.forEach(pub => {
       if (!pub.id) return;
       this.commentaireService.getCommentCountByPublicationId(pub.id).subscribe({
         next: (count) => {
           pub.commentaires = Array(count).fill({});
-          // Mettre à jour aussi dans filteredPublications
           const fpub = this.filteredPublications.find(p => p.id === pub.id);
           if (fpub) fpub.commentaires = Array(count).fill({});
         },
-        error: () => {} // silencieux si le service est down
+        error: () => {}
       });
     });
   }
@@ -138,9 +160,76 @@ export class ForumListComponent implements OnInit {
     this.currentPage = 1;
   }
 
-  onTypeChange(type: string): void { this.selectedType = type; this.filterPublications(); }
+  onTypeChange(type: string): void {
+    this.selectedType = type;
+    if (type === 'ARCHIVED') {
+      this.loadArchivedPublications();
+    } else {
+      this.filterPublications();
+    }
+  }
+
   onSearchChange(): void { this.filterPublications(); }
   clearSearch(): void { this.searchQuery = ''; this.filterPublications(); }
+
+  // ── Signalement ────────────────────────────────────────────────
+
+  /** Vérifie si l'utilisateur courant a déjà signalé ce post */
+  hasUserSignaled(publication: Publication): boolean {
+    return (publication.signalements ?? []).includes(this.currentUserId);
+  }
+
+  signalerPublication(publication: Publication): void {
+    if (!publication.id || this.hasUserSignaled(publication)) return;
+
+    this.publicationService.signalerPublication(publication.id, this.currentUserId).subscribe({
+      next: (updated) => {
+        // Mettre à jour localement
+        const idx = this.publications.findIndex(p => p.id === updated.id);
+        if (idx >= 0) this.publications[idx] = { ...this.publications[idx], signalements: updated.signalements, statut: updated.statut };
+
+        if (updated.statut === StatutPublication.ARCHIVED) {
+          // Le post vient d'être archivé → le retirer du feed
+          this.publications = this.publications.filter(p => p.id !== updated.id);
+          this.showToast('⚠️ This post has been archived after 3 reports.', false);
+        } else {
+          this.showToast('🚩 Post reported successfully.', false);
+        }
+        this.filterPublications();
+      },
+      error: (err) => {
+        const msg = err?.error ?? 'Error reporting post.';
+        this.showToast(msg, true);
+      }
+    });
+  }
+
+  // ── Réactivation (onglet Archives) ────────────────────────────
+
+  demanderReactivation(pub: Publication): void {
+    if (!pub.id) return;
+    this.publicationService.demanderReactivation(pub.id, this.currentUserId).subscribe({
+      next: (updated) => {
+        const idx = this.archivedPublications.findIndex(p => p.id === updated.id);
+        if (idx >= 0) this.archivedPublications[idx] = updated;
+        this.showToast('⏳ Reactivation request sent to admin.', false);
+      },
+      error: (err) => {
+        this.showToast(err?.error ?? 'Error sending request.', true);
+      }
+    });
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────
+
+  showToast(message: string, isError: boolean): void {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastMessage = message;
+    this.toastIsError = isError;
+    this.toastTimer = setTimeout(() => this.toastMessage = '', 4000);
+  }
+
+  // ── Modals / CRUD existants ───────────────────────────────────
 
   openAddModal(): void { this.showAddModal = true; }
   closeAddModal(): void { this.showAddModal = false; }
@@ -177,7 +266,6 @@ export class ForumListComponent implements OnInit {
     this.publicationToDelete = publication;
     this.showDeleteModal = true;
   }
-
   confirmDelete(): void {
     if (!this.publicationToDelete) return;
     this.publicationService.deletePublication(this.publicationToDelete.id!, this.currentUserId).subscribe({
@@ -211,23 +299,15 @@ export class ForumListComponent implements OnInit {
   }
 
   getTypeLabel(type: string): string {
-    const map: Record<string, string> = { QUESTION: 'Question', ARTICLE: 'Article', REVIEW: 'Review' };
-    return map[type] ?? type;
-  }
-
-  getTypeIcon(type: string): string {
-    const map: Record<string, string> = { QUESTION: '❓', ARTICLE: '📝', REVIEW: '⭐' };
-    return map[type] ?? '📄';
+    return ({ QUESTION: 'Question', ARTICLE: 'Article', REVIEW: 'Review' } as any)[type] ?? type;
   }
 
   getImageUrl(imageName: string): string {
     return `http://localhost:8222/uploads/publications/${imageName}`;
   }
-
   getPdfUrl(pdfName: string): string {
     return `http://localhost:8222/uploads/publications/${pdfName}`;
   }
-
   onImageError(event: any): void { event.target.style.display = 'none'; }
 
   openLightbox(images: string[], index: number): void {
@@ -243,16 +323,6 @@ export class ForumListComponent implements OnInit {
     if (event.key === 'ArrowLeft') this.lightboxPrev();
     if (event.key === 'ArrowRight') this.lightboxNext();
     if (event.key === 'Escape') this.closeLightbox();
-  }
-
-  getCardBg(titleColor?: string): string {
-    if (!titleColor || titleColor === '#2d1f4e') return 'rgba(255,255,255,0.82)';
-    return `${titleColor}12`;
-  }
-
-  getAvatarBg(titleColor?: string): string {
-    if (!titleColor || titleColor === '#2d1f4e') return 'linear-gradient(135deg, #ddd6fe, #c4b5fd)';
-    return `${titleColor}30`;
   }
 
   highlightName(fullName: string): string {

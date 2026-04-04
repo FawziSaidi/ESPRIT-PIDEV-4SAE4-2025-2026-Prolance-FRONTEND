@@ -4,6 +4,12 @@ export enum TypePublication {
   REVIEW = 'REVIEW'
 }
 
+export enum StatutPublication {
+  ACTIVE = 'ACTIVE',
+  ARCHIVED = 'ARCHIVED',
+  PENDING = 'PENDING'
+}
+
 export interface User {
   id: number;
   name: string;
@@ -24,14 +30,14 @@ export interface Publication {
   titleColor?: string;
   contentColor?: string;
   titleFontSize?: string;
+  statut?: StatutPublication;
+  signalements?: number[]; // liste des userId qui ont signalé
 }
 
-// ✅ Helper to build an image URL
 export function getImageUrl(imageName: string): string {
   return `http://localhost:8222/uploads/publications/${imageName}`;
 }
 
-// ✅ Helper to build a PDF URL
 export function getPdfUrl(pdfName: string): string {
   return `http://localhost:8222/uploads/publications/${pdfName}`;
 }

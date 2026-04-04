@@ -7,22 +7,24 @@ export interface Publication {
   titre: string;
   contenue: string;
   type: 'QUESTION' | 'ARTICLE' | 'REVIEW';
+  statut: 'ACTIVE' | 'ARCHIVED' | 'PENDING';
   createAt: string;
   images: string[];
   pdfs: string[];
+  signalements?: number[];
   user: { id: number; name: string; lastName: string; email: string; };
   commentaires: Commentaire[];
-  commentCount?: number; // ✅ NOUVEAU : count chargé séparément
+  commentCount?: number;
 }
 
 export interface Commentaire {
   id: number;
   contenue: string;
   createAt: string;
-  userId?: number;           // ✅ microservice retourne userId directement
-  publicationId?: number;    // ✅ microservice retourne publicationId directement
+  userId?: number;
+  publicationId?: number;
   user: { id: number; name: string; lastName: string; email: string; };
-  publication?: { id: number; titre: string; }; // optionnel (ancien format)
+  publication?: { id: number; titre: string; };
   parent?: { id: number; };
   replies: Commentaire[];
 }
@@ -35,28 +37,52 @@ export interface ReactionSummary {
   reactors: { userId: number; userName: string; type: string; }[];
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class ForumService {
   private readonly apiBase = 'http://localhost:8222/api';
 
   constructor(private http: HttpClient) {}
 
+  // ── Publications ──────────────────────────────────────────────
+
+  /** Admin : toutes les publications (tous statuts) */
   getAllPublications(): Observable<Publication[]> {
-    return this.http.get<Publication[]>(`${this.apiBase}/publications`);
+    return this.http.get<Publication[]>(`${this.apiBase}/publications/admin/all`);
   }
+
+  /** Admin : publications en attente de réactivation */
+  getPendingPublications(): Observable<Publication[]> {
+    return this.http.get<Publication[]>(`${this.apiBase}/publications/admin/pending`);
+  }
+
+  /** Admin accepte la réactivation → ACTIVE */
+  accepterReactivation(id: number): Observable<Publication> {
+    return this.http.post<Publication>(`${this.apiBase}/publications/admin/${id}/accepter`, null);
+  }
+
+  /** Admin refuse la réactivation → reste ARCHIVED */
+  refuserReactivation(id: number): Observable<Publication> {
+    return this.http.post<Publication>(`${this.apiBase}/publications/admin/${id}/refuser`, null);
+  }
+
+  adminDeletePublication(id: number): Observable<any> {
+    return this.http.delete(`${this.apiBase}/publications/admin/${id}`, { responseType: 'text' });
+  }
+
+  deletePublication(id: number, userId: number): Observable<any> {
+    return this.http.delete(`${this.apiBase}/publications/${id}?userId=${userId}`, { responseType: 'text' });
+  }
+
+  // ── Commentaires ──────────────────────────────────────────────
 
   getAllCommentaires(): Observable<Commentaire[]> {
     return this.http.get<Commentaire[]>(`${this.apiBase}/commentaires`);
   }
 
-  // ✅ NOUVEAU : commentaires par publication (direct, sans filtre côté front)
   getCommentairesByPublication(publicationId: number): Observable<Commentaire[]> {
     return this.http.get<Commentaire[]>(`${this.apiBase}/commentaires/publication/${publicationId}`);
   }
 
-  // Compte récursif : roots + toutes leurs replies imbriquées
   private countTotal(comments: Commentaire[]): number {
     return comments.reduce((acc, c) => acc + 1 + this.countTotal(c.replies || []), 0);
   }
@@ -71,23 +97,17 @@ export class ForumService {
     });
   }
 
+  deleteCommentaire(id: number, userId: number): Observable<any> {
+    return this.http.delete(`${this.apiBase}/commentaires/${id}?userId=${userId}`, { responseType: 'text' });
+  }
+
+  // ── Réactions ────────────────────────────────────────────────
+
   getReactionSummary(publicationId: number): Observable<ReactionSummary> {
     const params = new HttpParams().set('userId', '0');
     return this.http.get<ReactionSummary>(
       `${this.apiBase}/reactions/publication/${publicationId}/summary`,
       { params }
     );
-  }
-
-  adminDeletePublication(id: number): Observable<any> {
-    return this.http.delete(`${this.apiBase}/publications/admin/${id}`, { responseType: 'text' });
-  }
-
-  deletePublication(id: number, userId: number): Observable<any> {
-    return this.http.delete(`${this.apiBase}/publications/${id}?userId=${userId}`, { responseType: 'text' });
-  }
-
-  deleteCommentaire(id: number, userId: number): Observable<any> {
-    return this.http.delete(`${this.apiBase}/commentaires/${id}?userId=${userId}`, { responseType: 'text' });
   }
 }

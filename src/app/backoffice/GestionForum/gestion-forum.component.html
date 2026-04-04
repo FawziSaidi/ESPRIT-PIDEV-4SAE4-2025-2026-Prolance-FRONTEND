@@ -29,346 +29,356 @@
   <!-- ══════ PAGE HEADER ══════ -->
   <div class="fo-header">
     <h1 class="fo-title"><span class="fo-title-icon">🗂️</span> Forum Management</h1>
-    <p class="fo-subtitle">Review, manage and moderate all platform publications</p>
   </div>
 
-  <!-- ══════ STATS CARDS ══════ -->
-  <div class="stats-row">
-    <div class="stat-card sc-all" [class.active]="typeFilter==='ALL'" (click)="onTypeChange('ALL')">
-      <span class="sc-icon">📝</span>
-      <div class="sc-body">
-        <p class="sc-val">{{ publications.length }}</p>
-        <p class="sc-lbl">All Publications</p>
-        <p class="sc-pct">100%</p>
-      </div>
-    </div>
-    <div class="stat-card sc-q" [class.active]="typeFilter==='QUESTION'" (click)="onTypeChange('QUESTION')">
-      <span class="sc-icon">❓</span>
-      <div class="sc-body">
-        <p class="sc-val">{{ getCountByType('QUESTION') }}</p>
-        <p class="sc-lbl">Questions</p>
-        <p class="sc-pct">{{ publications.length > 0 ? ((getCountByType('QUESTION') / publications.length) * 100).toFixed(0) : 0 }}%</p>
-      </div>
-    </div>
-    <div class="stat-card sc-a" [class.active]="typeFilter==='ARTICLE'" (click)="onTypeChange('ARTICLE')">
-      <span class="sc-icon">📰</span>
-      <div class="sc-body">
-        <p class="sc-val">{{ getCountByType('ARTICLE') }}</p>
-        <p class="sc-lbl">Articles</p>
-        <p class="sc-pct">{{ publications.length > 0 ? ((getCountByType('ARTICLE') / publications.length) * 100).toFixed(0) : 0 }}%</p>
-      </div>
-    </div>
-    <div class="stat-card sc-r" [class.active]="typeFilter==='REVIEW'" (click)="onTypeChange('REVIEW')">
-      <span class="sc-icon">⭐</span>
-      <div class="sc-body">
-        <p class="sc-val">{{ getCountByType('REVIEW') }}</p>
-        <p class="sc-lbl">Reviews</p>
-        <p class="sc-pct">{{ publications.length > 0 ? ((getCountByType('REVIEW') / publications.length) * 100).toFixed(0) : 0 }}%</p>
-      </div>
-    </div>
+  <!-- ══════ TABS ADMIN ══════ -->
+  <div class="admin-tabs">
+    <button class="admin-tab" [class.active]="activeTab === 'all'" (click)="switchTab('all')">
+      📋 All Publications <span class="tab-badge">{{ publications.length }}</span>
+    </button>
+    <button class="admin-tab admin-tab-pending" [class.active]="activeTab === 'pending'" (click)="switchTab('pending')">
+      ⏳ Pending Reactivation
+      <span class="tab-badge tab-badge-pending" *ngIf="pendingPublications.length > 0">
+        {{ pendingPublications.length }}
+      </span>
+    </button>
   </div>
 
-  <!-- ══════ SEARCH BAR (above cards) ══════ -->
-  <div class="search-bar-row">
-    <div class="sbar-input-wrap">
-      <span class="sbar-icon">🔍</span>
-      <input
-        class="sbar-input"
-        type="text"
-        placeholder="Search by author name…"
-        [(ngModel)]="searchQuery"
-        (ngModelChange)="onSearchChange($event)" />
-      <button *ngIf="searchQuery" class="sbar-clear" (click)="onSearchChange('')">✕</button>
-    </div>
-    <div class="sbar-type-group">
-      <button *ngFor="let t of typeOptions" class="sbar-type-btn"
-        [class.sbt-active]="typeFilter === t" (click)="onTypeChange(t)">
-        {{ t === 'ALL' ? '📋 All' : getTypeIcon(t) + ' ' + t }}
-      </button>
-    </div>
-    <div class="sbar-info" *ngIf="searchQuery || typeFilter !== 'ALL'">
-      <span class="sbar-count">{{ filteredPublications.length }} result{{ filteredPublications.length !== 1 ? 's' : '' }}</span>
-      <button class="sbar-reset" (click)="clearFilters()">↺ Reset</button>
-    </div>
-  </div>
+  <!-- ══════════════════════════════════════
+       TAB : ALL PUBLICATIONS
+       ══════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'all'">
 
-  <!-- ══════ MAIN LAYOUT ══════ -->
-  <div class="fo-body" [class.panel-open]="selectedPublication !== null">
-
-    <!-- ── LEFT: cards ── -->
-    <div class="fo-main">
-
-      <div *ngIf="loading" class="state-box">
-        <div class="spinner"></div><p>Loading publications…</p>
-      </div>
-
-      <div *ngIf="error && !loading" class="state-box">
-        <p class="err-txt">⚠️ {{ error }}</p>
-        <button class="btn-retry" (click)="loadData()">↻ Retry</button>
-      </div>
-
-      <div *ngIf="!loading && !error && filteredPublications.length === 0" class="state-box">
-        <span style="font-size:2.5rem">🔍</span>
-        <p>No publications match your filters.</p>
-        <button class="btn-clear-f" (click)="clearFilters()">Clear filters</button>
-      </div>
-
-      <!-- ── Publication cards ── -->
-      <div *ngIf="!loading && !error && filteredPublications.length > 0" class="pub-grid">
-        <div *ngFor="let pub of pagedPublications"
-          class="pub-card"
-          [class.pub-selected]="selectedPublication?.id === pub.id">
-
-          <!-- Left accent ribbon -->
-          <div class="pub-ribbon" [style.background]="getTypeColor(pub.type)"></div>
-
-          <div class="pub-card-inner">
-
-            <!-- ── Card header: avatar + name + date + type badge ── -->
-            <div class="pub-card-header">
-              <div class="pub-author-block">
-                <div class="pub-avatar" [style.background]="getTypeColor(pub.type)">
-                  {{ getInitials(pub.user) }}
-                </div>
-                <div class="pub-author-info">
-                  <span class="pub-author-name">{{ getUserLabel(pub.user) }}</span>
-                  <span class="pub-date">{{ formatDate(pub.createAt) }}</span>
-                </div>
-              </div>
-              <div class="pub-type-chip"
-                [style.background]="getTypeBg(pub.type)"
-                [style.color]="getTypeColor(pub.type)">
-                {{ getTypeIcon(pub.type) }} {{ pub.type }}
-              </div>
-            </div>
-
-            <!-- ── Title ── -->
-            <h3 class="pub-titre">{{ pub.titre }}</h3>
-
-            <!-- ── Content with see more/less ── -->
-            <div class="pub-content-wrap">
-              <p class="pub-contenue" [class.clamped]="!isExpanded(pub.id)">{{ pub.contenue }}</p>
-              <button *ngIf="pub.contenue && pub.contenue.length > 220"
-                class="btn-see-more"
-                (click)="toggleExpand(pub.id, $event)">
-                {{ isExpanded(pub.id) ? '▲ See less' : '▼ See more' }}
-              </button>
-            </div>
-
-            <!-- ── Action buttons row ── -->
-            <div class="pub-actions">
-              <!-- PDFs -->
-              <button class="pub-action-btn btn-pdf"
-                [class.btn-active]="selectedPublication?.id === pub.id && activePanel === 'pdfs'"
-                (click)="openPanel(pub, 'pdfs', $event)"
-                [title]="(pub.pdfs?.length || 0) + ' PDF(s)'">
-                📄 PDFs
-                <span class="pub-action-badge" *ngIf="pub.pdfs?.length">{{ pub.pdfs.length }}</span>
-              </button>
-
-              <!-- Images -->
-              <button class="pub-action-btn btn-img"
-                [class.btn-active]="selectedPublication?.id === pub.id && activePanel === 'images'"
-                (click)="openPanel(pub, 'images', $event)"
-                [title]="(pub.images?.length || 0) + ' image(s)'">
-                🖼️ Images
-                <span class="pub-action-badge" *ngIf="pub.images?.length">{{ pub.images.length }}</span>
-              </button>
-
-              <!-- Reactions -->
-              <button class="pub-action-btn btn-react"
-                [class.btn-active]="selectedPublication?.id === pub.id && activePanel === 'reactions'"
-                (click)="openPanel(pub, 'reactions', $event)">
-                ❤️ Reactions
-              </button>
-
-              <!-- Comments -->
-              <button class="pub-action-btn btn-cmt"
-                [class.btn-active]="selectedPublication?.id === pub.id && activePanel === 'comments'"
-                (click)="openPanel(pub, 'comments', $event)"
-                [title]="(pub.commentCount || 0) + ' comment(s)'">
-                💬 Comments
-                <span class="pub-action-badge" *ngIf="pub.commentCount">{{ pub.commentCount }}</span>
-              </button>
-
-              <!-- Delete -->
-              <button class="pub-action-btn btn-del" (click)="askDelete(pub, $event)" title="Delete publication">
-                🗑️ Delete
-              </button>
-            </div>
-
-          </div>
+    <!-- STATS CARDS -->
+    <div class="stats-row">
+      <div class="stat-card sc-all" [class.active]="typeFilter==='ALL' && statutFilter==='ALL'" (click)="onTypeChange('ALL')">
+        <span class="sc-icon">📝</span>
+        <div class="sc-body">
+          <p class="sc-val">{{ activePublicationsCount }}</p>
+          <p class="sc-lbl">All Publications</p>
+          <p class="sc-pct">100%</p>
         </div>
       </div>
-
-      <!-- Pagination -->
-      <div class="pagination" *ngIf="totalPages > 1">
-        <button class="pg-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">‹</button>
-        <button *ngFor="let p of pageNumbers" class="pg-btn pg-num"
-          [class.pg-active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
-        <button class="pg-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
-        <span class="pg-info">Page {{ currentPage }}/{{ totalPages }} · {{ filteredPublications.length }} results</span>
+      <div class="stat-card sc-q" [class.active]="typeFilter==='QUESTION'" (click)="onTypeChange('QUESTION')">
+        <span class="sc-icon">❓</span>
+        <div class="sc-body">
+          <p class="sc-val">{{ getCountByType('QUESTION') }}</p>
+          <p class="sc-lbl">Questions</p>
+          <p class="sc-pct">{{ pct('QUESTION') }}%</p>
+        </div>
+      </div>
+      <div class="stat-card sc-a" [class.active]="typeFilter==='ARTICLE'" (click)="onTypeChange('ARTICLE')">
+        <span class="sc-icon">📰</span>
+        <div class="sc-body">
+          <p class="sc-val">{{ getCountByType('ARTICLE') }}</p>
+          <p class="sc-lbl">Articles</p>
+          <p class="sc-pct">{{ pct('ARTICLE') }}%</p>
+        </div>
+      </div>
+      <div class="stat-card sc-r" [class.active]="typeFilter==='REVIEW'" (click)="onTypeChange('REVIEW')">
+        <span class="sc-icon">⭐</span>
+        <div class="sc-body">
+          <p class="sc-val">{{ getCountByType('REVIEW') }}</p>
+          <p class="sc-lbl">Reviews</p>
+          <p class="sc-pct">{{ pct('REVIEW') }}%</p>
+        </div>
+      </div>
+      <!-- ✅ Stat : Archivées (inclut ARCHIVED + PENDING non réactivées) -->
+      <div class="stat-card sc-arch" [class.active]="statutFilter==='ARCHIVED'" (click)="onStatutChange('ARCHIVED')">
+        <span class="sc-icon">🗄️</span>
+        <div class="sc-body">
+          <p class="sc-val">{{ getCountByStatut('ARCHIVED') }}</p>
+          <p class="sc-lbl">Archived</p>
+          <p class="sc-pct">{{ getCountByStatut('ARCHIVED') }} posts (incl. pending)</p>
+        </div>
       </div>
     </div>
 
-    <!-- ── RIGHT PANEL ── -->
-    <div class="fo-panel" *ngIf="selectedPublication && activePanel">
-
-      <!-- Panel header -->
-      <div class="panel-head">
-        <div class="panel-head-left">
-          <span class="panel-pub-title">{{ selectedPublication.titre | slice:0:40 }}{{ selectedPublication.titre?.length > 40 ? '…' : '' }}</span>
-          <span class="panel-type-chip"
-            [style.background]="getTypeBg(selectedPublication.type)"
-            [style.color]="getTypeColor(selectedPublication.type)">
-            {{ getTypeIcon(selectedPublication.type) }} {{ selectedPublication.type }}
-          </span>
-        </div>
-        <button class="panel-close" (click)="closePanel()">✕</button>
+    <!-- SEARCH BAR -->
+    <div class="search-bar-row">
+      <div class="sbar-input-wrap">
+        <span class="sbar-icon">🔍</span>
+        <input class="sbar-input" type="text" placeholder="Search by author name…"
+          [(ngModel)]="searchQuery" (ngModelChange)="onSearchChange($event)" />
+        <button *ngIf="searchQuery" class="sbar-clear" (click)="onSearchChange('')">✕</button>
       </div>
-
-      <!-- ── PDFs panel ── -->
-      <div *ngIf="activePanel === 'pdfs'" class="panel-body">
-        <h4 class="panel-section-title">📄 PDF Files</h4>
-        <div *ngIf="!selectedPublication.pdfs || selectedPublication.pdfs.length === 0" class="panel-empty">
-          No PDFs attached to this publication.
-        </div>
-        <div class="pdf-list" *ngIf="selectedPublication.pdfs?.length">
-          <a *ngFor="let pdf of selectedPublication.pdfs"
-            [href]="getPdfUrl(pdf)" target="_blank" rel="noopener"
-            class="pdf-item">
-            <span class="pdf-item-icon">📄</span>
-            <span class="pdf-item-name">{{ getPdfName(pdf) }}</span>
-            <span class="pdf-item-open">↗</span>
-          </a>
-        </div>
+      <div class="sbar-type-group">
+        <button *ngFor="let t of typeOptions" class="sbar-type-btn"
+          [class.sbt-active]="typeFilter === t && statutFilter === 'ALL'" (click)="onTypeChange(t)">
+          {{ t === 'ALL' ? '📋 All' : getTypeIcon(t) + ' ' + t }}
+        </button>
+        <button class="sbar-type-btn sbt-archived"
+          [class.sbt-active]="statutFilter === 'ARCHIVED'"
+          (click)="onStatutChange('ARCHIVED')">
+          🗄️ ARCHIVED
+        </button>
       </div>
-
-      <!-- ── Images panel ── -->
-      <div *ngIf="activePanel === 'images'" class="panel-body">
-        <h4 class="panel-section-title">🖼️ Images</h4>
-        <div *ngIf="!selectedPublication.images || selectedPublication.images.length === 0" class="panel-empty">
-          No images attached to this publication.
-        </div>
-        <div class="images-grid" *ngIf="selectedPublication.images?.length">
-          <div *ngFor="let img of selectedPublication.images" class="img-thumb-wrap">
-            <img [src]="getImageUrl(img)" [alt]="selectedPublication.titre" class="img-thumb"
-              (error)="$any($event.target).style.display='none'" />
-          </div>
-        </div>
+      <div class="sbar-info" *ngIf="searchQuery || typeFilter !== 'ALL' || statutFilter !== 'ALL'">
+        <span class="sbar-count">{{ filteredPublications.length }} result{{ filteredPublications.length !== 1 ? 's' : '' }}</span>
+        <button class="sbar-reset" (click)="clearFilters()">↺ Reset</button>
       </div>
+    </div>
 
-      <!-- ── Reactions panel ── -->
-      <div *ngIf="activePanel === 'reactions'" class="panel-body">
-        <h4 class="panel-section-title">❤️ Reactions</h4>
+    <!-- MAIN LAYOUT -->
+    <div class="fo-body" [class.panel-open]="selectedPublication !== null">
 
-        <div *ngIf="loadingReactions" class="sd-loading">
-          <div class="spinner sm"></div> Loading…
+      <!-- Cards list -->
+      <div class="fo-main">
+
+        <div *ngIf="loading" class="state-box">
+          <div class="spinner"></div><p>Loading publications…</p>
+        </div>
+        <div *ngIf="error && !loading" class="state-box">
+          <p class="err-txt">⚠️ {{ error }}</p>
+          <button class="btn-retry" (click)="loadData()">↻ Retry</button>
+        </div>
+        <div *ngIf="!loading && !error && filteredPublications.length === 0" class="state-box">
+          <span style="font-size:2.5rem">🔍</span>
+          <p>No publications match your filters.</p>
+          <button class="btn-clear-f" (click)="clearFilters()">Clear filters</button>
         </div>
 
-        <div *ngIf="!loadingReactions && reactionSummary" class="rct-dashboard">
-          <div class="rct-total-row">
-            <span class="rct-total-num">{{ totalReactions }}</span>
-            <span class="rct-total-lbl">total reactions</span>
-          </div>
-          <div class="rct-grid">
-            <div class="rct-tile rct-like-tile">
-              <span class="rct-emoji">👍</span>
-              <span class="rct-cnt">{{ reactionSummary.LIKE }}</span>
-              <span class="rct-lbl">Likes</span>
-            </div>
-            <div class="rct-tile rct-heart-tile">
-              <span class="rct-emoji">❤️</span>
-              <span class="rct-cnt">{{ reactionSummary.HEART }}</span>
-              <span class="rct-lbl">Hearts</span>
-            </div>
-            <div class="rct-tile rct-dis-tile">
-              <span class="rct-emoji">👎</span>
-              <span class="rct-cnt">{{ reactionSummary.DISLIKE }}</span>
-              <span class="rct-lbl">Dislikes</span>
-            </div>
-          </div>
-          <div class="rct-bar" *ngIf="totalReactions > 0">
-            <div class="rct-seg rct-like-seg"  [style.width.%]="(reactionSummary.LIKE    / totalReactions) * 100"></div>
-            <div class="rct-seg rct-heart-seg" [style.width.%]="(reactionSummary.HEART   / totalReactions) * 100"></div>
-            <div class="rct-seg rct-dis-seg"   [style.width.%]="(reactionSummary.DISLIKE / totalReactions) * 100"></div>
-          </div>
-          <p *ngIf="totalReactions === 0" class="panel-empty">No reactions yet.</p>
+        <div *ngIf="!loading && !error && filteredPublications.length > 0" class="pub-grid">
+          <div *ngFor="let pub of pagedPublications"
+            class="pub-card"
+            [class.pub-selected]="selectedPublication?.id === pub.id"
+            [class.pub-archived]="pub.statut === 'ARCHIVED'"
+            [class.pub-pending]="pub.statut === 'PENDING'">
 
-          <div *ngIf="reactionSummary.reactors?.length" class="reactors-section">
-            <p class="reactors-title">Who reacted:</p>
-            <div class="reactors-chips">
-              <span *ngFor="let r of reactionSummary.reactors" class="reactor-chip"
-                [class.chip-like]="r.type==='LIKE'"
-                [class.chip-heart]="r.type==='HEART'"
-                [class.chip-dis]="r.type==='DISLIKE'">
-                {{ r.type==='LIKE' ? '👍' : r.type==='HEART' ? '❤️' : '👎' }} {{ r.userName }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+            <div class="pub-ribbon" [style.background]="getTypeColor(pub.type)"></div>
 
-      <!-- ── Comments panel ── -->
-      <div *ngIf="activePanel === 'comments'" class="panel-body">
-        <h4 class="panel-section-title">
-          💬 Comments
-          <span class="panel-count">{{ totalCommentsDisplayed }}</span>
-        </h4>
+            <div class="pub-card-inner">
 
-        <div *ngIf="loadingComments" class="sd-loading">
-          <div class="spinner sm"></div> Loading…
-        </div>
-
-        <p *ngIf="!loadingComments && selectedCommentaires.length === 0" class="panel-empty">No comments yet.</p>
-
-        <div *ngIf="!loadingComments && selectedCommentaires.length > 0" class="cmt-list">
-
-          <!-- ── Commentaire root ── -->
-          <div *ngFor="let c of selectedCommentaires" class="cmt-card">
-
-            <!-- Header du commentaire -->
-            <div class="cmt-head">
-              <span class="cmt-avatar">{{ getInitials(c.user) }}</span>
-              <div style="flex:1">
-                <p class="cmt-author">{{ getUserLabel(c.user) }}</p>
-                <p class="cmt-date">{{ formatDate(c.createAt) }}</p>
-              </div>
-            </div>
-
-            <!-- Texte du commentaire -->
-            <p class="cmt-text">{{ c.contenue }}</p>
-
-            <!-- Bouton toggle replies -->
-            <button
-              *ngIf="c.replies && c.replies.length > 0"
-              class="cmt-replies-toggle"
-              (click)="toggleReplies(c.id)">
-              {{ isRepliesExpanded(c.id) ? '▲ Hide' : '▶ Show' }}
-              {{ c.replies.length }} repl{{ c.replies.length > 1 ? 'ies' : 'y' }}
-            </button>
-
-            <p *ngIf="!c.replies || c.replies.length === 0" class="cmt-no-reply">No replies</p>
-
-            <!-- ── Replies (affichées si toggle ouvert) ── -->
-            <div *ngIf="c.replies && c.replies.length > 0 && isRepliesExpanded(c.id)" class="replies-list">
-              <div *ngFor="let r of c.replies" class="reply-card">
-                <div class="cmt-head">
-                  <span class="reply-avatar">{{ getInitials(r.user) }}</span>
-                  <div style="flex:1">
-                    <p class="cmt-author">↳ {{ getUserLabel(r.user) }}</p>
-                    <p class="cmt-date">{{ formatDate(r.createAt) }}</p>
+              <!-- Header -->
+              <div class="pub-card-header">
+                <div class="pub-author-block">
+                  <div class="pub-avatar" [style.background]="getTypeColor(pub.type)">
+                    {{ getInitials(pub.user) }}
+                  </div>
+                  <div class="pub-author-info">
+                    <span class="pub-author-name">{{ getUserLabel(pub.user) }}</span>
+                    <span class="pub-date">{{ formatDate(pub.createAt) }}</span>
                   </div>
                 </div>
-                <p class="cmt-text">{{ r.contenue }}</p>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div class="pub-type-chip"
+                    [style.background]="getTypeBg(pub.type)"
+                    [style.color]="getTypeColor(pub.type)">
+                    {{ getTypeIcon(pub.type) }} {{ pub.type }}
+                  </div>
+                  <!-- ✅ Badge statut -->
+                  <div class="pub-statut-chip" [class.chip-archived]="pub.statut==='ARCHIVED'" [class.chip-pending]="pub.statut==='PENDING'" *ngIf="pub.statut !== 'ACTIVE'">
+                    {{ pub.statut === 'ARCHIVED' ? '🚫 Archived' : '⏳ Pending' }}
+                  </div>
+                  <!-- ✅ Compteur signalements -->
+                  <div class="pub-signals" *ngIf="pub.signalements && pub.signalements.length > 0" title="Number of reports">
+                    🚩 {{ pub.signalements.length }}
+                  </div>
+                </div>
+              </div>
+
+              <h3 class="pub-titre">{{ pub.titre }}</h3>
+
+              <div class="pub-content-wrap">
+                <p class="pub-contenue" [class.clamped]="!isExpanded(pub.id)">{{ pub.contenue }}</p>
+                <button *ngIf="pub.contenue && pub.contenue.length > 220"
+                  class="btn-see-more" (click)="toggleExpand(pub.id, $event)">
+                  {{ isExpanded(pub.id) ? '▲ See less' : '▼ See more' }}
+                </button>
+              </div>
+
+              <!-- Actions -->
+              <div class="pub-actions">
+                <button class="pub-action-btn btn-pdf"
+                  [class.btn-active]="selectedPublication?.id === pub.id && activePanel === 'pdfs'"
+                  (click)="openPanel(pub, 'pdfs', $event)" [title]="(pub.pdfs?.length || 0) + ' PDF(s)'">
+                  📄 PDFs <span class="pub-action-badge" *ngIf="pub.pdfs?.length">{{ pub.pdfs.length }}</span>
+                </button>
+                <button class="pub-action-btn btn-img"
+                  [class.btn-active]="selectedPublication?.id === pub.id && activePanel === 'images'"
+                  (click)="openPanel(pub, 'images', $event)">
+                  🖼️ Images <span class="pub-action-badge" *ngIf="pub.images?.length">{{ pub.images.length }}</span>
+                </button>
+                <button class="pub-action-btn btn-react"
+                  [class.btn-active]="selectedPublication?.id === pub.id && activePanel === 'reactions'"
+                  (click)="openPanel(pub, 'reactions', $event)">❤️ Reactions</button>
+                <button class="pub-action-btn btn-cmt"
+                  [class.btn-active]="selectedPublication?.id === pub.id && activePanel === 'comments'"
+                  (click)="openPanel(pub, 'comments', $event)">
+                  💬 Comments <span class="pub-action-badge" *ngIf="pub.commentCount">{{ pub.commentCount }}</span>
+                </button>
+                <button class="pub-action-btn btn-del" (click)="askDelete(pub, $event)">🗑️ Delete</button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" *ngIf="totalPages > 1">
+          <button class="pg-btn" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">‹</button>
+          <button *ngFor="let p of pageNumbers" class="pg-btn pg-num"
+            [class.pg-active]="p === currentPage" (click)="goToPage(p)">{{ p }}</button>
+          <button class="pg-btn" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
+          <span class="pg-info">Page {{ currentPage }}/{{ totalPages }} · {{ filteredPublications.length }} results</span>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL (inchangé) -->
+      <div class="fo-panel" *ngIf="selectedPublication && activePanel">
+        <div class="panel-head">
+          <div class="panel-head-left">
+            <span class="panel-pub-title">{{ selectedPublication.titre | slice:0:40 }}{{ selectedPublication.titre?.length > 40 ? '…' : '' }}</span>
+            <span class="panel-type-chip" [style.background]="getTypeBg(selectedPublication.type)" [style.color]="getTypeColor(selectedPublication.type)">
+              {{ getTypeIcon(selectedPublication.type) }} {{ selectedPublication.type }}
+            </span>
+          </div>
+          <button class="panel-close" (click)="closePanel()">✕</button>
+        </div>
+
+        <!-- PDFs -->
+        <div *ngIf="activePanel === 'pdfs'" class="panel-body">
+          <h4 class="panel-section-title">📄 PDF Files</h4>
+          <div *ngIf="!selectedPublication.pdfs || selectedPublication.pdfs.length === 0" class="panel-empty">No PDFs attached.</div>
+          <div class="pdf-list" *ngIf="selectedPublication.pdfs?.length">
+            <a *ngFor="let pdf of selectedPublication.pdfs" [href]="getPdfUrl(pdf)" target="_blank" rel="noopener" class="pdf-item">
+              <span class="pdf-item-icon">📄</span>
+              <span class="pdf-item-name">{{ getPdfName(pdf) }}</span>
+              <span class="pdf-item-open">↗</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Images -->
+        <div *ngIf="activePanel === 'images'" class="panel-body">
+          <h4 class="panel-section-title">🖼️ Images</h4>
+          <div *ngIf="!selectedPublication.images || selectedPublication.images.length === 0" class="panel-empty">No images attached.</div>
+          <div class="images-grid" *ngIf="selectedPublication.images?.length">
+            <div *ngFor="let img of selectedPublication.images" class="img-thumb-wrap">
+              <img [src]="getImageUrl(img)" [alt]="selectedPublication.titre" class="img-thumb" (error)="$any($event.target).style.display='none'" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Reactions -->
+        <div *ngIf="activePanel === 'reactions'" class="panel-body">
+          <h4 class="panel-section-title">❤️ Reactions</h4>
+          <div *ngIf="loadingReactions" class="sd-loading"><div class="spinner sm"></div> Loading…</div>
+          <div *ngIf="!loadingReactions && reactionSummary" class="rct-dashboard">
+            <div class="rct-total-row">
+              <span class="rct-total-num">{{ totalReactions }}</span>
+              <span class="rct-total-lbl">total reactions</span>
+            </div>
+            <div class="rct-grid">
+              <div class="rct-tile rct-like-tile"><span class="rct-emoji">👍</span><span class="rct-cnt">{{ reactionSummary.LIKE }}</span><span class="rct-lbl">Likes</span></div>
+              <div class="rct-tile rct-heart-tile"><span class="rct-emoji">❤️</span><span class="rct-cnt">{{ reactionSummary.HEART }}</span><span class="rct-lbl">Hearts</span></div>
+              <div class="rct-tile rct-dis-tile"><span class="rct-emoji">👎</span><span class="rct-cnt">{{ reactionSummary.DISLIKE }}</span><span class="rct-lbl">Dislikes</span></div>
+            </div>
+            <div class="rct-bar" *ngIf="totalReactions > 0">
+              <div class="rct-seg rct-like-seg" [style.width.%]="(reactionSummary.LIKE / totalReactions) * 100"></div>
+              <div class="rct-seg rct-heart-seg" [style.width.%]="(reactionSummary.HEART / totalReactions) * 100"></div>
+              <div class="rct-seg rct-dis-seg" [style.width.%]="(reactionSummary.DISLIKE / totalReactions) * 100"></div>
+            </div>
+            <p *ngIf="totalReactions === 0" class="panel-empty">No reactions yet.</p>
+            <div *ngIf="reactionSummary.reactors?.length" class="reactors-section">
+              <p class="reactors-title">Who reacted:</p>
+              <div class="reactors-chips">
+                <span *ngFor="let r of reactionSummary.reactors" class="reactor-chip"
+                  [class.chip-like]="r.type==='LIKE'" [class.chip-heart]="r.type==='HEART'" [class.chip-dis]="r.type==='DISLIKE'">
+                  {{ r.type==='LIKE' ? '👍' : r.type==='HEART' ? '❤️' : '👎' }} {{ r.userName }}
+                </span>
               </div>
             </div>
+          </div>
+        </div>
 
+        <!-- Comments -->
+        <div *ngIf="activePanel === 'comments'" class="panel-body">
+          <h4 class="panel-section-title">💬 Comments <span class="panel-count">{{ totalCommentsDisplayed }}</span></h4>
+          <div *ngIf="loadingComments" class="sd-loading"><div class="spinner sm"></div> Loading…</div>
+          <p *ngIf="!loadingComments && selectedCommentaires.length === 0" class="panel-empty">No comments yet.</p>
+          <div *ngIf="!loadingComments && selectedCommentaires.length > 0" class="cmt-list">
+            <div *ngFor="let c of selectedCommentaires" class="cmt-card">
+              <div class="cmt-head">
+                <span class="cmt-avatar">{{ getInitials(c.user) }}</span>
+                <div style="flex:1">
+                  <p class="cmt-author">{{ getUserLabel(c.user) }}</p>
+                  <p class="cmt-date">{{ formatDate(c.createAt) }}</p>
+                </div>
+              </div>
+              <p class="cmt-text">{{ c.contenue }}</p>
+              <button *ngIf="c.replies && c.replies.length > 0" class="cmt-replies-toggle" (click)="toggleReplies(c.id)">
+                {{ isRepliesExpanded(c.id) ? '▲ Hide' : '▶ Show' }} {{ c.replies.length }} repl{{ c.replies.length > 1 ? 'ies' : 'y' }}
+              </button>
+              <p *ngIf="!c.replies || c.replies.length === 0" class="cmt-no-reply">No replies</p>
+              <div *ngIf="c.replies && c.replies.length > 0 && isRepliesExpanded(c.id)" class="replies-list">
+                <div *ngFor="let r of c.replies" class="reply-card">
+                  <div class="cmt-head">
+                    <span class="reply-avatar">{{ getInitials(r.user) }}</span>
+                    <div style="flex:1">
+                      <p class="cmt-author">↳ {{ getUserLabel(r.user) }}</p>
+                      <p class="cmt-date">{{ formatDate(r.createAt) }}</p>
+                    </div>
+                  </div>
+                  <p class="cmt-text">{{ r.contenue }}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
     </div>
+  </ng-container>
 
-  </div>
+  <!-- ══════════════════════════════════════
+       TAB : PENDING REACTIVATION
+       ══════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'pending'">
+    <div class="pending-section">
+
+      <div *ngIf="loadingPending" class="state-box">
+        <div class="spinner"></div><p>Loading pending requests…</p>
+      </div>
+
+      <div *ngIf="!loadingPending && pendingPublications.length === 0" class="state-box">
+        <span style="font-size:2.5rem">✅</span>
+        <p>No pending reactivation requests.</p>
+      </div>
+
+      <div *ngIf="!loadingPending && pendingPublications.length > 0" class="pending-grid">
+        <div *ngFor="let pub of pendingPublications" class="pending-card">
+
+          <div class="pending-card-header">
+            <div class="pub-author-block">
+              <div class="pub-avatar" style="background:#f59e0b">{{ getInitials(pub.user) }}</div>
+              <div class="pub-author-info">
+                <span class="pub-author-name">{{ getUserLabel(pub.user) }}</span>
+                <span class="pub-date">Archived on {{ formatDate(pub.createAt) }}</span>
+              </div>
+            </div>
+            <div class="pub-signals" *ngIf="pub.signalements && pub.signalements.length > 0">
+              🚩 {{ pub.signalements.length }} report(s)
+            </div>
+          </div>
+
+          <h3 class="pending-titre">{{ pub.titre }}</h3>
+          <p class="pending-contenue">{{ pub.contenue | slice:0:200 }}{{ pub.contenue.length > 200 ? '…' : '' }}</p>
+
+          <div class="pending-actions">
+            <button class="btn-accepter" (click)="accepterReactivation(pub)">
+              ✅ Accept Reactivation
+            </button>
+            <button class="btn-refuser" (click)="refuserReactivation(pub)">
+              ❌ Refuse
+            </button>
+            <button class="btn-del-pending" (click)="askDelete(pub, $event)">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
 </div>

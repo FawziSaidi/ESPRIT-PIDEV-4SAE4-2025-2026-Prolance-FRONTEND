@@ -1,53 +1,60 @@
 <div class="forum-container">
-  <div class="forum-content" >
+  <div class="forum-content">
 
     <!-- Galaxy Filter Card -->
     <div class="galaxy-card">
 
-    <!-- Tabs + Add Post -->
-    <div class="tabs-bar">
-      <button
-        *ngFor="let type of typeOptions"
-        [class.active]="selectedType === type.value"
-        (click)="onTypeChange(type.value)"
-        class="tab-button">
-        {{ type.label }}
-      </button>
-      <button
-        [class.active]="selectedType === 'MYPOSTS'"
-        (click)="onTypeChange('MYPOSTS')"
-        class="tab-button">
-        My Posts
-      </button>
-      <button class="btn-add" (click)="openAddModal()">
-        <span class="btn-icon">+</span> Add Post
-      </button>
-    </div>
-
-    <!-- Search bar -->
-    <div class="search-bar">
-      <div class="search-input-wrapper">
-        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onSearchChange()"
-          class="search-input"
-          placeholder="Search by author name..."
-          autocomplete="off" />
-        <button *ngIf="searchQuery" class="btn-clear" (click)="clearSearch()">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+      <!-- Tabs + Add Post -->
+      <div class="tabs-bar">
+        <button
+          *ngFor="let type of typeOptions"
+          [class.active]="selectedType === type.value"
+          (click)="onTypeChange(type.value)"
+          class="tab-button">
+          {{ type.label }}
+        </button>
+        <button
+          [class.active]="selectedType === 'MYPOSTS'"
+          (click)="onTypeChange('MYPOSTS')"
+          class="tab-button">
+          My Posts
+        </button>
+        <!-- ✅ NOUVEAU : Onglet Archives -->
+        <button
+          [class.active]="selectedType === 'ARCHIVED'"
+          (click)="onTypeChange('ARCHIVED')"
+          class="tab-button tab-archive">
+          🗄️ Archives
+        </button>
+        <button class="btn-add" (click)="openAddModal()">
+          <span class="btn-icon">+</span> Add Post
         </button>
       </div>
-      <span class="search-results" *ngIf="searchQuery.trim()">
-        <strong>{{ filteredPublications.length }}</strong> result{{ filteredPublications.length !== 1 ? 's' : '' }}
-        for <em>« {{ searchQuery.trim() }} »</em>
-      </span>
-    </div>
+
+      <!-- Search bar -->
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchChange()"
+            class="search-input"
+            placeholder="Search by author name..."
+            autocomplete="off" />
+          <button *ngIf="searchQuery" class="btn-clear" (click)="clearSearch()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <span class="search-results" *ngIf="searchQuery.trim()">
+          <strong>{{ filteredPublications.length }}</strong> result{{ filteredPublications.length !== 1 ? 's' : '' }}
+          for <em>« {{ searchQuery.trim() }} »</em>
+        </span>
+      </div>
 
     </div><!-- end galaxy-card -->
 
@@ -60,8 +67,69 @@
       <p>Loading posts...</p>
     </div>
 
-    <!-- Cards -->
-    <div *ngIf="!loading && filteredPublications.length > 0" class="publications-grid">
+    <!-- ══════ VUE ARCHIVES ══════ -->
+    <div *ngIf="selectedType === 'ARCHIVED' && !loading" class="archives-section">
+      <div class="archives-header">
+        <h2>🗄️ My Archived Posts</h2>
+        <p class="archives-subtitle">Posts archived after 3 reports. You can request reactivation.</p>
+      </div>
+
+      <div *ngIf="archivedPublications.length === 0" class="empty-state">
+        <div class="empty-icon">🗄️</div>
+        <h3>No archived posts</h3>
+        <p>All your posts are currently active.</p>
+      </div>
+
+      <div *ngIf="archivedPublications.length > 0" class="publications-grid">
+        <div *ngFor="let pub of archivedPublications" class="publication-card archived-card" [attr.data-statut]="pub.statut">
+
+          <div class="card-main">
+            <!-- Bandeau statut -->
+            <div class="archive-status-banner" [class.pending]="pub.statut === 'PENDING'">
+              <span *ngIf="pub.statut === 'ARCHIVED'">🚫 Archived — {{ (pub.signalements?.length ?? 0) }} report(s)</span>
+              <span *ngIf="pub.statut === 'PENDING'">⏳ Pending admin review</span>
+            </div>
+
+            <div class="card-header">
+              <div class="user-info">
+                <div class="user-avatar" data-type="ARCHIVED">
+                  {{ pub.user?.name?.charAt(0) }}{{ pub.user?.lastName?.charAt(0) }}
+                </div>
+                <div class="user-details">
+                  <h3 class="user-name">{{ pub.user?.name }} {{ pub.user?.lastName }}</h3>
+                  <p class="publication-time">{{ getTimeAgo(pub.createAt!) }}</p>
+                </div>
+              </div>
+              <div class="type-badge" [attr.data-type]="pub.type">
+                {{ getTypeLabel(pub.type) }}
+              </div>
+            </div>
+
+            <div class="card-content">
+              <h2 class="publication-titre" [style.color]="pub.titleColor || '#2d1f4e'">{{ pub.titre }}</h2>
+              <p class="publication-contenue clamped" [style.color]="pub.contentColor || '#555'">{{ pub.contenue }}</p>
+            </div>
+
+            <div class="card-footer">
+              <!-- Bouton Réactiver uniquement si ARCHIVED (pas déjà en PENDING) -->
+              <button
+                *ngIf="pub.statut === 'ARCHIVED'"
+                class="btn-reactiver"
+                (click)="demanderReactivation(pub)">
+                🔄 Request Reactivation
+              </button>
+              <span *ngIf="pub.statut === 'PENDING'" class="pending-label">
+                ⏳ Waiting for admin decision…
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ══════ FIN VUE ARCHIVES ══════ -->
+
+    <!-- Cards normales (tous les autres onglets) -->
+    <div *ngIf="selectedType !== 'ARCHIVED' && !loading && filteredPublications.length > 0" class="publications-grid">
       <div
         *ngFor="let publication of paginatedPublications"
         class="publication-card"
@@ -82,10 +150,26 @@
                 <p class="publication-time">{{ getTimeAgo(publication.createAt!) }}</p>
               </div>
             </div>
+
             <div class="header-right">
               <div class="type-badge" [attr.data-type]="publication.type">
                 {{ getTypeLabel(publication.type) }}
               </div>
+
+              <!-- ✅ NOUVEAU : Bouton Signaler (en haut à droite, visible si pas son propre post) -->
+              <button
+                *ngIf="!canModifyPublication(publication)"
+                class="btn-signaler"
+                [class.already-signaled]="hasUserSignaled(publication)"
+                [disabled]="hasUserSignaled(publication)"
+                (click)="signalerPublication(publication)"
+                [title]="hasUserSignaled(publication) ? 'Already reported' : 'Report this post'">
+                <span>🚩</span>
+                <span class="signaler-count" *ngIf="(publication.signalements?.length ?? 0) > 0">
+                  {{ publication.signalements!.length }}
+                </span>
+              </button>
+
               <div class="actions-right" *ngIf="canModifyPublication(publication)">
                 <button class="btn-menu" (click)="toggleActionMenu(publication.id!)">••</button>
                 <div class="actions-dropdown" *ngIf="activeMenuId === publication.id">
@@ -129,15 +213,9 @@
             <!-- Images -->
             <div *ngIf="publication.images && publication.images.length > 0" class="pub-images-row"
                  [class.center-single]="publication.images.length === 1">
-
-              <!-- 1 image : centrée -->
-              <div *ngIf="publication.images.length === 1"
-                   class="pub-img-wrapper"
-                   (click)="openLightbox(publication.images, 0)">
+              <div *ngIf="publication.images.length === 1" class="pub-img-wrapper" (click)="openLightbox(publication.images, 0)">
                 <img [src]="getImageUrl(publication.images[0])" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
               </div>
-
-              <!-- 2 images : côte à côte -->
               <ng-container *ngIf="publication.images.length === 2">
                 <div class="pub-img-wrapper" (click)="openLightbox(publication.images, 0)">
                   <img [src]="getImageUrl(publication.images[0])" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
@@ -146,8 +224,6 @@
                   <img [src]="getImageUrl(publication.images[1])" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
                 </div>
               </ng-container>
-
-              <!-- 3+ images : 2 images + overlay +N sur la 2ème -->
               <ng-container *ngIf="publication.images.length > 2">
                 <div class="pub-img-wrapper" (click)="openLightbox(publication.images, 0)">
                   <img [src]="getImageUrl(publication.images[0])" [alt]="publication.titre" (error)="onImageError($event)" class="pub-img">
@@ -157,17 +233,16 @@
                   <div class="pub-img-overlay">+{{ publication.images.length - 2 }}</div>
                 </div>
               </ng-container>
-
             </div>
           </div>
 
-          <!-- Footer : React gauche | Comments droite | pas de ligne -->
+          <!-- Footer -->
           <div class="card-footer">
             <div class="footer-actions">
               <app-reaction-button [publicationId]="publication.id!"></app-reaction-button>
               <button class="btn-action btn-comments" (click)="openCommentModal(publication)">
                 <span class="icon">💬</span> Comments
-                <span class="count" *ngIf="publication.commentaires?.length">({{ publication.commentaires.length }})</span>
+                <span class="count" *ngIf="publication.commentaires?.length">({{ publication.commentaires!.length }})</span>
               </button>
             </div>
           </div>
@@ -177,25 +252,15 @@
     </div>
 
     <!-- Pagination -->
-    <div *ngIf="!loading && totalPages > 1" class="pagination-bar">
-      <button class="page-btn page-nav" (click)="prevPage()" [disabled]="currentPage === 1">
-        &#8592;
-      </button>
-      <button
-        *ngFor="let page of pageNumbers"
-        class="page-btn"
-        [class.active]="page === currentPage"
-        (click)="goToPage(page)">
-        {{ page }}
-      </button>
-      <button class="page-btn page-nav" (click)="nextPage()" [disabled]="currentPage === totalPages">
-        &#8594;
-      </button>
+    <div *ngIf="selectedType !== 'ARCHIVED' && !loading && totalPages > 1" class="pagination-bar">
+      <button class="page-btn page-nav" (click)="prevPage()" [disabled]="currentPage === 1">&#8592;</button>
+      <button *ngFor="let page of pageNumbers" class="page-btn" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>
+      <button class="page-btn page-nav" (click)="nextPage()" [disabled]="currentPage === totalPages">&#8594;</button>
       <span class="page-info">Page {{ currentPage }} / {{ totalPages }}</span>
     </div>
 
-    <!-- Empty state -->
-    <div *ngIf="!loading && filteredPublications.length === 0" class="empty-state">
+    <!-- Empty state (hors archives) -->
+    <div *ngIf="selectedType !== 'ARCHIVED' && !loading && filteredPublications.length === 0" class="empty-state">
       <div class="empty-icon">{{ searchQuery.trim() ? '🔍' : '💬' }}</div>
       <h3>{{ searchQuery.trim() ? 'No results found' : 'No posts yet' }}</h3>
       <p *ngIf="searchQuery.trim()">No author matches <strong>« {{ searchQuery.trim() }} »</strong></p>
@@ -212,44 +277,28 @@
 <app-publication-form *ngIf="showEditModal && selectedPublication" [mode]="'edit'" [publication]="selectedPublication" (close)="closeEditModal()" (saved)="onPublicationUpdated()"></app-publication-form>
 <app-commentaire-modal *ngIf="showCommentModal && selectedPublication" [publication]="selectedPublication" [currentUserId]="currentUserId" (close)="closeCommentModal()" (commentCountChanged)="onCommentCountChanged($event)"></app-commentaire-modal>
 
-<!-- ═══════════════════════ LIGHTBOX ═══════════════════════ -->
+<!-- Lightbox -->
 <div class="lightbox-overlay" *ngIf="showLightbox" (click)="closeLightbox()">
   <div class="lightbox-box" (click)="$event.stopPropagation()">
-    <!-- Close -->
     <button class="lightbox-close" (click)="closeLightbox()">✕</button>
-
-    <!-- Image principale -->
     <div class="lightbox-img-wrapper">
       <img [src]="getImageUrl(lightboxImages[lightboxIndex])" alt="Image" class="lightbox-img">
     </div>
-
-    <!-- Flèche gauche : cachée sur la première image -->
     <button class="lightbox-arrow lightbox-prev" (click)="lightboxPrev()" *ngIf="lightboxImages.length > 1 && lightboxIndex > 0">&#8592;</button>
-    <!-- Flèche droite : cachée sur la dernière image -->
     <button class="lightbox-arrow lightbox-next" (click)="lightboxNext()" *ngIf="lightboxImages.length > 1 && lightboxIndex < lightboxImages.length - 1">&#8594;</button>
-
-    <!-- Indicateur -->
-    <div class="lightbox-counter" *ngIf="lightboxImages.length > 1">
-      {{ lightboxIndex + 1 }} / {{ lightboxImages.length }}
-    </div>
-
-    <!-- Miniatures -->
+    <div class="lightbox-counter" *ngIf="lightboxImages.length > 1">{{ lightboxIndex + 1 }} / {{ lightboxImages.length }}</div>
     <div class="lightbox-thumbs" *ngIf="lightboxImages.length > 1">
       <img *ngFor="let img of lightboxImages; let i = index"
-           [src]="getImageUrl(img)"
-           [class.active]="i === lightboxIndex"
-           (click)="lightboxIndex = i"
-           class="lightbox-thumb">
+           [src]="getImageUrl(img)" [class.active]="i === lightboxIndex" (click)="lightboxIndex = i" class="lightbox-thumb">
     </div>
   </div>
 </div>
+
 <div class="delete-modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
   <div class="delete-modal-box" (click)="$event.stopPropagation()">
     <div class="delete-modal-icon">🗑️</div>
     <h3 class="delete-modal-title">Delete this post?</h3>
-    <p class="delete-modal-msg">
-      This action is <strong>irreversible</strong>. The post and all its reactions and comments will be permanently deleted.
-    </p>
+    <p class="delete-modal-msg">This action is <strong>irreversible</strong>. The post and all its reactions and comments will be permanently deleted.</p>
     <div class="delete-modal-actions">
       <button class="btn-cancel-delete" (click)="cancelDelete()">Cancel</button>
       <button class="btn-confirm-delete" (click)="confirmDelete()">Yes, delete</button>
@@ -257,5 +306,9 @@
   </div>
 </div>
 
-<!-- ✅ Chatbot flottant -->
+<!-- Toast notification -->
+<div class="toast-notif" *ngIf="toastMessage" [class.toast-error]="toastIsError">
+  {{ toastMessage }}
+</div>
+
 <app-chatbot></app-chatbot>

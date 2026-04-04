@@ -10,20 +10,32 @@ export type DetailPanel = 'pdfs' | 'images' | 'reactions' | 'comments' | null;
 })
 export class GestionForumComponent implements OnInit {
 
+  // ── Tabs admin ────────────────────────────────────────────────
+  activeTab: 'all' | 'pending' = 'all';
+
+  // ── Toutes les publications ───────────────────────────────────
   publications: Publication[] = [];
   filteredPublications: Publication[] = [];
+
+  // ── Publications en attente de réactivation ───────────────────
+  pendingPublications: Publication[] = [];
+  loadingPending = false;
+
+  // ── Panel détail ──────────────────────────────────────────────
   selectedPublication: Publication | null = null;
-  selectedCommentaires: Commentaire[] = [];   // le backend retourne déjà les replies dans c.replies
+  selectedCommentaires: Commentaire[] = [];
   loadingComments = false;
   reactionSummary: ReactionSummary | null = null;
   loadingReactions = false;
-
   activePanel: DetailPanel = null;
-  expandedCards = new Set<number>();
-  expandedReplies = new Set<number>(); // IDs des commentaires dont on affiche les replies
 
+  expandedCards = new Set<number>();
+  expandedReplies = new Set<number>();
+
+  // ── Filtres ───────────────────────────────────────────────────
   searchQuery = '';
   typeFilter = 'ALL';
+  statutFilter = 'ALL';
   typeOptions = ['ALL', 'QUESTION', 'ARTICLE', 'REVIEW'];
 
   loading = true;
@@ -32,15 +44,19 @@ export class GestionForumComponent implements OnInit {
   readonly PAGE_SIZE = 3;
   currentPage = 1;
 
+  // ── Delete modal ──────────────────────────────────────────────
   showDeleteModal = false;
   pubToDelete: Publication | null = null;
 
+  // ── Toast ─────────────────────────────────────────────────────
   toast = { visible: false, success: true, message: '' };
   private toastTimer: any;
 
   constructor(private forumService: ForumService) {}
 
   ngOnInit(): void { this.loadData(); }
+
+  // ── Chargement ────────────────────────────────────────────────
 
   loadData(): void {
     this.loading = true;
@@ -53,6 +69,17 @@ export class GestionForumComponent implements OnInit {
         this.loadAllCommentCounts();
       },
       error: () => { this.error = 'Error loading publications.'; this.loading = false; }
+    });
+  }
+
+  loadPendingPublications(): void {
+    this.loadingPending = true;
+    this.forumService.getPendingPublications().subscribe({
+      next: (pubs) => {
+        this.pendingPublications = pubs;
+        this.loadingPending = false;
+      },
+      error: () => { this.pendingPublications = []; this.loadingPending = false; }
     });
   }
 
@@ -69,8 +96,28 @@ export class GestionForumComponent implements OnInit {
     });
   }
 
+  // ── Navigation tabs ───────────────────────────────────────────
+
+  switchTab(tab: 'all' | 'pending'): void {
+    this.activeTab = tab;
+    if (tab === 'pending') {
+      this.loadPendingPublications();
+    }
+  }
+
+  // ── Filtres ───────────────────────────────────────────────────
+
   applyFilters(): void {
     let result = this.publications;
+
+    if (this.statutFilter === 'ARCHIVED') {
+      // Card Archived : afficher ARCHIVED + PENDING (demandes non encore traitées)
+      result = result.filter(p => p.statut === 'ARCHIVED' || p.statut === 'PENDING');
+    } else {
+      // All, QUESTION, ARTICLE, REVIEW : uniquement les posts ACTIVE
+      result = result.filter(p => p.statut === 'ACTIVE');
+    }
+
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
       result = result.filter(p => this.getUserLabel(p.user).toLowerCase().includes(q));
@@ -78,13 +125,27 @@ export class GestionForumComponent implements OnInit {
     if (this.typeFilter !== 'ALL') {
       result = result.filter(p => p.type === this.typeFilter);
     }
+
     this.filteredPublications = result;
     this.currentPage = 1;
   }
 
   onSearchChange(q: string): void { this.searchQuery = q; this.applyFilters(); }
-  onTypeChange(type: string): void { this.typeFilter = type; this.applyFilters(); }
-  clearFilters(): void { this.searchQuery = ''; this.typeFilter = 'ALL'; this.applyFilters(); }
+  onTypeChange(type: string): void {
+    this.typeFilter = type;
+    // Quand on clique "All Publications", on réinitialise aussi le filtre statut
+    if (type === 'ALL') {
+      this.statutFilter = 'ALL';
+    }
+    this.applyFilters();
+  }
+  onStatutChange(statut: string): void {
+    this.statutFilter = this.statutFilter === statut ? 'ALL' : statut;
+    this.applyFilters();
+  }
+  clearFilters(): void { this.searchQuery = ''; this.typeFilter = 'ALL'; this.statutFilter = 'ALL'; this.applyFilters(); }
+
+  // ── Pagination ────────────────────────────────────────────────
 
   get totalPages(): number { return Math.ceil(this.filteredPublications.length / this.PAGE_SIZE); }
   get pagedPublications(): Publication[] {
@@ -94,19 +155,19 @@ export class GestionForumComponent implements OnInit {
   get pageNumbers(): number[] { return Array.from({ length: this.totalPages }, (_, i) => i + 1); }
   goToPage(p: number): void { if (p >= 1 && p <= this.totalPages) this.currentPage = p; }
 
+  // ── Expand cards / replies ────────────────────────────────────
+
   isExpanded(id: number): boolean { return this.expandedCards.has(id); }
   toggleExpand(id: number, event: Event): void {
     event.stopPropagation();
     this.expandedCards.has(id) ? this.expandedCards.delete(id) : this.expandedCards.add(id);
   }
-
-  // Toggle affichage des replies d'un commentaire
   toggleReplies(commentId: number): void {
-    this.expandedReplies.has(commentId)
-      ? this.expandedReplies.delete(commentId)
-      : this.expandedReplies.add(commentId);
+    this.expandedReplies.has(commentId) ? this.expandedReplies.delete(commentId) : this.expandedReplies.add(commentId);
   }
   isRepliesExpanded(commentId: number): boolean { return this.expandedReplies.has(commentId); }
+
+  // ── Panel ─────────────────────────────────────────────────────
 
   openPanel(pub: Publication, panel: DetailPanel, event: Event): void {
     event.stopPropagation();
@@ -130,34 +191,22 @@ export class GestionForumComponent implements OnInit {
     this.loadingComments = true;
     this.selectedCommentaires = [];
     this.expandedReplies.clear();
-
     this.forumService.getCommentairesByPublication(pub.id).subscribe({
       next: (comments) => {
-        // Le backend retourne déjà la structure arborescente :
-        // chaque commentaire root a ses replies dans c.replies
-        // On garde uniquement les roots (ceux qui n'ont pas de parent)
         this.selectedCommentaires = comments.filter(c => !c.parent || !c.parent.id);
-
-        // Mettre à jour le count total affiché sur la carte
         pub.commentCount = this.countTotal(comments);
         const fpub = this.filteredPublications.find(p => p.id === pub.id);
         if (fpub) fpub.commentCount = pub.commentCount;
-
         this.loadingComments = false;
       },
       error: () => { this.loadingComments = false; }
     });
   }
 
-  // Compte récursif : roots + toutes leurs replies (identique au frontoffice)
   countTotal(comments: Commentaire[]): number {
     return comments.reduce((acc, c) => acc + 1 + this.countTotal(c.replies || []), 0);
   }
-
-  // Compte affiché dans le titre du panel
-  get totalCommentsDisplayed(): number {
-    return this.countTotal(this.selectedCommentaires);
-  }
+  get totalCommentsDisplayed(): number { return this.countTotal(this.selectedCommentaires); }
 
   loadReactions(pub: Publication): void {
     this.loadingReactions = true;
@@ -169,6 +218,37 @@ export class GestionForumComponent implements OnInit {
       }
     });
   }
+
+  // ── Décisions admin : réactivation ────────────────────────────
+
+  accepterReactivation(pub: Publication): void {
+    this.forumService.accepterReactivation(pub.id).subscribe({
+      next: () => {
+        this.pendingPublications = this.pendingPublications.filter(p => p.id !== pub.id);
+        // Mettre à jour dans la liste principale
+        const idx = this.publications.findIndex(p => p.id === pub.id);
+        if (idx >= 0) this.publications[idx].statut = 'ACTIVE';
+        this.applyFilters();
+        this.showToast(true, `"${pub.titre}" has been reactivated.`);
+      },
+      error: () => this.showToast(false, 'Error accepting reactivation.')
+    });
+  }
+
+  refuserReactivation(pub: Publication): void {
+    this.forumService.refuserReactivation(pub.id).subscribe({
+      next: () => {
+        this.pendingPublications = this.pendingPublications.filter(p => p.id !== pub.id);
+        const idx = this.publications.findIndex(p => p.id === pub.id);
+        if (idx >= 0) this.publications[idx].statut = 'ARCHIVED';
+        this.applyFilters();
+        this.showToast(true, `Reactivation refused for "${pub.titre}".`);
+      },
+      error: () => this.showToast(false, 'Error refusing reactivation.')
+    });
+  }
+
+  // ── Suppression ───────────────────────────────────────────────
 
   askDelete(pub: Publication, event: Event): void {
     event.stopPropagation();
@@ -184,12 +264,15 @@ export class GestionForumComponent implements OnInit {
     this.forumService.adminDeletePublication(pub.id).subscribe({
       next: () => {
         if (this.selectedPublication?.id === pub.id) this.closePanel();
+        this.pendingPublications = this.pendingPublications.filter(p => p.id !== pub.id);
         this.loadData();
         this.showToast(true, `"${pub.titre}" deleted successfully.`);
       },
-      error: () => { this.showToast(false, `Failed to delete "${pub.titre}". Please try again.`); }
+      error: () => this.showToast(false, `Failed to delete "${pub.titre}".`)
     });
   }
+
+  // ── Toast ─────────────────────────────────────────────────────
 
   showToast(success: boolean, message: string): void {
     if (this.toastTimer) clearTimeout(this.toastTimer);
@@ -201,12 +284,34 @@ export class GestionForumComponent implements OnInit {
     this.toast = { ...this.toast, visible: false };
   }
 
+  // ── Helpers ───────────────────────────────────────────────────
+
   get totalReactions(): number {
     if (!this.reactionSummary) return 0;
     return (this.reactionSummary.LIKE || 0) + (this.reactionSummary.DISLIKE || 0) + (this.reactionSummary.HEART || 0);
   }
 
-  getCountByType(type: string): number { return this.publications.filter(p => p.type === type).length; }
+  getCountByType(type: string): number {
+    return this.publications.filter(p => p.type === type && p.statut === 'ACTIVE').length;
+  }
+  getCountByStatut(statut: string): number {
+    // La card "Archived" compte ARCHIVED + PENDING (non réactivées)
+    if (statut === 'ARCHIVED') {
+      return this.publications.filter(p => p.statut === 'ARCHIVED' || p.statut === 'PENDING').length;
+    }
+    return this.publications.filter(p => p.statut === statut).length;
+  }
+  /** Compteur affiché sur la card "All Publications" : seulement les ACTIVE */
+  get activePublicationsCount(): number {
+    return this.publications.filter(p => p.statut === 'ACTIVE').length;
+  }
+  pct(type: string): string {
+    const activeCount = this.activePublicationsCount;
+    return activeCount > 0
+      ? ((this.getCountByType(type) / activeCount) * 100).toFixed(0)
+      : '0';
+  }
+
   getTypeIcon(type: string): string { return ({ QUESTION: '❓', ARTICLE: '📰', REVIEW: '⭐' } as any)[type] || '📝'; }
   getTypeColor(type: string): string { return ({ QUESTION: '#3b82f6', ARTICLE: '#a855f7', REVIEW: '#f59e0b' } as any)[type] || '#6b7280'; }
   getTypeBg(type: string): string { return ({ QUESTION: 'rgba(59,130,246,0.14)', ARTICLE: 'rgba(168,85,247,0.14)', REVIEW: 'rgba(245,158,11,0.14)' } as any)[type] || 'rgba(107,114,128,0.14)'; }
