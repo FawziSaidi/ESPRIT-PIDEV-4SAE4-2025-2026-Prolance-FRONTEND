@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ForumService, Publication, Commentaire, ReactionSummary } from './forum.service';
+import { ForumService, Publication, Commentaire, ReactionSummary, UserBlockDTO } from './forum.service';
 
 export type DetailPanel = 'pdfs' | 'images' | 'reactions' | 'comments' | null;
 
@@ -11,7 +11,7 @@ export type DetailPanel = 'pdfs' | 'images' | 'reactions' | 'comments' | null;
 export class GestionForumComponent implements OnInit {
 
   // ── Tabs admin ────────────────────────────────────────────────
-  activeTab: 'all' | 'pending' = 'all';
+  activeTab: 'all' | 'pending' | 'blocked' = 'all';
 
   // ── Toutes les publications ───────────────────────────────────
   publications: Publication[] = [];
@@ -21,6 +21,10 @@ export class GestionForumComponent implements OnInit {
   pendingPublications: Publication[] = [];
   loadingPending = false;
 
+  // ── Utilisateurs bloqués ──────────────────────────────────────
+  blockedUsers: UserBlockDTO[] = [];
+  loadingBlocked = false;
+
   // ── Panel détail ──────────────────────────────────────────────
   selectedPublication: Publication | null = null;
   selectedCommentaires: Commentaire[] = [];
@@ -29,17 +33,17 @@ export class GestionForumComponent implements OnInit {
   loadingReactions = false;
   activePanel: DetailPanel = null;
 
-  expandedCards = new Set<number>();
+  expandedCards  = new Set<number>();
   expandedReplies = new Set<number>();
 
   // ── Filtres ───────────────────────────────────────────────────
-  searchQuery = '';
-  typeFilter = 'ALL';
-  statutFilter = 'ALL';
-  typeOptions = ['ALL', 'QUESTION', 'ARTICLE', 'REVIEW'];
+  searchQuery   = '';
+  typeFilter    = 'ALL';
+  statutFilter  = 'ALL';
+  typeOptions   = ['ALL', 'QUESTION', 'ARTICLE', 'REVIEW'];
 
   loading = true;
-  error = '';
+  error   = '';
 
   readonly PAGE_SIZE = 3;
   currentPage = 1;
@@ -60,7 +64,7 @@ export class GestionForumComponent implements OnInit {
 
   loadData(): void {
     this.loading = true;
-    this.error = '';
+    this.error   = '';
     this.forumService.getAllPublications().subscribe({
       next: (pubs) => {
         this.publications = pubs;
@@ -75,11 +79,16 @@ export class GestionForumComponent implements OnInit {
   loadPendingPublications(): void {
     this.loadingPending = true;
     this.forumService.getPendingPublications().subscribe({
-      next: (pubs) => {
-        this.pendingPublications = pubs;
-        this.loadingPending = false;
-      },
-      error: () => { this.pendingPublications = []; this.loadingPending = false; }
+      next:  (pubs) => { this.pendingPublications = pubs; this.loadingPending = false; },
+      error: ()     => { this.pendingPublications = [];   this.loadingPending = false; }
+    });
+  }
+
+  loadBlockedUsers(): void {
+    this.loadingBlocked = true;
+    this.forumService.getBlockedUsers().subscribe({
+      next:  (users) => { this.blockedUsers = users; this.loadingBlocked = false; },
+      error: ()      => { this.blockedUsers = [];    this.loadingBlocked = false; }
     });
   }
 
@@ -98,11 +107,10 @@ export class GestionForumComponent implements OnInit {
 
   // ── Navigation tabs ───────────────────────────────────────────
 
-  switchTab(tab: 'all' | 'pending'): void {
+  switchTab(tab: 'all' | 'pending' | 'blocked'): void {
     this.activeTab = tab;
-    if (tab === 'pending') {
-      this.loadPendingPublications();
-    }
+    if (tab === 'pending') this.loadPendingPublications();
+    if (tab === 'blocked') this.loadBlockedUsers();
   }
 
   // ── Filtres ───────────────────────────────────────────────────
@@ -111,10 +119,8 @@ export class GestionForumComponent implements OnInit {
     let result = this.publications;
 
     if (this.statutFilter === 'ARCHIVED') {
-      // Card Archived : afficher ARCHIVED + PENDING (demandes non encore traitées)
       result = result.filter(p => p.statut === 'ARCHIVED' || p.statut === 'PENDING');
     } else {
-      // All, QUESTION, ARTICLE, REVIEW : uniquement les posts ACTIVE
       result = result.filter(p => p.statut === 'ACTIVE');
     }
 
@@ -133,10 +139,7 @@ export class GestionForumComponent implements OnInit {
   onSearchChange(q: string): void { this.searchQuery = q; this.applyFilters(); }
   onTypeChange(type: string): void {
     this.typeFilter = type;
-    // Quand on clique "All Publications", on réinitialise aussi le filtre statut
-    if (type === 'ALL') {
-      this.statutFilter = 'ALL';
-    }
+    if (type === 'ALL') this.statutFilter = 'ALL';
     this.applyFilters();
   }
   onStatutChange(statut: string): void {
@@ -177,7 +180,7 @@ export class GestionForumComponent implements OnInit {
     }
     this.selectedPublication = pub;
     this.activePanel = panel;
-    if (panel === 'comments') this.loadComments(pub);
+    if (panel === 'comments')  this.loadComments(pub);
     if (panel === 'reactions') this.loadReactions(pub);
   }
 
@@ -211,21 +214,20 @@ export class GestionForumComponent implements OnInit {
   loadReactions(pub: Publication): void {
     this.loadingReactions = true;
     this.forumService.getReactionSummary(pub.id).subscribe({
-      next: (s) => { this.reactionSummary = s; this.loadingReactions = false; },
-      error: () => {
+      next:  (s) => { this.reactionSummary = s; this.loadingReactions = false; },
+      error: ()  => {
         this.reactionSummary = { LIKE: 0, DISLIKE: 0, HEART: 0, userReaction: null, reactors: [] };
         this.loadingReactions = false;
       }
     });
   }
 
-  // ── Décisions admin : réactivation ────────────────────────────
+  // ── Décisions admin : réactivation publication ────────────────
 
   accepterReactivation(pub: Publication): void {
     this.forumService.accepterReactivation(pub.id).subscribe({
       next: () => {
         this.pendingPublications = this.pendingPublications.filter(p => p.id !== pub.id);
-        // Mettre à jour dans la liste principale
         const idx = this.publications.findIndex(p => p.id === pub.id);
         if (idx >= 0) this.publications[idx].statut = 'ACTIVE';
         this.applyFilters();
@@ -248,11 +250,30 @@ export class GestionForumComponent implements OnInit {
     });
   }
 
+  // ── Réactivation compte utilisateur (admin) ───────────────────
+
+  reactiverCompteUser(user: UserBlockDTO): void {
+    this.forumService.reactiverCompteUser(user.userId).subscribe({
+      next: () => {
+        // Mettre à jour localement : remettre le compteur à 0
+        const idx = this.blockedUsers.findIndex(u => u.userId === user.userId);
+        if (idx >= 0) {
+          this.blockedUsers[idx].archivedCount = 0;
+          this.blockedUsers[idx].blocked = false;
+        }
+        // Recharger la liste principale
+        this.loadData();
+        this.showToast(true, `Account of ${user.name} ${user.lastName} reactivated. Counter reset to 0.`);
+      },
+      error: () => this.showToast(false, `Error reactivating account of ${user.name} ${user.lastName}.`)
+    });
+  }
+
   // ── Suppression ───────────────────────────────────────────────
 
   askDelete(pub: Publication, event: Event): void {
     event.stopPropagation();
-    this.pubToDelete = pub;
+    this.pubToDelete    = pub;
     this.showDeleteModal = true;
   }
   cancelDelete(): void { this.showDeleteModal = false; this.pubToDelete = null; }
@@ -260,7 +281,7 @@ export class GestionForumComponent implements OnInit {
     if (!this.pubToDelete) return;
     const pub = this.pubToDelete;
     this.showDeleteModal = false;
-    this.pubToDelete = null;
+    this.pubToDelete    = null;
     this.forumService.adminDeletePublication(pub.id).subscribe({
       next: () => {
         if (this.selectedPublication?.id === pub.id) this.closePanel();
@@ -295,29 +316,43 @@ export class GestionForumComponent implements OnInit {
     return this.publications.filter(p => p.type === type && p.statut === 'ACTIVE').length;
   }
   getCountByStatut(statut: string): number {
-    // La card "Archived" compte ARCHIVED + PENDING (non réactivées)
     if (statut === 'ARCHIVED') {
       return this.publications.filter(p => p.statut === 'ARCHIVED' || p.statut === 'PENDING').length;
     }
     return this.publications.filter(p => p.statut === statut).length;
   }
-  /** Compteur affiché sur la card "All Publications" : seulement les ACTIVE */
   get activePublicationsCount(): number {
     return this.publications.filter(p => p.statut === 'ACTIVE').length;
   }
   pct(type: string): string {
     const activeCount = this.activePublicationsCount;
-    return activeCount > 0
-      ? ((this.getCountByType(type) / activeCount) * 100).toFixed(0)
-      : '0';
+    return activeCount > 0 ? ((this.getCountByType(type) / activeCount) * 100).toFixed(0) : '0';
   }
 
-  getTypeIcon(type: string): string { return ({ QUESTION: '❓', ARTICLE: '📰', REVIEW: '⭐' } as any)[type] || '📝'; }
+  /** Nombre d'utilisateurs actuellement bloqués */
+  get blockedUsersCount(): number {
+    return this.blockedUsers.filter(u => u.blocked).length;
+  }
+
+  getWarningLevel(count: number): string {
+    if (count >= 3) return 'blocked';
+    if (count === 2) return 'warning';
+    return 'ok';
+  }
+
+  getWarningLabel(user: UserBlockDTO): string {
+    if (user.blocked) return '🔴 Blocked';
+    if (user.archivedCount === 2) return '🟠 2/3 warnings';
+    if (user.archivedCount === 1) return '🟡 1/3 warnings';
+    return '🟢 Active';
+  }
+
+  getTypeIcon(type: string): string  { return ({ QUESTION: '❓', ARTICLE: '📰', REVIEW: '⭐' } as any)[type] || '📝'; }
   getTypeColor(type: string): string { return ({ QUESTION: '#3b82f6', ARTICLE: '#a855f7', REVIEW: '#f59e0b' } as any)[type] || '#6b7280'; }
-  getTypeBg(type: string): string { return ({ QUESTION: 'rgba(59,130,246,0.14)', ARTICLE: 'rgba(168,85,247,0.14)', REVIEW: 'rgba(245,158,11,0.14)' } as any)[type] || 'rgba(107,114,128,0.14)'; }
-  getPdfUrl(pdf: string): string { return `http://localhost:8222/uploads/publications/${pdf}`; }
-  getImageUrl(img: string): string { return `http://localhost:8222/uploads/publications/${img}`; }
-  getPdfName(pdf: string): string { const idx = pdf.indexOf('_'); return idx >= 0 ? pdf.substring(idx + 1) : pdf; }
+  getTypeBg(type: string): string    { return ({ QUESTION: 'rgba(59,130,246,0.14)', ARTICLE: 'rgba(168,85,247,0.14)', REVIEW: 'rgba(245,158,11,0.14)' } as any)[type] || 'rgba(107,114,128,0.14)'; }
+  getPdfUrl(pdf: string): string     { return `http://localhost:8222/uploads/publications/${pdf}`; }
+  getImageUrl(img: string): string   { return `http://localhost:8222/uploads/publications/${img}`; }
+  getPdfName(pdf: string): string    { const idx = pdf.indexOf('_'); return idx >= 0 ? pdf.substring(idx + 1) : pdf; }
   getUserLabel(user: any): string {
     if (!user) return 'N/A';
     const full = [user.name, user.lastName].filter(Boolean).join(' ').trim();

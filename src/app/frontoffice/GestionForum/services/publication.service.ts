@@ -3,6 +3,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Publication, TypePublication } from '../models/publication.model';
 
+export interface BlockStatus {
+  blocked: boolean;
+  archivedCount: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PublicationService {
   private baseUrl = 'http://localhost:8222/api/publications';
@@ -31,6 +36,16 @@ export class PublicationService {
 
   getPublicationById(id: number): Observable<Publication> {
     return this.http.get<Publication>(`${this.baseUrl}/${id}`);
+  }
+
+  // ── Blocage ───────────────────────────────────────────────────
+
+  /**
+   * Vérifie si un utilisateur est bloqué (≥ 3 posts archivés).
+   * Retourne { blocked: boolean, archivedCount: number }
+   */
+  getBlockStatus(userId: number): Observable<BlockStatus> {
+    return this.http.get<BlockStatus>(`${this.baseUrl}/user/${userId}/block-status`);
   }
 
   // ── Signalement ───────────────────────────────────────────────

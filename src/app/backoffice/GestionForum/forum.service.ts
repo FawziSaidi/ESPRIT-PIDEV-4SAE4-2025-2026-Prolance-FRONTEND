@@ -37,6 +37,15 @@ export interface ReactionSummary {
   reactors: { userId: number; userName: string; type: string; }[];
 }
 
+/** DTO retourné par /admin/blocked-users */
+export interface UserBlockDTO {
+  userId: number;
+  name: string;
+  lastName: string;
+  archivedCount: number;  // nombre de posts archivés (compteur avertissements)
+  blocked: boolean;       // true si archivedCount >= 3
+}
+
 @Injectable({ providedIn: 'root' })
 export class ForumService {
   private readonly apiBase = 'http://localhost:8222/api';
@@ -71,6 +80,24 @@ export class ForumService {
 
   deletePublication(id: number, userId: number): Observable<any> {
     return this.http.delete(`${this.apiBase}/publications/${id}?userId=${userId}`, { responseType: 'text' });
+  }
+
+  // ── Blocage utilisateurs ──────────────────────────────────────
+
+  /**
+   * Admin : liste tous les utilisateurs ayant des posts archivés,
+   * avec leur compteur d'avertissements.
+   */
+  getBlockedUsers(): Observable<UserBlockDTO[]> {
+    return this.http.get<UserBlockDTO[]>(`${this.apiBase}/publications/admin/blocked-users`);
+  }
+
+  /**
+   * Admin : réactive le compte d'un utilisateur bloqué.
+   * Remet le compteur à 0 (tous ses posts archivés → ACTIVE).
+   */
+  reactiverCompteUser(userId: number): Observable<any> {
+    return this.http.post(`${this.apiBase}/publications/admin/users/${userId}/reactiver-compte`, null);
   }
 
   // ── Commentaires ──────────────────────────────────────────────

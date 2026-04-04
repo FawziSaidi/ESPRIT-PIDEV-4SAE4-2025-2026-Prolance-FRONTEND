@@ -1,6 +1,6 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { Publication, TypePublication, StatutPublication } from '../../models/publication.model';
-import { PublicationService } from '../../services/publication.service';
+import { PublicationService, BlockStatus } from '../../services/publication.service';
 import { CommentaireService } from '../../services/commentaire.service';
 import { AuthService } from '../../../../services/auth.services';
 
@@ -29,6 +29,12 @@ export class ForumListComponent implements OnInit {
   errorMessage = '';
   activeMenuId: number | null = null;
   expandedPosts = new Set<number>();
+
+  // ── Blocage utilisateur ───────────────────────────────────────
+  /** true si l'utilisateur courant a ≥ 3 posts archivés */
+  isUserBlocked = false;
+  /** Nombre de posts archivés (compteur d'avertissements) */
+  archivedCount = 0;
 
   // Toast
   toastMessage = '';
@@ -89,10 +95,31 @@ export class ForumListComponent implements OnInit {
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(user => {
       this.currentUserId = user?.userId ?? 0;
+      if (this.currentUserId) this.checkBlockStatus();
     });
     const userId = this.authService.getCurrentUserId();
-    if (userId) this.currentUserId = userId;
+    if (userId) {
+      this.currentUserId = userId;
+      this.checkBlockStatus();
+    }
     this.loadPublications();
+  }
+
+  // ── Vérification du statut de blocage ────────────────────────
+
+  checkBlockStatus(): void {
+    if (!this.currentUserId) return;
+    this.publicationService.getBlockStatus(this.currentUserId).subscribe({
+      next: (status: BlockStatus) => {
+        this.isUserBlocked = status.blocked;
+        this.archivedCount = status.archivedCount;
+      },
+      error: () => {
+        // En cas d'erreur réseau, ne pas bloquer l'utilisateur
+        this.isUserBlocked = false;
+        this.archivedCount = 0;
+      }
+    });
   }
 
   loadPublications(): void {
@@ -104,6 +131,8 @@ export class ForumListComponent implements OnInit {
         this.filterPublications();
         this.loading = false;
         this.loadCommentCounts();
+        // Rafraîchir le statut de blocage à chaque chargement
+        if (this.currentUserId) this.checkBlockStatus();
       },
       error: () => {
         this.errorMessage = 'Error loading posts';
@@ -120,6 +149,8 @@ export class ForumListComponent implements OnInit {
       next: (data) => {
         this.archivedPublications = data;
         this.loading = false;
+        // Mettre à jour le compteur d'avertissements
+        this.checkBlockStatus();
       },
       error: () => {
         this.archivedPublications = [];
@@ -184,12 +215,10 @@ export class ForumListComponent implements OnInit {
 
     this.publicationService.signalerPublication(publication.id, this.currentUserId).subscribe({
       next: (updated) => {
-        // Mettre à jour localement
         const idx = this.publications.findIndex(p => p.id === updated.id);
         if (idx >= 0) this.publications[idx] = { ...this.publications[idx], signalements: updated.signalements, statut: updated.statut };
 
         if (updated.statut === StatutPublication.ARCHIVED) {
-          // Le post vient d'être archivé → le retirer du feed
           this.publications = this.publications.filter(p => p.id !== updated.id);
           this.showToast('⚠️ This post has been archived after 3 reports.', false);
         } else {
@@ -231,7 +260,13 @@ export class ForumListComponent implements OnInit {
 
   // ── Modals / CRUD existants ───────────────────────────────────
 
-  openAddModal(): void { this.showAddModal = true; }
+  openAddModal(): void {
+    if (this.isUserBlocked) {
+      this.showToast('🚫 Your account is blocked. You cannot create new posts. Contact the admin.', true);
+      return;
+    }
+    this.showAddModal = true;
+  }
   closeAddModal(): void { this.showAddModal = false; }
 
   openEditModal(publication: Publication): void {
@@ -258,7 +293,12 @@ export class ForumListComponent implements OnInit {
     if (fpub) fpub.commentaires = arr;
   }
 
-  onPublicationCreated(): void { this.closeAddModal(); this.loadPublications(); }
+  onPublicationCreated(): void {
+    this.closeAddModal();
+    this.loadPublications();
+    // Rafraîchir le compteur après création
+    this.checkBlockStatus();
+  }
   onPublicationUpdated(): void { this.closeEditModal(); this.loadPublications(); }
 
   deletePublication(publication: Publication): void {
@@ -269,7 +309,11 @@ export class ForumListComponent implements OnInit {
   confirmDelete(): void {
     if (!this.publicationToDelete) return;
     this.publicationService.deletePublication(this.publicationToDelete.id!, this.currentUserId).subscribe({
-      next: () => { this.showDeleteModal = false; this.publicationToDelete = null; this.loadPublications(); },
+      next: () => {
+        this.showDeleteModal = false;
+        this.publicationToDelete = null;
+        this.loadPublications();
+      },
       error: () => { this.showDeleteModal = false; this.publicationToDelete = null; }
     });
   }

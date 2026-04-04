@@ -1,6 +1,25 @@
 <div class="forum-container">
   <div class="forum-content">
 
+    <!-- ══════ BANNIÈRE BLOCAGE (visible seulement si bloqué) ══════ -->
+    <div class="block-banner" *ngIf="isUserBlocked">
+      <span class="block-banner-icon">🔒</span>
+      <div class="block-banner-text">
+        <strong>Your account is blocked.</strong>
+        You have {{ archivedCount }} archived post{{ archivedCount > 1 ? 's' : '' }} due to reports.
+        You cannot create new posts. Contact an administrator to reactivate your account.
+      </div>
+    </div>
+
+    <!-- ══════ AVERTISSEMENT (visible si 1 ou 2 posts archivés, pas encore bloqué) ══════ -->
+    <div class="warning-banner" *ngIf="!isUserBlocked && archivedCount > 0">
+      <span class="warning-banner-icon">⚠️</span>
+      <div class="warning-banner-text">
+        <strong>Warning:</strong> {{ archivedCount }}/3 of your posts have been archived due to reports.
+        {{ 3 - archivedCount }} more will block your account.
+      </div>
+    </div>
+
     <!-- Galaxy Filter Card -->
     <div class="galaxy-card">
 
@@ -19,15 +38,27 @@
           class="tab-button">
           My Posts
         </button>
-        <!-- ✅ NOUVEAU : Onglet Archives -->
+        <!-- Onglet Archives -->
         <button
           [class.active]="selectedType === 'ARCHIVED'"
           (click)="onTypeChange('ARCHIVED')"
-          class="tab-button tab-archive">
-          🗄️ Archives
+          class="tab-button ">
+          Archives
         </button>
-        <button class="btn-add" (click)="openAddModal()">
-          <span class="btn-icon">+</span> Add Post
+
+        <!-- ══ BOUTON ADD POST : disabled si bloqué ══ -->
+        <button
+          class="btn-add"
+          [class.btn-add-disabled]="isUserBlocked"
+          [disabled]="isUserBlocked"
+          (click)="openAddModal()"
+          [title]="isUserBlocked ? 'Account blocked — contact admin' : 'Add a new post'">
+          <span class="btn-icon">{{ isUserBlocked ? '🔒' : '+' }}</span>
+          {{ isUserBlocked ? 'Blocked' : 'Add Post' }}
+          <!-- Badge avertissement sur le bouton -->
+          <span class="btn-warn-badge" *ngIf="!isUserBlocked && archivedCount > 0">
+            {{ archivedCount }}/3
+          </span>
         </button>
       </div>
 
@@ -111,7 +142,6 @@
             </div>
 
             <div class="card-footer">
-              <!-- Bouton Réactiver uniquement si ARCHIVED (pas déjà en PENDING) -->
               <button
                 *ngIf="pub.statut === 'ARCHIVED'"
                 class="btn-reactiver"
@@ -156,7 +186,7 @@
                 {{ getTypeLabel(publication.type) }}
               </div>
 
-              <!-- ✅ NOUVEAU : Bouton Signaler (en haut à droite, visible si pas son propre post) -->
+              <!-- Bouton Signaler -->
               <button
                 *ngIf="!canModifyPublication(publication)"
                 class="btn-signaler"
@@ -266,7 +296,8 @@
       <p *ngIf="searchQuery.trim()">No author matches <strong>« {{ searchQuery.trim() }} »</strong></p>
       <p *ngIf="!searchQuery.trim()">Be the first to start the conversation!</p>
       <button *ngIf="searchQuery.trim()" class="btn-primary" (click)="clearSearch()">Clear search</button>
-      <button *ngIf="!searchQuery.trim()" class="btn-primary" (click)="openAddModal()">Create first post</button>
+      <button *ngIf="!searchQuery.trim() && !isUserBlocked" class="btn-primary" (click)="openAddModal()">Create first post</button>
+      <p *ngIf="!searchQuery.trim() && isUserBlocked" class="blocked-empty-msg">🔒 Your account is blocked. Contact the admin.</p>
     </div>
 
   </div>
