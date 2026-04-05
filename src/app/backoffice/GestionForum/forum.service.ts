@@ -9,6 +9,7 @@ export interface Publication {
   type: 'QUESTION' | 'ARTICLE' | 'REVIEW';
   statut: 'ACTIVE' | 'ARCHIVED' | 'PENDING';
   createAt: string;
+  archivedAt?: string;
   images: string[];
   pdfs: string[];
   signalements?: number[];
@@ -42,8 +43,8 @@ export interface UserBlockDTO {
   userId: number;
   name: string;
   lastName: string;
-  archivedCount: number;  // nombre de posts archivés (compteur avertissements)
-  blocked: boolean;       // true si archivedCount >= 3
+  archivedCount: number;
+  blocked: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -54,22 +55,18 @@ export class ForumService {
 
   // ── Publications ──────────────────────────────────────────────
 
-  /** Admin : toutes les publications (tous statuts) */
   getAllPublications(): Observable<Publication[]> {
     return this.http.get<Publication[]>(`${this.apiBase}/publications/admin/all`);
   }
 
-  /** Admin : publications en attente de réactivation */
   getPendingPublications(): Observable<Publication[]> {
     return this.http.get<Publication[]>(`${this.apiBase}/publications/admin/pending`);
   }
 
-  /** Admin accepte la réactivation → ACTIVE */
   accepterReactivation(id: number): Observable<Publication> {
     return this.http.post<Publication>(`${this.apiBase}/publications/admin/${id}/accepter`, null);
   }
 
-  /** Admin refuse la réactivation → reste ARCHIVED */
   refuserReactivation(id: number): Observable<Publication> {
     return this.http.post<Publication>(`${this.apiBase}/publications/admin/${id}/refuser`, null);
   }
@@ -84,18 +81,10 @@ export class ForumService {
 
   // ── Blocage utilisateurs ──────────────────────────────────────
 
-  /**
-   * Admin : liste tous les utilisateurs ayant des posts archivés,
-   * avec leur compteur d'avertissements.
-   */
   getBlockedUsers(): Observable<UserBlockDTO[]> {
     return this.http.get<UserBlockDTO[]>(`${this.apiBase}/publications/admin/blocked-users`);
   }
 
-  /**
-   * Admin : réactive le compte d'un utilisateur bloqué.
-   * Remet le compteur à 0 (tous ses posts archivés → ACTIVE).
-   */
   reactiverCompteUser(userId: number): Observable<any> {
     return this.http.post(`${this.apiBase}/publications/admin/users/${userId}/reactiver-compte`, null);
   }
@@ -128,7 +117,7 @@ export class ForumService {
     return this.http.delete(`${this.apiBase}/commentaires/${id}?userId=${userId}`, { responseType: 'text' });
   }
 
-  // ── Réactions ────────────────────────────────────────────────
+  // ── Réactions ─────────────────────────────────────────────────
 
   getReactionSummary(publicationId: number): Observable<ReactionSummary> {
     const params = new HttpParams().set('userId', '0');

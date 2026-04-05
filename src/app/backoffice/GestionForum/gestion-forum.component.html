@@ -358,7 +358,7 @@
               <div class="pub-avatar" style="background:#f59e0b">{{ getInitials(pub.user) }}</div>
               <div class="pub-author-info">
                 <span class="pub-author-name">{{ getUserLabel(pub.user) }}</span>
-                <span class="pub-date">Archived on {{ formatDate(pub.createAt) }}</span>
+                <span class="pub-date">Archived on {{ formatDate(pub.archivedAt || pub.createAt) }}</span>
               </div>
             </div>
             <div class="pub-signals" *ngIf="pub.signalements && pub.signalements.length > 0">
@@ -375,9 +375,6 @@
             </button>
             <button class="btn-refuser" (click)="refuserReactivation(pub)">
               ❌ Refuse
-            </button>
-            <button class="btn-del-pending" (click)="askDelete(pub, $event)">
-              🗑️ Delete
             </button>
           </div>
         </div>

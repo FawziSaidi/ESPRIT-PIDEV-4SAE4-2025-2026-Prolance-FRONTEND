@@ -58,7 +58,11 @@ export class GestionForumComponent implements OnInit {
 
   constructor(private forumService: ForumService) {}
 
-  ngOnInit(): void { this.loadData(); }
+  ngOnInit(): void {
+    this.loadData();
+    this.loadPendingPublications();
+    this.loadBlockedUsers();
+  }
 
   // ── Chargement ────────────────────────────────────────────────
 
