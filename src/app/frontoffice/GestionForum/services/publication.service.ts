@@ -5,7 +5,7 @@ import { Publication, TypePublication } from '../models/publication.model';
 
 export interface BlockStatus {
   blocked: boolean;
-  archivedCount: number;
+  warningCount: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -42,7 +42,7 @@ export class PublicationService {
 
   /**
    * Vérifie si un utilisateur est bloqué (≥ 3 posts archivés).
-   * Retourne { blocked: boolean, archivedCount: number }
+   * Retourne { blocked: boolean, warningCount: number }
    */
   getBlockStatus(userId: number): Observable<BlockStatus> {
     return this.http.get<BlockStatus>(`${this.baseUrl}/user/${userId}/block-status`);

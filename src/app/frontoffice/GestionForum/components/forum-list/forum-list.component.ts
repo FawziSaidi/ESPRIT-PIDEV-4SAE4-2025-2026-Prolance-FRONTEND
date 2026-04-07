@@ -112,7 +112,7 @@ export class ForumListComponent implements OnInit {
     this.publicationService.getBlockStatus(this.currentUserId).subscribe({
       next: (status: BlockStatus) => {
         this.isUserBlocked = status.blocked;
-        this.archivedCount = status.archivedCount;
+        this.archivedCount = status.warningCount;
       },
       error: () => {
         // En cas d'erreur réseau, ne pas bloquer l'utilisateur

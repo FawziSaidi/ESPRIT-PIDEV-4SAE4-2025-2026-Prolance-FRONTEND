@@ -43,7 +43,7 @@ export interface UserBlockDTO {
   userId: number;
   name: string;
   lastName: string;
-  archivedCount: number;
+  warningCount: number;    // ✅ correspond au champ retourné par le backend
   blocked: boolean;
 }
 

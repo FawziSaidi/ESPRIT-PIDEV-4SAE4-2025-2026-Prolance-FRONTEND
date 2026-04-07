@@ -262,7 +262,7 @@ export class GestionForumComponent implements OnInit {
         // Mettre à jour localement : remettre le compteur à 0
         const idx = this.blockedUsers.findIndex(u => u.userId === user.userId);
         if (idx >= 0) {
-          this.blockedUsers[idx].archivedCount = 0;
+          this.blockedUsers[idx].warningCount = 0;
           this.blockedUsers[idx].blocked = false;
         }
         // Recharger la liste principale
@@ -346,8 +346,8 @@ export class GestionForumComponent implements OnInit {
 
   getWarningLabel(user: UserBlockDTO): string {
     if (user.blocked) return '🔴 Blocked';
-    if (user.archivedCount === 2) return '🟠 2/3 warnings';
-    if (user.archivedCount === 1) return '🟡 1/3 warnings';
+    if (user.warningCount === 2) return '🟠 2/3 warnings';
+    if (user.warningCount === 1) return '🟡 1/3 warnings';
     return '🟢 Active';
   }
 
