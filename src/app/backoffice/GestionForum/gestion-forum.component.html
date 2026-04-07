@@ -42,11 +42,18 @@
         {{ pendingPublications.length }}
       </span>
     </button>
-    <!-- ══ NOUVEAU TAB : Utilisateurs bloqués ══ -->
+    <!-- ══ TAB : Utilisateurs bloqués ══ -->
     <button class="admin-tab admin-tab-blocked" [class.active]="activeTab === 'blocked'" (click)="switchTab('blocked')">
       🚫 Blocked Users
-      <span class="tab-badge tab-badge-blocked" *ngIf="blockedUsers.length > 0">
-        {{ blockedUsers.length }}
+      <span class="tab-badge tab-badge-blocked" *ngIf="blockedUsersCount > 0">
+        {{ blockedUsersCount }}
+      </span>
+    </button>
+    <!-- ══ TAB : Utilisateurs avertis ══ -->
+    <button class="admin-tab admin-tab-warned" [class.active]="activeTab === 'warned'" (click)="switchTab('warned')">
+      ⚠️ Warned Users
+      <span class="tab-badge tab-badge-warned" *ngIf="warnedUsersCount > 0">
+        {{ warnedUsersCount }}
       </span>
     </button>
   </div>
@@ -383,102 +390,139 @@
   </ng-container>
 
   <!-- ══════════════════════════════════════
-       TAB : BLOCKED USERS  (NOUVEAU)
+       TAB : BLOCKED USERS
        ══════════════════════════════════════ -->
   <ng-container *ngIf="activeTab === 'blocked'">
     <div class="blocked-section">
 
-      <!-- Header info -->
-      <div class="blocked-header">
-        
-        <div class="blocked-legend">
-          <span class="legend-item"><span class="dot dot-blocked"></span> Blocked (≥ 3)</span>
-          <span class="legend-item"><span class="dot dot-warning"></span> Warning (1/3 or 2/3)</span>
-          <span class="legend-item"><span class="dot dot-ok"></span> Active</span>
-        </div>
-      </div>
-
       <!-- Loading -->
       <div *ngIf="loadingBlocked" class="state-box">
-        <div class="spinner"></div><p>Loading users…</p>
+        <div class="spinner"></div><p>Loading blocked users…</p>
       </div>
 
       <!-- Empty -->
-      <div *ngIf="!loadingBlocked && blockedUsers.length === 0" class="state-box">
+      <div *ngIf="!loadingBlocked && blockedUsersCount === 0" class="state-box">
         <span style="font-size:2.5rem">✅</span>
-        <p>No users with archived posts.</p>
+        <p>No blocked users at the moment.</p>
       </div>
 
-      <!-- Users grid -->
-      <div *ngIf="!loadingBlocked && blockedUsers.length > 0" class="blocked-grid">
-        <div *ngFor="let user of blockedUsers"
-          class="blocked-card"
-          [class.bcard-blocked]="user.blocked"
-          [class.bcard-warning]="!user.blocked && user.archivedCount === 2"
-          [class.bcard-ok]="!user.blocked && user.archivedCount < 2">
-
-          <!-- Card header -->
-          <div class="bcard-header">
-            <div class="bcard-avatar" [class.bavatar-blocked]="user.blocked">
-              {{ (user.name?.charAt(0) || '') + (user.lastName?.charAt(0) || '') | uppercase }}
-            </div>
-            <div class="bcard-info">
-              <span class="bcard-name">{{ user.name }} {{ user.lastName }}</span>
-              <span class="bcard-id">ID #{{ user.userId }}</span>
-            </div>
-            <!-- Status badge -->
-            <div class="bcard-status-badge"
-              [class.badge-blocked]="user.blocked"
-              [class.badge-warning]="!user.blocked && user.archivedCount === 2"
-              [class.badge-ok]="!user.blocked && user.archivedCount < 2">
-              {{ getWarningLabel(user) }}
-            </div>
-          </div>
-
-          <!-- Warning counter bar -->
-          <div class="bcard-counter-section">
-            <div class="bcard-counter-label">
-              <span>⚠️ Warnings</span>
-              <strong [class.text-red]="user.blocked" [class.text-orange]="!user.blocked && user.archivedCount === 2">
-                {{ user.archivedCount }} / 3
-              </strong>
-            </div>
-            <div class="bcard-progress-bar">
-              <div class="bcard-progress-fill"
-                [class.fill-blocked]="user.blocked"
-                [class.fill-warning]="!user.blocked && user.archivedCount === 2"
-                [class.fill-ok]="user.archivedCount === 1"
-                [style.width.%]="(user.archivedCount / 3) * 100">
+      <!-- Users grid — only truly blocked -->
+      <ng-container *ngIf="!loadingBlocked && blockedUsersCount > 0">
+        <div class="blocked-grid">
+          <ng-container *ngFor="let user of blockedUsers">
+            <div class="blocked-card bcard-blocked" *ngIf="user.blocked">
+              <div class="bcard-header">
+                <div class="bcard-avatar bavatar-blocked">
+                  {{ (user.name?.charAt(0) || '') + (user.lastName?.charAt(0) || '') | uppercase }}
+                </div>
+                <div class="bcard-info">
+                  <span class="bcard-name">{{ user.name }} {{ user.lastName }}</span>
+                  <span class="bcard-id">ID #{{ user.userId }}</span>
+                </div>
+                <div class="bcard-status-badge badge-blocked">🔴 Blocked</div>
+              </div>
+              <div class="bcard-counter-section">
+                <div class="bcard-counter-label">
+                  <span>⚠️ Warnings</span>
+                  <strong class="text-red">{{ user.warningCount }} / 3</strong>
+                </div>
+                <div class="bcard-progress-bar">
+                  <div class="bcard-progress-fill fill-blocked" style="width:100%"></div>
+                </div>
+                <div class="bcard-dots">
+                  <span class="bcard-dot dot-filled dot-blocked-filled" *ngFor="let i of [1,2,3]"></span>
+                </div>
+              </div>
+              <p class="bcard-desc">🔒 This user cannot create new posts. Reactivate to restore access.</p>
+              <div class="bcard-actions">
+                <button class="btn-reactiver-compte" (click)="reactiverCompteUser(user)">
+                  🔓 Reactivate Account <span class="btn-sub">(counter → 0)</span>
+                </button>
               </div>
             </div>
-            <!-- Points individuels -->
-            <div class="bcard-dots">
-              <span class="bcard-dot"
-                *ngFor="let i of [1,2,3]"
-                [class.dot-filled]="user.archivedCount >= i"
-                [class.dot-blocked-filled]="user.blocked && user.archivedCount >= i"
-                [class.dot-warn-filled]="!user.blocked && user.archivedCount >= i">
-              </span>
-            </div>
-          </div>
-
-          <!-- Description -->
-          <p class="bcard-desc" *ngIf="user.blocked">
-            🔒 This user cannot create new posts. Reactivate to restore access.
-          </p>
-          <p class="bcard-desc bcard-desc-warn" *ngIf="!user.blocked && user.archivedCount > 0">
-            ⚠️ {{ 3 - user.archivedCount }} more archived post{{ (3 - user.archivedCount) > 1 ? 's' : '' }} will block this user.
-          </p>
-
-          <!-- Action : réactiver le compte -->
-          <div class="bcard-actions" *ngIf="user.blocked">
-            <button class="btn-reactiver-compte" (click)="reactiverCompteUser(user)">
-              🔓 Reactivate Account <span class="btn-sub">(counter → 0)</span>
-            </button>
-          </div>
-
+          </ng-container>
         </div>
+      </ng-container>
+
+    </div>
+  </ng-container>
+
+  <!-- ══════════════════════════════════════
+       TAB : WARNED USERS
+       ══════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'warned'">
+    <div class="blocked-section">
+
+      <!-- Empty -->
+      <div *ngIf="warnedUsersCount === 0" class="state-box">
+        <span style="font-size:2.5rem">✅</span>
+        <p>No users with archived publications.</p>
       </div>
+
+      <!-- Users grid — basé sur warningCount depuis le back -->
+      <ng-container *ngIf="warnedUsersCount > 0">
+        <div class="blocked-grid">
+          <div class="blocked-card"
+            *ngFor="let user of warnedUsersFromPublications"
+            [class.bcard-warning]="user.warningCount >= 2"
+            [class.bcard-ok]="user.warningCount === 1">
+
+            <div class="bcard-header">
+              <div class="bcard-avatar"
+                [class.bavatar-warning]="user.warningCount >= 2">
+                {{ (user.name?.charAt(0) || '') + (user.lastName?.charAt(0) || '') | uppercase }}
+              </div>
+              <div class="bcard-info">
+                <span class="bcard-name">{{ user.name }} {{ user.lastName }}</span>
+                <span class="bcard-id">ID #{{ user.userId }}</span>
+              </div>
+              <div class="bcard-status-badge"
+                [class.badge-warning]="user.warningCount >= 2"
+                [class.badge-ok]="user.warningCount === 1">
+                {{ user.warningCount >= 2 ? '🟠 ' + user.warningCount + '/3 warnings' : '🟡 1/3 warnings' }}
+              </div>
+            </div>
+
+            <div class="bcard-counter-section">
+              <div class="bcard-counter-label">
+                <span>⚠️ Warnings</span>
+                <strong [class.text-orange]="user.warningCount >= 2">{{ user.warningCount }} / 3</strong>
+              </div>
+              <div class="bcard-progress-bar">
+                <div class="bcard-progress-fill"
+                  [class.fill-warning]="user.warningCount >= 2"
+                  [class.fill-ok]="user.warningCount === 1"
+                  [style.width.%]="(user.warningCount / 3) * 100">
+                </div>
+              </div>
+              <div class="bcard-dots">
+                <span class="bcard-dot"
+                  *ngFor="let i of [1,2,3]"
+                  [class.dot-filled]="user.warningCount >= i"
+                  [class.dot-warn-filled]="user.warningCount >= i">
+                </span>
+              </div>
+            </div>
+
+            <!-- Liste des posts de l'utilisateur (tous statuts) -->
+            <div class="warn-posts-list" *ngIf="user.posts.length > 0">
+              <p class="warn-posts-title">📋 Posts :</p>
+              <div class="warn-post-item" *ngFor="let pub of user.posts">
+                <span class="warn-post-icon">{{ pub.statut === 'PENDING' ? '⏳' : pub.statut === 'ARCHIVED' ? '🗄️' : '✅' }}</span>
+                <span class="warn-post-titre">{{ pub.titre | slice:0:60 }}{{ pub.titre.length > 60 ? '…' : '' }}</span>
+                <span class="warn-post-status" [class.status-pending]="pub.statut === 'PENDING'">
+                  {{ pub.statut }}
+                </span>
+              </div>
+            </div>
+
+            <p class="bcard-desc bcard-desc-warn">
+              ⚠️ {{ 3 - user.warningCount > 0 ? (3 - user.warningCount) + ' more warning' + ((3 - user.warningCount) > 1 ? 's' : '') + ' will block this user.' : 'Account will be blocked on next warning.' }}
+            </p>
+
+          </div>
+        </div>
+      </ng-container>
 
     </div>
   </ng-container>

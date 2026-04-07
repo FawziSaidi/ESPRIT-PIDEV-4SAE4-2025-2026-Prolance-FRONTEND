@@ -13,6 +13,7 @@ export interface Publication {
   images: string[];
   pdfs: string[];
   signalements?: number[];
+  warningCount?: number;
   user: { id: number; name: string; lastName: string; email: string; };
   commentaires: Commentaire[];
   commentCount?: number;

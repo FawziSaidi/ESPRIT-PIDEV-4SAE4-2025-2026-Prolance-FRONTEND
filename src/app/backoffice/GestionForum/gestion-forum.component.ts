@@ -11,7 +11,7 @@ export type DetailPanel = 'pdfs' | 'images' | 'reactions' | 'comments' | null;
 export class GestionForumComponent implements OnInit {
 
   // ── Tabs admin ────────────────────────────────────────────────
-  activeTab: 'all' | 'pending' | 'blocked' = 'all';
+  activeTab: 'all' | 'pending' | 'blocked' | 'warned' = 'all';
 
   // ── Toutes les publications ───────────────────────────────────
   publications: Publication[] = [];
@@ -111,10 +111,10 @@ export class GestionForumComponent implements OnInit {
 
   // ── Navigation tabs ───────────────────────────────────────────
 
-  switchTab(tab: 'all' | 'pending' | 'blocked'): void {
+  switchTab(tab: 'all' | 'pending' | 'blocked' | 'warned'): void {
     this.activeTab = tab;
     if (tab === 'pending') this.loadPendingPublications();
-    if (tab === 'blocked') this.loadBlockedUsers();
+    if (tab === 'blocked' || tab === 'warned') this.loadBlockedUsers();
   }
 
   // ── Filtres ───────────────────────────────────────────────────
@@ -259,15 +259,15 @@ export class GestionForumComponent implements OnInit {
   reactiverCompteUser(user: UserBlockDTO): void {
     this.forumService.reactiverCompteUser(user.userId).subscribe({
       next: () => {
-        // Mettre à jour localement : remettre le compteur à 0
+        // ✅ Reset warning counter & unblock — posts stay ARCHIVED/PENDING untouched
         const idx = this.blockedUsers.findIndex(u => u.userId === user.userId);
         if (idx >= 0) {
           this.blockedUsers[idx].warningCount = 0;
           this.blockedUsers[idx].blocked = false;
         }
-        // Recharger la liste principale
+        // Reload publications — archived posts must remain archived
         this.loadData();
-        this.showToast(true, `Account of ${user.name} ${user.lastName} reactivated. Counter reset to 0.`);
+        this.showToast(true, `Account of ${user.name} ${user.lastName} reactivated. Warning counter reset to 0. Archived posts remain archived.`);
       },
       error: () => this.showToast(false, `Error reactivating account of ${user.name} ${user.lastName}.`)
     });
@@ -336,6 +336,37 @@ export class GestionForumComponent implements OnInit {
   /** Nombre d'utilisateurs actuellement bloqués */
   get blockedUsersCount(): number {
     return this.blockedUsers.filter(u => u.blocked).length;
+  }
+
+  /** Utilisateurs avertis : somme des warningCount de leurs publications (total 1 ou 2), non bloqués */
+  get warnedUsersFromPublications(): { userId: number; name: string; lastName: string; warningCount: number; posts: Publication[] }[] {
+    const map = new Map<number, { userId: number; name: string; lastName: string; warningCount: number; posts: Publication[] }>();
+
+    for (const pub of this.publications) {
+      const u = pub.user;
+      if (!u) continue;
+      const pubWarning = pub.warningCount ?? 0;
+      if (pubWarning === 0) continue;
+
+      // Exclure les utilisateurs bloqués (ils ont leur propre tab)
+      const isBlocked = this.blockedUsers.some(b => b.userId === u.id && b.blocked);
+      if (isBlocked) continue;
+
+      if (!map.has(u.id)) {
+        map.set(u.id, { userId: u.id, name: u.name, lastName: u.lastName, warningCount: 0, posts: [] });
+      }
+      const entry = map.get(u.id)!;
+      entry.warningCount += pubWarning;
+      entry.posts.push(pub);
+    }
+
+    // Ne garder que les users dont le total warningCount est 1 ou 2
+    return Array.from(map.values()).filter(u => u.warningCount === 1 || u.warningCount === 2);
+  }
+
+  /** Nombre d'utilisateurs avec warningCount total 1 ou 2 (non bloqués) */
+  get warnedUsersCount(): number {
+    return this.warnedUsersFromPublications.length;
   }
 
   getWarningLevel(count: number): string {

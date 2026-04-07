@@ -304,6 +304,12 @@
 .admin-tab-blocked { border-color: rgba(239,68,68,.3); color: #dc2626; }
 .admin-tab-blocked.active { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; border-color: transparent; box-shadow: 0 4px 14px rgba(239,68,68,.35); }
 
+/* ── TAB : Warned Users ── */
+.admin-tab-warned { border-color: rgba(245,158,11,.3); color: #b45309; }
+.admin-tab-warned.active { background: linear-gradient(135deg, #f59e0b, #b45309); color: #fff; border-color: transparent; box-shadow: 0 4px 14px rgba(245,158,11,.35); }
+.tab-badge-warned { background: rgba(245,158,11,.15); color: #b45309; border-radius: 50px; padding: 2px 8px; font-size: .78rem; font-weight: 800; }
+.admin-tab-warned.active .tab-badge-warned { background: rgba(255,255,255,.25); color: #fff; }
+
 .tab-badge { background: rgba(124, 58, 237, 0.15); color: #7c3aed; border-radius: 50px; padding: 2px 8px; font-size: 0.78rem; font-weight: 800; }
 .admin-tab.active .tab-badge { background: rgba(255,255,255,0.25); color: #fff; }
 .tab-badge-pending { background: rgba(245, 158, 11, 0.2); color: #b45309; border-radius: 50px; padding: 2px 8px; font-size: 0.78rem; font-weight: 800; }
@@ -497,4 +503,41 @@
   .fo-title { font-size: 1.4rem; }
   .search-bar-row { flex-direction: column; align-items: stretch; }
   .admin-tabs { flex-direction: column; }
+}
+/* ═══════════════════════════════════════════════
+   WARNED USERS — Posts archivés list
+═══════════════════════════════════════════════ */
+.warn-posts-list {
+  margin: 12px 0 8px;
+  background: rgba(245,158,11,.07);
+  border: 1px solid rgba(245,158,11,.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.warn-posts-title {
+  font-size: .78rem; font-weight: 700;
+  color: #92400e; margin: 0 0 8px;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.warn-post-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 0; border-bottom: 1px solid rgba(245,158,11,.15);
+}
+.warn-post-item:last-child { border-bottom: none; }
+.warn-post-icon { font-size: .9rem; flex-shrink: 0; }
+.warn-post-titre {
+  flex: 1; font-size: .82rem; color: #ffffff;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.warn-post-status {
+  font-size: .72rem; font-weight: 700;
+  background: rgba(100,116,139,.15); color: #475569;
+  padding: 2px 7px; border-radius: 999px;
+  text-transform: uppercase; flex-shrink: 0;
+}
+.warn-post-status.status-pending {
+  background: rgba(245,158,11,.15); color: #b45309;
+}
+.bavatar-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
 }
