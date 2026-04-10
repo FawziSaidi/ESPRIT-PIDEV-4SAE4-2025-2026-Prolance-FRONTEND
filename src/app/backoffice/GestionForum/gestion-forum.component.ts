@@ -10,22 +10,20 @@ export type DetailPanel = 'pdfs' | 'images' | 'reactions' | 'comments' | null;
 })
 export class GestionForumComponent implements OnInit {
 
-  // ── Tabs admin ────────────────────────────────────────────────
-  activeTab: 'all' | 'pending' | 'blocked' | 'warned' = 'all';
+  today = new Date();
 
-  // ── Toutes les publications ───────────────────────────────────
+  // ── Tabs admin ────────────────────────────────────────────────────
+  activeTab: 'all' | 'blocked' | 'warned' = 'all';
+
+  // ── Toutes les publications ───────────────────────────────────────
   publications: Publication[] = [];
   filteredPublications: Publication[] = [];
 
-  // ── Publications en attente de réactivation ───────────────────
-  pendingPublications: Publication[] = [];
-  loadingPending = false;
-
-  // ── Utilisateurs bloqués ──────────────────────────────────────
+  // ── Utilisateurs bloqués ──────────────────────────────────────────
   blockedUsers: UserBlockDTO[] = [];
   loadingBlocked = false;
 
-  // ── Panel détail ──────────────────────────────────────────────
+  // ── Panel détail ──────────────────────────────────────────────────
   selectedPublication: Publication | null = null;
   selectedCommentaires: Commentaire[] = [];
   loadingComments = false;
@@ -33,14 +31,14 @@ export class GestionForumComponent implements OnInit {
   loadingReactions = false;
   activePanel: DetailPanel = null;
 
-  expandedCards  = new Set<number>();
+  expandedCards   = new Set<number>();
   expandedReplies = new Set<number>();
 
-  // ── Filtres ───────────────────────────────────────────────────
-  searchQuery   = '';
-  typeFilter    = 'ALL';
-  statutFilter  = 'ALL';
-  typeOptions   = ['ALL', 'QUESTION', 'ARTICLE', 'REVIEW'];
+  // ── Filtres ───────────────────────────────────────────────────────
+  searchQuery  = '';
+  typeFilter   = 'ALL';
+  statutFilter = 'ALL';
+  typeOptions  = ['ALL', 'QUESTION', 'ARTICLE', 'REVIEW'];
 
   loading = true;
   error   = '';
@@ -48,23 +46,185 @@ export class GestionForumComponent implements OnInit {
   readonly PAGE_SIZE = 3;
   currentPage = 1;
 
-  // ── Delete modal ──────────────────────────────────────────────
+  // ── Delete modal ──────────────────────────────────────────────────
   showDeleteModal = false;
   pubToDelete: Publication | null = null;
 
-  // ── Toast ─────────────────────────────────────────────────────
+  // ── Toast ─────────────────────────────────────────────────────────
   toast = { visible: false, success: true, message: '' };
   private toastTimer: any;
+
+  // ── AI Rapport ────────────────────────────────────────────────────
+  private readonly GROQ_API_KEY = '';
+  private readonly GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+  generatingReport = false;
+  showReportModal = false;
+  reportText = '';
+
+  generateAiReport(): void {
+    this.generatingReport = true;
+
+    const totalPubs= this.publications.filter(p => p.statut === 'ACTIVE').length;
+    const questions         = this.publications.filter(p => p.statut === 'ACTIVE' && p.type === 'QUESTION').length;
+    const articles          = this.publications.filter(p => p.statut === 'ACTIVE' && p.type === 'ARTICLE').length;
+    const reviews           = this.publications.filter(p => p.statut === 'ACTIVE' && p.type === 'REVIEW').length;
+    const totalSignalements = this.publications
+      .filter(p => p.statut === 'ACTIVE')
+      .reduce((acc, p) => acc + (p.signalements?.length || 0), 0);
+    const blockedCount = this.blockedUsersCount;
+    const warnedCount  = this.warnedUsersCount;
+
+    const prompt = `You are an AI assistant generating an admin report for a developer forum platform.
+Here are the current statistics:
+- Total publications: ${totalPubs}
+- By type: Questions: ${questions}, Articles: ${articles}, Reviews: ${reviews}
+- Total reports (signalements): ${totalSignalements}
+- Blocked users: ${blockedCount}
+- Warned users: ${warnedCount}
+
+Write a concise, professional admin report in French (2–4 paragraphs) that:
+1. Summarizes the forum activity
+2. Highlights moderation issues (reports, blocks, warnings)
+3. Gives 2–3 actionable recommendations for the admin
+Keep it factual, clear and actionable. No bullet points, write in prose.`;
+
+    fetch(this.GROQ_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${this.GROQ_API_KEY}` },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 600,
+        temperature: 0.6
+      })
+    })
+      .then(r => r.json())
+      .then(data => {
+        this.reportText = data?.choices?.[0]?.message?.content?.trim() || 'Erreur lors de la génération du rapport.';
+        this.showReportModal = true;
+        this.generatingReport = false;
+      })
+      .catch(() => {
+        this.reportText = 'Erreur réseau lors de la génération du rapport.';
+        this.showReportModal = true;
+        this.generatingReport = false;
+      });
+  }
+
+  closeReportModal(): void {
+    this.showReportModal = false;
+    this.reportText = '';
+  }
+
+  downloadReport(): void {
+    const loadJsPDF = (): Promise<any> => {
+      if ((window as any).jspdf?.jsPDF) return Promise.resolve((window as any).jspdf.jsPDF);
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        script.onload = () => resolve((window as any).jspdf.jsPDF);
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    };
+
+    loadJsPDF().then(JsPDF => {
+      const doc = new JsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const date = new Date().toLocaleDateString('fr-FR');
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 18;
+      const contentW = pageW - margin * 2;
+
+      // ── Header band ──
+      doc.setFillColor(124, 58, 237);
+      doc.rect(0, 0, pageW, 32, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Rapport AI — Forum Management', margin, 15);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Généré le : ${date}`, margin, 24);
+
+      // ── Stats band ──
+      const totalPubs = this.publications.length;
+      const activePubs = this.publications.filter(p => p.statut === 'ACTIVE').length;
+      const archivedPubs = this.publications.filter(p => p.statut === 'ARCHIVED').length;
+      const totalSig = this.publications.reduce((a, p) => a + (p.signalements?.length || 0), 0);
+
+      const stats = [
+        { label: 'Publications actives', value: String(activePubs) },
+        { label: 'Archivées', value: String(archivedPubs) },
+        { label: 'Signalements', value: String(totalSig) },
+        { label: 'Bloqués', value: String(this.blockedUsersCount) },
+        { label: 'Avertis', value: String(this.warnedUsersCount) },
+      ];
+
+      const boxW = (contentW - 4 * 4) / 5;
+      let bx = margin;
+      const bY = 38;
+      doc.setFontSize(8);
+      stats.forEach(s => {
+        doc.setFillColor(243, 240, 255);
+        doc.roundedRect(bx, bY, boxW, 18, 3, 3, 'F');
+        doc.setTextColor(124, 58, 237);
+        doc.setFont('helvetica', 'bold');
+        doc.text(s.value, bx + boxW / 2, bY + 7, { align: 'center' });
+        doc.setTextColor(80, 60, 120);
+        doc.setFont('helvetica', 'normal');
+        doc.text(s.label, bx + boxW / 2, bY + 13, { align: 'center' });
+        bx += boxW + 4;
+      });
+
+      // ── Divider ──
+      let curY = bY + 26;
+      doc.setDrawColor(200, 180, 255);
+      doc.setLineWidth(0.4);
+      doc.line(margin, curY, pageW - margin, curY);
+      curY += 7;
+
+      // ── Report body ──
+      doc.setFontSize(10.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(40, 40, 60);
+      const lines: string[] = doc.splitTextToSize(this.reportText, contentW);
+      const lineH = 6;
+      const pageH = doc.internal.pageSize.getHeight();
+      const bottomMargin = 22;
+
+      lines.forEach((line: string) => {
+        if (curY + lineH > pageH - bottomMargin) {
+          doc.addPage();
+          curY = margin;
+        }
+        doc.text(line, margin, curY);
+        curY += lineH;
+      });
+
+      // ── Footer on each page ──
+      const totalPages = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFillColor(248, 245, 255);
+        doc.rect(0, pageH - 14, pageW, 14, 'F');
+        doc.setFontSize(7.5);
+        doc.setTextColor(150, 130, 190);
+        doc.text('Forum Management — Rapport IA confidentiel', margin, pageH - 5);
+        doc.text(`Page ${i} / ${totalPages}`, pageW - margin, pageH - 5, { align: 'right' });
+      }
+
+      doc.save(`rapport-forum-${new Date().toISOString().slice(0, 10)}.pdf`);
+    });
+  }
 
   constructor(private forumService: ForumService) {}
 
   ngOnInit(): void {
     this.loadData();
-    this.loadPendingPublications();
     this.loadBlockedUsers();
   }
 
-  // ── Chargement ────────────────────────────────────────────────
+  // ── Chargement ────────────────────────────────────────────────────
 
   loadData(): void {
     this.loading = true;
@@ -77,14 +237,6 @@ export class GestionForumComponent implements OnInit {
         this.loadAllCommentCounts();
       },
       error: () => { this.error = 'Error loading publications.'; this.loading = false; }
-    });
-  }
-
-  loadPendingPublications(): void {
-    this.loadingPending = true;
-    this.forumService.getPendingPublications().subscribe({
-      next:  (pubs) => { this.pendingPublications = pubs; this.loadingPending = false; },
-      error: ()     => { this.pendingPublications = [];   this.loadingPending = false; }
     });
   }
 
@@ -109,21 +261,20 @@ export class GestionForumComponent implements OnInit {
     });
   }
 
-  // ── Navigation tabs ───────────────────────────────────────────
+  // ── Navigation tabs ───────────────────────────────────────────────
 
-  switchTab(tab: 'all' | 'pending' | 'blocked' | 'warned'): void {
+  switchTab(tab: 'all' | 'blocked' | 'warned'): void {
     this.activeTab = tab;
-    if (tab === 'pending') this.loadPendingPublications();
     if (tab === 'blocked' || tab === 'warned') this.loadBlockedUsers();
   }
 
-  // ── Filtres ───────────────────────────────────────────────────
+  // ── Filtres ───────────────────────────────────────────────────────
 
   applyFilters(): void {
     let result = this.publications;
 
     if (this.statutFilter === 'ARCHIVED') {
-      result = result.filter(p => p.statut === 'ARCHIVED' || p.statut === 'PENDING');
+      result = result.filter(p => p.statut === 'ARCHIVED');
     } else {
       result = result.filter(p => p.statut === 'ACTIVE');
     }
@@ -152,7 +303,7 @@ export class GestionForumComponent implements OnInit {
   }
   clearFilters(): void { this.searchQuery = ''; this.typeFilter = 'ALL'; this.statutFilter = 'ALL'; this.applyFilters(); }
 
-  // ── Pagination ────────────────────────────────────────────────
+  // ── Pagination ────────────────────────────────────────────────────
 
   get totalPages(): number { return Math.ceil(this.filteredPublications.length / this.PAGE_SIZE); }
   get pagedPublications(): Publication[] {
@@ -162,7 +313,7 @@ export class GestionForumComponent implements OnInit {
   get pageNumbers(): number[] { return Array.from({ length: this.totalPages }, (_, i) => i + 1); }
   goToPage(p: number): void { if (p >= 1 && p <= this.totalPages) this.currentPage = p; }
 
-  // ── Expand cards / replies ────────────────────────────────────
+  // ── Expand cards / replies ────────────────────────────────────────
 
   isExpanded(id: number): boolean { return this.expandedCards.has(id); }
   toggleExpand(id: number, event: Event): void {
@@ -174,7 +325,7 @@ export class GestionForumComponent implements OnInit {
   }
   isRepliesExpanded(commentId: number): boolean { return this.expandedReplies.has(commentId); }
 
-  // ── Panel ─────────────────────────────────────────────────────
+  // ── Panel ─────────────────────────────────────────────────────────
 
   openPanel(pub: Publication, panel: DetailPanel, event: Event): void {
     event.stopPropagation();
@@ -200,7 +351,7 @@ export class GestionForumComponent implements OnInit {
     this.expandedReplies.clear();
     this.forumService.getCommentairesByPublication(pub.id).subscribe({
       next: (comments) => {
-        this.selectedCommentaires = comments.filter(c => !c.parent || !c.parent.id);
+        this.selectedCommentaires = comments;
         pub.commentCount = this.countTotal(comments);
         const fpub = this.filteredPublications.find(p => p.id === pub.id);
         if (fpub) fpub.commentCount = pub.commentCount;
@@ -226,54 +377,24 @@ export class GestionForumComponent implements OnInit {
     });
   }
 
-  // ── Décisions admin : réactivation publication ────────────────
-
-  accepterReactivation(pub: Publication): void {
-    this.forumService.accepterReactivation(pub.id).subscribe({
-      next: () => {
-        this.pendingPublications = this.pendingPublications.filter(p => p.id !== pub.id);
-        const idx = this.publications.findIndex(p => p.id === pub.id);
-        if (idx >= 0) this.publications[idx].statut = 'ACTIVE';
-        this.applyFilters();
-        this.showToast(true, `"${pub.titre}" has been reactivated.`);
-      },
-      error: () => this.showToast(false, 'Error accepting reactivation.')
-    });
-  }
-
-  refuserReactivation(pub: Publication): void {
-    this.forumService.refuserReactivation(pub.id).subscribe({
-      next: () => {
-        this.pendingPublications = this.pendingPublications.filter(p => p.id !== pub.id);
-        const idx = this.publications.findIndex(p => p.id === pub.id);
-        if (idx >= 0) this.publications[idx].statut = 'ARCHIVED';
-        this.applyFilters();
-        this.showToast(true, `Reactivation refused for "${pub.titre}".`);
-      },
-      error: () => this.showToast(false, 'Error refusing reactivation.')
-    });
-  }
-
-  // ── Réactivation compte utilisateur (admin) ───────────────────
+  // ── Réactivation compte utilisateur (admin) ───────────────────────
 
   reactiverCompteUser(user: UserBlockDTO): void {
     this.forumService.reactiverCompteUser(user.userId).subscribe({
       next: () => {
-        // ✅ Reset warning counter & unblock — posts stay ARCHIVED/PENDING untouched
-        const idx = this.blockedUsers.findIndex(u => u.userId === user.userId);
-        if (idx >= 0) {
-          this.blockedUsers[idx].warningCount = 0;
-          this.blockedUsers[idx].blocked = false;
-        }
-        // Reload publications — archived posts must remain archived
+        // Les posts archivés ont été supprimés côté back — on recharge tout
         this.loadData();
-        this.showToast(true, `Account of ${user.name} ${user.lastName} reactivated. Warning counter reset to 0. Archived posts remain archived.`);
+        this.loadBlockedUsers();
+        this.showToast(
+          true,
+          `Compte de ${user.name} ${user.lastName} réactivé. Posts archivés supprimés.`
+        );
       },
-      error: () => this.showToast(false, `Error reactivating account of ${user.name} ${user.lastName}.`)
+      error: () => this.showToast(false, `Erreur lors de la réactivation du compte de ${user.name} ${user.lastName}.`)
     });
   }
 
-  // ── Suppression ───────────────────────────────────────────────
+  // ── Suppression ───────────────────────────────────────────────────
 
   askDelete(pub: Publication, event: Event): void {
     event.stopPropagation();
@@ -289,7 +410,6 @@ export class GestionForumComponent implements OnInit {
     this.forumService.adminDeletePublication(pub.id).subscribe({
       next: () => {
         if (this.selectedPublication?.id === pub.id) this.closePanel();
-        this.pendingPublications = this.pendingPublications.filter(p => p.id !== pub.id);
         this.loadData();
         this.showToast(true, `"${pub.titre}" deleted successfully.`);
       },
@@ -297,7 +417,7 @@ export class GestionForumComponent implements OnInit {
     });
   }
 
-  // ── Toast ─────────────────────────────────────────────────────
+  // ── Toast ─────────────────────────────────────────────────────────
 
   showToast(success: boolean, message: string): void {
     if (this.toastTimer) clearTimeout(this.toastTimer);
@@ -309,7 +429,7 @@ export class GestionForumComponent implements OnInit {
     this.toast = { ...this.toast, visible: false };
   }
 
-  // ── Helpers ───────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────
 
   get totalReactions(): number {
     if (!this.reactionSummary) return 0;
@@ -320,9 +440,6 @@ export class GestionForumComponent implements OnInit {
     return this.publications.filter(p => p.type === type && p.statut === 'ACTIVE').length;
   }
   getCountByStatut(statut: string): number {
-    if (statut === 'ARCHIVED') {
-      return this.publications.filter(p => p.statut === 'ARCHIVED' || p.statut === 'PENDING').length;
-    }
     return this.publications.filter(p => p.statut === statut).length;
   }
   get activePublicationsCount(): number {
@@ -333,20 +450,23 @@ export class GestionForumComponent implements OnInit {
     return activeCount > 0 ? ((this.getCountByType(type) / activeCount) * 100).toFixed(0) : '0';
   }
 
-  /** Nombre d'utilisateurs actuellement bloqués */
+  /** Nombre d'utilisateurs actuellement bloqués (>= 3 posts archivés) */
   get blockedUsersCount(): number {
     return this.blockedUsers.filter(u => u.blocked).length;
   }
 
-  /** Utilisateurs avertis : somme des warningCount de leurs publications (total 1 ou 2), non bloqués */
+  /**
+   * Utilisateurs avertis :
+   * basé sur le nombre de leurs publications ARCHIVED dans this.publications (feed admin complet).
+   * Seulement ceux ayant 1 ou 2 posts archivés (non bloqués).
+   */
   get warnedUsersFromPublications(): { userId: number; name: string; lastName: string; warningCount: number; posts: Publication[] }[] {
     const map = new Map<number, { userId: number; name: string; lastName: string; warningCount: number; posts: Publication[] }>();
 
     for (const pub of this.publications) {
+      if (pub.statut !== 'ARCHIVED') continue;
       const u = pub.user;
       if (!u) continue;
-      const pubWarning = pub.warningCount ?? 0;
-      if (pubWarning === 0) continue;
 
       // Exclure les utilisateurs bloqués (ils ont leur propre tab)
       const isBlocked = this.blockedUsers.some(b => b.userId === u.id && b.blocked);
@@ -356,30 +476,17 @@ export class GestionForumComponent implements OnInit {
         map.set(u.id, { userId: u.id, name: u.name, lastName: u.lastName, warningCount: 0, posts: [] });
       }
       const entry = map.get(u.id)!;
-      entry.warningCount += pubWarning;
+      entry.warningCount += 1;
       entry.posts.push(pub);
     }
 
-    // Ne garder que les users dont le total warningCount est 1 ou 2
+    // Seulement ceux avec 1 ou 2 posts archivés
     return Array.from(map.values()).filter(u => u.warningCount === 1 || u.warningCount === 2);
   }
 
-  /** Nombre d'utilisateurs avec warningCount total 1 ou 2 (non bloqués) */
+  /** Nombre d'utilisateurs avertis (1 ou 2 posts archivés, non bloqués) */
   get warnedUsersCount(): number {
     return this.warnedUsersFromPublications.length;
-  }
-
-  getWarningLevel(count: number): string {
-    if (count >= 3) return 'blocked';
-    if (count === 2) return 'warning';
-    return 'ok';
-  }
-
-  getWarningLabel(user: UserBlockDTO): string {
-    if (user.blocked) return '🔴 Blocked';
-    if (user.warningCount === 2) return '🟠 2/3 warnings';
-    if (user.warningCount === 1) return '🟡 1/3 warnings';
-    return '🟢 Active';
   }
 
   getTypeIcon(type: string): string  { return ({ QUESTION: '❓', ARTICLE: '📰', REVIEW: '⭐' } as any)[type] || '📝'; }

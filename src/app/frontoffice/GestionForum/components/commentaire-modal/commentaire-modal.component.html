@@ -44,9 +44,7 @@
               </div>
             </div>
             <div class="comment-actions-right">
-              <!-- Badge épinglé visible par tous -->
               <span *ngIf="commentaire.pinned" class="pinned-badge">📌 Pinned</span>
-              <!-- Bouton épingler visible uniquement par le créateur du post -->
               <button *ngIf="isPublicationOwner() && editingCommentaireId !== commentaire.id"
                 class="btn-pin" [class.pinned]="commentaire.pinned"
                 (click)="togglePin(commentaire)"
@@ -63,6 +61,10 @@
           <!-- Content (read) -->
           <div *ngIf="editingCommentaireId !== commentaire.id" class="commentaire-content">
             <p [innerHTML]="parseContent(commentaire.contenue)"></p>
+            <!-- GIF affiché si le commentaire contient une URL GIF -->
+            <img *ngIf="extractGifUrl(commentaire.contenue)" 
+                 [src]="extractGifUrl(commentaire.contenue)" 
+                 class="comment-gif" alt="GIF" />
           </div>
 
           <!-- Content (edit) -->
@@ -74,6 +76,41 @@
               <div *ngFor="let user of mentionSuggestions" class="mention-item" (mousedown)="selectMention(user)">
                 <span class="mention-avatar">{{ user.name.charAt(0) }}{{ user.lastName.charAt(0) }}</span>
                 <span class="mention-name">{{ user.name }} {{ user.lastName }}</span>
+              </div>
+            </div>
+            <!-- Emoji + GIF buttons in edit mode -->
+            <div class="toolbar-row">
+              <button class="btn-toolbar" (click)="toggleEmojiPicker('edit')" title="Emoji">😊</button>
+              <button class="btn-toolbar" (click)="toggleGifPicker('edit')" title="GIF">
+                <span class="gif-label">GIF</span>
+              </button>
+            </div>
+            <!-- Emoji Picker (edit) -->
+            <div class="emoji-picker-panel" *ngIf="showEmojiPicker && activeEmojiField === 'edit'">
+              <div class="emoji-categories">
+                <button *ngFor="let cat of emojiCategories" class="emoji-cat-btn"
+                  [class.active]="selectedCategory === cat.name"
+                  (click)="selectedCategory = cat.name">{{ cat.icon }}</button>
+              </div>
+              <div class="emoji-grid">
+                <button *ngFor="let emoji of getEmojisForCategory(selectedCategory)"
+                  class="emoji-btn" (click)="insertEmoji(emoji, 'edit')">{{ emoji }}</button>
+              </div>
+            </div>
+            <!-- GIF Picker (edit) -->
+            <div class="gif-picker-panel" *ngIf="showGifPicker && activeGifField === 'edit'">
+              <div class="gif-search-row">
+                <input class="gif-search-input" [(ngModel)]="gifSearchQuery"
+                  placeholder="Search GIFs..." (input)="onGifInput()" (keydown.enter)="searchGifs()" />
+                <button class="btn-gif-search" (click)="searchGifs()">🔍</button>
+              </div>
+              <div class="gif-loading" *ngIf="gifLoading"><div class="spinner-small-dark"></div></div>
+              <div class="gif-grid" *ngIf="!gifLoading">
+                <img *ngFor="let gif of gifResults" [src]="gif.preview" class="gif-thumb"
+                  (click)="insertGif(gif.url, 'edit')" [title]="gif.title" />
+                <div *ngIf="gifResults.length === 0 && !gifLoading" class="gif-empty">
+                  Type to search GIFs
+                </div>
               </div>
             </div>
             <div *ngIf="moderationEditError" class="moderation-error">{{ moderationEditError }}</div>
@@ -108,6 +145,39 @@
                 <div *ngFor="let user of mentionSuggestions" class="mention-item" (mousedown)="selectMention(user)">
                   <span class="mention-avatar">{{ user.name.charAt(0) }}{{ user.lastName.charAt(0) }}</span>
                   <span class="mention-name">{{ user.name }} {{ user.lastName }}</span>
+                </div>
+              </div>
+              <!-- Emoji + GIF buttons in reply -->
+              <div class="toolbar-row">
+                <button class="btn-toolbar" (click)="toggleEmojiPicker('reply')" title="Emoji">😊</button>
+                <button class="btn-toolbar" (click)="toggleGifPicker('reply')" title="GIF">
+                  <span class="gif-label">GIF</span>
+                </button>
+              </div>
+              <!-- Emoji Picker (reply) -->
+              <div class="emoji-picker-panel" *ngIf="showEmojiPicker && activeEmojiField === 'reply'">
+                <div class="emoji-categories">
+                  <button *ngFor="let cat of emojiCategories" class="emoji-cat-btn"
+                    [class.active]="selectedCategory === cat.name"
+                    (click)="selectedCategory = cat.name">{{ cat.icon }}</button>
+                </div>
+                <div class="emoji-grid">
+                  <button *ngFor="let emoji of getEmojisForCategory(selectedCategory)"
+                    class="emoji-btn" (click)="insertEmoji(emoji, 'reply')">{{ emoji }}</button>
+                </div>
+              </div>
+              <!-- GIF Picker (reply) -->
+              <div class="gif-picker-panel" *ngIf="showGifPicker && activeGifField === 'reply'">
+                <div class="gif-search-row">
+                  <input class="gif-search-input" [(ngModel)]="gifSearchQuery"
+                    placeholder="Search GIFs..." (input)="onGifInput()" (keydown.enter)="searchGifs()" />
+                  <button class="btn-gif-search" (click)="searchGifs()">🔍</button>
+                </div>
+                <div class="gif-loading" *ngIf="gifLoading"><div class="spinner-small-dark"></div></div>
+                <div class="gif-grid" *ngIf="!gifLoading">
+                  <img *ngFor="let gif of gifResults" [src]="gif.preview" class="gif-thumb"
+                    (click)="insertGif(gif.url, 'reply')" [title]="gif.title" />
+                  <div *ngIf="gifResults.length === 0 && !gifLoading" class="gif-empty">Type to search GIFs</div>
                 </div>
               </div>
               <div *ngIf="moderationReplyError" class="moderation-error">{{ moderationReplyError }}</div>
@@ -145,9 +215,12 @@
                 </div>
               </div>
 
-              <!-- Reply content (read) with mentions -->
+              <!-- Reply content (read) -->
               <div *ngIf="editingCommentaireId !== reply.id" class="commentaire-content reply-content">
                 <p [innerHTML]="parseContent(reply.contenue)"></p>
+                <img *ngIf="extractGifUrl(reply.contenue)"
+                     [src]="extractGifUrl(reply.contenue)"
+                     class="comment-gif" alt="GIF" />
               </div>
 
               <!-- Reply content (edit) -->
@@ -159,6 +232,36 @@
                   <div *ngFor="let user of mentionSuggestions" class="mention-item" (mousedown)="selectMention(user)">
                     <span class="mention-avatar">{{ user.name.charAt(0) }}{{ user.lastName.charAt(0) }}</span>
                     <span class="mention-name">{{ user.name }} {{ user.lastName }}</span>
+                  </div>
+                </div>
+                <div class="toolbar-row">
+                  <button class="btn-toolbar" (click)="toggleEmojiPicker('edit')" title="Emoji">😊</button>
+                  <button class="btn-toolbar" (click)="toggleGifPicker('edit')" title="GIF">
+                    <span class="gif-label">GIF</span>
+                  </button>
+                </div>
+                <div class="emoji-picker-panel" *ngIf="showEmojiPicker && activeEmojiField === 'edit'">
+                  <div class="emoji-categories">
+                    <button *ngFor="let cat of emojiCategories" class="emoji-cat-btn"
+                      [class.active]="selectedCategory === cat.name"
+                      (click)="selectedCategory = cat.name">{{ cat.icon }}</button>
+                  </div>
+                  <div class="emoji-grid">
+                    <button *ngFor="let emoji of getEmojisForCategory(selectedCategory)"
+                      class="emoji-btn" (click)="insertEmoji(emoji, 'edit')">{{ emoji }}</button>
+                  </div>
+                </div>
+                <div class="gif-picker-panel" *ngIf="showGifPicker && activeGifField === 'edit'">
+                  <div class="gif-search-row">
+                    <input class="gif-search-input" [(ngModel)]="gifSearchQuery"
+                      placeholder="Search GIFs..." (input)="onGifInput()" (keydown.enter)="searchGifs()" />
+                    <button class="btn-gif-search" (click)="searchGifs()">🔍</button>
+                  </div>
+                  <div class="gif-loading" *ngIf="gifLoading"><div class="spinner-small-dark"></div></div>
+                  <div class="gif-grid" *ngIf="!gifLoading">
+                    <img *ngFor="let gif of gifResults" [src]="gif.preview" class="gif-thumb"
+                      (click)="insertGif(gif.url, 'edit')" [title]="gif.title" />
+                    <div *ngIf="gifResults.length === 0 && !gifLoading" class="gif-empty">Type to search GIFs</div>
                   </div>
                 </div>
                 <div class="edit-actions">
@@ -179,6 +282,29 @@
         {{ currentUserId ? 'U' : '?' }}
       </div>
       <div class="comment-input-wrapper mention-wrapper">
+
+        <!-- ✅ AI Suggestions Section -->
+        <div class="ai-suggestions-wrapper">
+          <div class="ai-suggestions-header">
+            <span class="ai-suggestions-label">✨ Suggestions IA</span>
+            <button class="btn-load-suggestions" (click)="loadSuggestions()"
+              [disabled]="loadingSuggestions || suggestionsLoaded"
+              title="Générer des suggestions">
+              <span *ngIf="!loadingSuggestions && !suggestionsLoaded">Générer</span>
+              <span *ngIf="loadingSuggestions" class="loading-text"><span class="spinner-small"></span> IA...</span>
+              <span *ngIf="suggestionsLoaded && !loadingSuggestions">✓ Chargé</span>
+            </button>
+          </div>
+          <div class="ai-suggestions-list" *ngIf="commentSuggestions.length > 0">
+            <button *ngFor="let s of commentSuggestions; let i = index"
+              class="btn-suggestion"
+              (click)="applySuggestion(s)">
+              <span class="suggestion-number">{{ i + 1 }}</span>
+              <span class="suggestion-text">{{ s }}</span>
+            </button>
+          </div>
+        </div>
+
         <textarea [(ngModel)]="newCommentaire" class="comment-input"
           placeholder="Add a comment... (type @ to mention someone)"
           rows="3"
@@ -186,13 +312,52 @@
           (input)="onTextInput($event, 'new')"
           (keydown.enter)="$event.ctrlKey && addCommentaire()">
         </textarea>
-        <!-- ✅ Mention dropdown for new comment -->
+        <!-- Mention dropdown for new comment -->
         <div class="mention-dropdown" *ngIf="showMentionDropdown && activeMentionField === 'new'" [ngStyle]="dropdownPosition">
           <div *ngFor="let user of mentionSuggestions" class="mention-item" (mousedown)="selectMention(user)">
             <span class="mention-avatar">{{ user.name.charAt(0) }}{{ user.lastName.charAt(0) }}</span>
             <span class="mention-name">{{ user.name }} {{ user.lastName }}</span>
           </div>
         </div>
+
+        <!-- ✅ Toolbar: Emoji + GIF buttons -->
+        <div class="toolbar-row">
+          <button class="btn-toolbar" (click)="toggleEmojiPicker('new')" title="Add emoji">😊</button>
+          <button class="btn-toolbar" (click)="toggleGifPicker('new')" title="Add GIF">
+            <span class="gif-label">GIF</span>
+          </button>
+        </div>
+
+        <!-- ✅ Emoji Picker Panel (new comment) -->
+        <div class="emoji-picker-panel" *ngIf="showEmojiPicker && activeEmojiField === 'new'">
+          <div class="emoji-categories">
+            <button *ngFor="let cat of emojiCategories" class="emoji-cat-btn"
+              [class.active]="selectedCategory === cat.name"
+              (click)="selectedCategory = cat.name">{{ cat.icon }}</button>
+          </div>
+          <div class="emoji-grid">
+            <button *ngFor="let emoji of getEmojisForCategory(selectedCategory)"
+              class="emoji-btn" (click)="insertEmoji(emoji, 'new')">{{ emoji }}</button>
+          </div>
+        </div>
+
+        <!-- ✅ GIF Picker Panel (new comment) -->
+        <div class="gif-picker-panel" *ngIf="showGifPicker && activeGifField === 'new'">
+          <div class="gif-search-row">
+            <input class="gif-search-input" [(ngModel)]="gifSearchQuery"
+              placeholder="Search GIFs (ex: funny, hello...)" (input)="onGifInput()" (keydown.enter)="searchGifs()" />
+            <button class="btn-gif-search" (click)="searchGifs()">🔍</button>
+          </div>
+          <div class="gif-loading" *ngIf="gifLoading"><div class="spinner-small-dark"></div></div>
+          <div class="gif-grid" *ngIf="!gifLoading">
+            <img *ngFor="let gif of gifResults" [src]="gif.preview" class="gif-thumb"
+              (click)="insertGif(gif.url, 'new')" [title]="gif.title" />
+            <div *ngIf="gifResults.length === 0 && !gifLoading" class="gif-empty">
+              🔍 Type something to search GIFs
+            </div>
+          </div>
+        </div>
+
         <div *ngIf="moderationError" class="moderation-error">{{ moderationError }}</div>
         <div class="input-footer">
           <span class="input-hint"></span>

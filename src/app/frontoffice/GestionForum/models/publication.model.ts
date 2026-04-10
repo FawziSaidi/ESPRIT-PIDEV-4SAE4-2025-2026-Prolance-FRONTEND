@@ -6,8 +6,8 @@ export enum TypePublication {
 
 export enum StatutPublication {
   ACTIVE = 'ACTIVE',
-  ARCHIVED = 'ARCHIVED',
-  PENDING = 'PENDING'
+  ARCHIVED = 'ARCHIVED'
+  // PENDING supprimé
 }
 
 export interface User {
@@ -31,7 +31,8 @@ export interface Publication {
   contentColor?: string;
   titleFontSize?: string;
   statut?: StatutPublication;
-  signalements?: number[]; // liste des userId qui ont signalé
+  signalements?: number[];
+  signalementRaisons?: string[]; // raisons des signalements
 }
 
 export function getImageUrl(imageName: string): string {

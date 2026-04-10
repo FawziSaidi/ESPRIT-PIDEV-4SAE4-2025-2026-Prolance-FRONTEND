@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Publication, TypePublication, getImageUrl, getPdfUrl } from '../../models/publication.model';
 import { PublicationService } from '../../services/publication.service';
 import { AuthService } from '../../../../services/auth.services';
-import { AiContentService } from '../../services/ai-content.service';
+import { AiContentService, ModerationResult } from '../../services/ai-content.service';
 
 interface ImagePreview {
   file?: File;
@@ -59,6 +59,8 @@ export class PublicationFormComponent implements OnInit {
 
   loading: boolean = false;
   errorMessage: string = '';
+  moderating: boolean = false;
+  moderationErrors: string[] = [];
 
   // ✅ AI Generation state
   generatingContent: boolean = false;
@@ -193,6 +195,45 @@ export class PublicationFormComponent implements OnInit {
   // ── Submit ────────────────────────────────────────────────────
   onSubmit(): void {
     if (!this.validateForm()) return;
+    this.moderating = true;
+    this.moderationErrors = [];
+    this.errorMessage = '';
+
+    // Collect images with mimeType for visual moderation
+    const imageBase64List = this.imagePreviews
+      .filter(p => p.file)
+      .map(p => ({
+        base64: p.previewUrl,
+        mimeType: p.file!.type || 'image/jpeg'
+      }));
+
+    // Pass actual PDF files for text extraction
+    const pdfFiles = this.pdfPreviews
+      .filter(p => p.file)
+      .map(p => ({ file: p.file!, fileName: p.fileName }));
+
+    this.aiContentService.moderateContent({
+      titre: this.formData.titre.trim(),
+      contenue: this.formData.contenue.trim(),
+      imageBase64List,
+      pdfFiles
+    }).subscribe({
+      next: (result: ModerationResult) => {
+        this.moderating = false;
+        if (!result.approved) {
+          this.moderationErrors = result.reasons;
+          return;
+        }
+        this.submitToBackend();
+      },
+      error: () => {
+        this.moderating = false;
+        this.submitToBackend(); // en cas d'erreur AI → on laisse passer
+      }
+    });
+  }
+
+  private submitToBackend(): void {
     this.loading = true;
     this.errorMessage = '';
 

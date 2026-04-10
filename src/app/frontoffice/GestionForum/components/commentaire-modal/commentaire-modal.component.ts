@@ -4,6 +4,21 @@ import { Commentaire } from '../../models/commentaire.model';
 import { CommentaireService } from '../../services/commentaire.service';
 import { AuthService } from '../../../../services/auth.services';
 import { UserSearchService, UserSuggestion } from '../../services/user-search.service';
+import { AiContentService } from '../../services/ai-content.service';
+
+// ✅ Structure GIF
+interface GifItem {
+  url: string;
+  preview: string;
+  title: string;
+}
+
+// ✅ Structure catégorie d'emojis
+interface EmojiCategory {
+  name: string;
+  icon: string;
+  emojis: string[];
+}
 
 @Component({
   selector: 'app-commentaire-modal',
@@ -38,6 +53,11 @@ export class CommentaireModalComponent implements OnInit {
   moderationReplyError: string = '';
   moderationEditError: string = '';
 
+  // AI Comment Suggestions
+  commentSuggestions: string[] = [];
+  loadingSuggestions: boolean = false;
+  suggestionsLoaded: boolean = false;
+
   showDeleteModal: boolean = false;
   commentaireToDelete: Commentaire | null = null;
 
@@ -50,11 +70,72 @@ export class CommentaireModalComponent implements OnInit {
   private mentionDebounce: any = null;
   dropdownPosition: { top: string; left: string; width: string; maxHeight?: string; bottom?: string } = { top: '0px', left: '0px', width: '220px' };
 
+  // ✅ EMOJI PICKER
+  showEmojiPicker: boolean = false;
+  activeEmojiField: 'new' | 'reply' | 'edit' | null = null;
+  selectedCategory: string = 'Smileys';
+
+  emojiCategories: EmojiCategory[] = [
+    {
+      name: 'Smileys', icon: '😊',
+      emojis: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙',
+               '🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬',
+               '🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','💫','🤯','🤠','🥳',
+               '🥸','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭',
+               '😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺']
+    },
+    {
+      name: 'Gestures', icon: '👋',
+      emojis: ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍',
+               '👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂',
+               '🦻','👃','🫀','🫁','🧠','🦷','🦴','👀','👁','👅','👄','💋','🩸']
+    },
+    {
+      name: 'Hearts', icon: '❤️',
+      emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','❤️‍🔥','❤️‍🩹','💔','❣️','💕','💞','💓','💗','💖','💘','💝',
+               '💟','☮️','✝️','☪️','🕉','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐']
+    },
+    {
+      name: 'Animals', icon: '🐶',
+      emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊',
+               '🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗',
+               '🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆']
+    },
+    {
+      name: 'Food', icon: '🍕',
+      emojis: ['🍕','🍔','🌮','🌯','🍟','🌭','🍿','🧂','🥚','🍳','🧇','🥞','🧈','🍞','🥐','🥖','🫓','🥨','🥯',
+               '🧀','🥗','🥙','🥪','🫔','🌮','🫕','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘',
+               '🍥','🥮','🍡','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🧃','🥤','🧋']
+    },
+    {
+      name: 'Activities', icon: '⚽',
+      emojis: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🏑','🥍','🏏','🪃','🥅','⛳','🪁',
+               '🎣','🤿','🎽','🎿','🛷','🥌','🎯','🪀','🪆','🎮','🕹','🎲','🧩','🪅','🎭','🎨','🎬','🎤','🎧','🎼',
+               '🎵','🎶','🥁','🪘','🎷','🎺','🎸','🪕','🎻','🪗','🪈']
+    },
+    {
+      name: 'Travel', icon: '✈️',
+      emojis: ['✈️','🚀','🛸','🚁','🛶','⛵','🚤','🛥','🛳','⛴','🚢','🚂','🚃','🚄','🚅','🚆','🚇','🚈','🚉','🚊',
+               '🚝','🚞','🚋','🚌','🚍','🚎','🚐','🚑','🚒','🚓','🚔','🚕','🚖','🚗','🚘','🚙','🛻','🚚','🚛','🚜',
+               '🏎','🏍','🛵','🦽','🦼','🛺','🚲','🛴','🛹','🛼','🏋','🛐','⛪','🕌','🕍','⛩','🏔','🗻','🌋','🏕']
+    }
+  ];
+
+  // ✅ GIF PICKER — GIPHY API (remplace Tenor qui est arrêté depuis jan 2026)
+  private readonly GIPHY_API_KEY = '';
+  showGifPicker: boolean = false;
+  activeGifField: 'new' | 'reply' | 'edit' | null = null;
+  gifSearchQuery: string = '';
+  gifResults: GifItem[] = [];
+  gifLoading: boolean = false;
+  private gifDebounce: any = null;
+
   constructor(
     private commentaireService: CommentaireService,
     private authService: AuthService,
     private userSearchService: UserSearchService,
-    private cdr: ChangeDetectorRef   // ✅ AJOUTÉ
+    private aiContentService: AiContentService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -70,7 +151,145 @@ export class CommentaireModalComponent implements OnInit {
       return;
     }
     this.loadCommentaires();
+    // Charger les GIFs tendance au démarrage
+    this.loadTrendingGifs();
   }
+
+  // ─────────────────────────────────────────────────
+  // ✅ EMOJI METHODS
+  // ─────────────────────────────────────────────────
+
+  toggleEmojiPicker(field: 'new' | 'reply' | 'edit'): void {
+    if (this.showEmojiPicker && this.activeEmojiField === field) {
+      this.showEmojiPicker = false;
+      this.activeEmojiField = null;
+    } else {
+      this.showEmojiPicker = true;
+      this.activeEmojiField = field;
+      this.showGifPicker = false;
+    }
+  }
+
+  getEmojisForCategory(categoryName: string): string[] {
+    const cat = this.emojiCategories.find(c => c.name === categoryName);
+    return cat ? cat.emojis : [];
+  }
+
+  insertEmoji(emoji: string, field: 'new' | 'reply' | 'edit'): void {
+    if (field === 'new') {
+      this.newCommentaire += emoji;
+    } else if (field === 'reply') {
+      this.replyContent += emoji;
+    } else if (field === 'edit') {
+      this.editingContent += emoji;
+    }
+  }
+
+  // ─────────────────────────────────────────────────
+  // ✅ GIF METHODS — GIPHY
+  // ─────────────────────────────────────────────────
+
+  toggleGifPicker(field: 'new' | 'reply' | 'edit'): void {
+    if (this.showGifPicker && this.activeGifField === field) {
+      this.showGifPicker = false;
+      this.activeGifField = null;
+    } else {
+      this.showGifPicker = true;
+      this.activeGifField = field;
+      this.showEmojiPicker = false;
+      if (this.gifResults.length === 0) {
+        this.loadTrendingGifs();
+      }
+    }
+  }
+
+  loadTrendingGifs(): void {
+    this.gifLoading = true;
+    const url = `https://api.giphy.com/v1/gifs/trending?api_key=${this.GIPHY_API_KEY}&limit=20&rating=g`;
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        this.gifResults = (data.data || []).map((r: any) => ({
+          url: r.images?.original?.url || '',
+          preview: r.images?.fixed_width_small?.url || r.images?.original?.url || '',
+          title: r.title || ''
+        })).filter((g: GifItem) => g.url);
+        this.gifLoading = false;
+        this.cdr.detectChanges();
+      })
+      .catch((err) => {
+        console.error('GIPHY trending error:', err);
+        this.gifResults = [];
+        this.gifLoading = false;
+        this.cdr.detectChanges();
+      });
+  }
+
+  searchGifs(): void {
+    if (!this.gifSearchQuery.trim()) {
+      this.loadTrendingGifs();
+      return;
+    }
+    this.gifLoading = true;
+    const query = encodeURIComponent(this.gifSearchQuery.trim());
+    const url = `https://api.giphy.com/v1/gifs/search?q=${query}&api_key=${this.GIPHY_API_KEY}&limit=20&rating=g`;
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        this.gifResults = (data.data || []).map((r: any) => ({
+          url: r.images?.original?.url || '',
+          preview: r.images?.fixed_width_small?.url || r.images?.original?.url || '',
+          title: r.title || ''
+        })).filter((g: GifItem) => g.url);
+        this.gifLoading = false;
+        this.cdr.detectChanges();
+      })
+      .catch((err) => {
+        console.error('GIPHY search error:', err);
+        this.gifResults = [];
+        this.gifLoading = false;
+        this.cdr.detectChanges();
+      });
+  }
+
+  // ✅ Recherche automatique avec debounce (déclenché à chaque frappe)
+  onGifInput(): void {
+    clearTimeout(this.gifDebounce);
+    this.gifDebounce = setTimeout(() => {
+      this.searchGifs();
+    }, 400);
+  }
+
+  /**
+   * Insère l'URL du GIF dans le commentaire sous forme de balise spéciale
+   * Format: [GIF:url] — sera rendu visuellement dans parseContent()
+   */
+  insertGif(url: string, field: 'new' | 'reply' | 'edit'): void {
+    const gifTag = `[GIF:${url}]`;
+    if (field === 'new') {
+      this.newCommentaire = this.newCommentaire.trim() + '\n' + gifTag;
+    } else if (field === 'reply') {
+      this.replyContent = this.replyContent.trim() + '\n' + gifTag;
+    } else if (field === 'edit') {
+      this.editingContent = this.editingContent.trim() + '\n' + gifTag;
+    }
+    this.showGifPicker = false;
+    this.activeGifField = null;
+  }
+
+  /**
+   * Extrait l'URL du GIF depuis le texte du commentaire (format [GIF:url])
+   * Retourne null si aucun GIF trouvé
+   */
+  extractGifUrl(content: string): string | null {
+    if (!content) return null;
+    const match = content.match(/\[GIF:(https?:\/\/[^\]]+)\]/);
+    return match ? match[1] : null;
+  }
+
+  // ─────────────────────────────────────────────────
+  // Méthodes existantes (inchangées)
+  // ─────────────────────────────────────────────────
 
   countTotal(comments: any[]): number {
     return comments.reduce((acc, c) => acc + 1 + this.countTotal(c.replies || []), 0);
@@ -105,7 +324,6 @@ export class CommentaireModalComponent implements OnInit {
     });
   }
 
-  // ✅ Detect @ and show mention dropdown
   onTextInput(event: Event, field: 'new' | 'reply' | 'edit'): void {
     const textarea = event.target as HTMLTextAreaElement;
     const text = textarea.value;
@@ -127,7 +345,6 @@ export class CommentaireModalComponent implements OnInit {
     this.mentionStartIndex = atIndex;
     this.mentionQuery = queryRaw;
 
-    // ✅ Calculer position fixe par rapport au viewport
     const rect = textarea.getBoundingClientRect();
     const dropdownMaxHeight = 220;
     const spaceBelow = window.innerHeight - rect.bottom - 8;
@@ -135,7 +352,6 @@ export class CommentaireModalComponent implements OnInit {
 
     let top: number;
     if (spaceBelow >= 120 || spaceBelow >= spaceAbove) {
-      // Ouvrir vers le bas
       top = rect.bottom + 4;
       this.dropdownPosition = {
         top: top + 'px',
@@ -145,7 +361,6 @@ export class CommentaireModalComponent implements OnInit {
         bottom: 'auto'
       };
     } else {
-      // Ouvrir vers le haut
       this.dropdownPosition = {
         top: 'auto',
         bottom: (window.innerHeight - rect.top + 4) + 'px',
@@ -161,7 +376,7 @@ export class CommentaireModalComponent implements OnInit {
         next: (users) => {
           this.mentionSuggestions = users.slice(0, 6);
           this.showMentionDropdown = this.mentionSuggestions.length > 0;
-          this.cdr.detectChanges(); // ✅ Force Angular à mettre à jour la vue
+          this.cdr.detectChanges();
         },
         error: () => {
           this.showMentionDropdown = false;
@@ -171,7 +386,6 @@ export class CommentaireModalComponent implements OnInit {
     }, 200);
   }
 
-  // ✅ Insert selected mention
   selectMention(user: UserSuggestion): void {
     const mention = `@${user.name} ${user.lastName} `;
 
@@ -197,10 +411,45 @@ export class CommentaireModalComponent implements OnInit {
     clearTimeout(this.mentionDebounce);
   }
 
-  // ✅ Highlight @mentions in displayed text
+  /**
+   * Render @mentions — GIFs are rendered separately via extractGifUrl()
+   */
   parseContent(content: string): string {
-    return content.replace(/@([A-Za-zÀ-ÿ]+(?:\s[A-Za-zÀ-ÿ]+)?)/g,
+    if (!content) return '';
+    const withoutGif = content.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '').trim();
+    return withoutGif.replace(/@([A-Za-zÀ-ÿ]+(?:\s[A-Za-zÀ-ÿ]+)?)/g,
       '<span class="mention-tag">@$1</span>');
+  }
+
+  // ─────────────────────────────────────────────────
+  // ✅ AI COMMENT SUGGESTIONS
+  // ─────────────────────────────────────────────────
+
+  loadSuggestions(): void {
+    if (this.loadingSuggestions || this.suggestionsLoaded) return;
+    this.loadingSuggestions = true;
+    this.commentSuggestions = [];
+    this.aiContentService.generateCommentSuggestions(
+      this.publication.titre,
+      this.publication.contenue
+    ).subscribe({
+      next: (suggestions) => {
+        this.commentSuggestions = suggestions;
+        this.suggestionsLoaded = true;
+        this.loadingSuggestions = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loadingSuggestions = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  applySuggestion(suggestion: string): void {
+    this.newCommentaire = suggestion;
+    this.showEmojiPicker = false;
+    this.showGifPicker = false;
   }
 
   private checkContent(text: string): Promise<boolean> {
@@ -233,12 +482,16 @@ export class CommentaireModalComponent implements OnInit {
     }
     if (!this.publication?.id) { this.errorMessage = 'Error: Missing publication ID'; return; }
 
+    this.showEmojiPicker = false;
+    this.showGifPicker = false;
+
     this.moderating = true; this.moderationError = '';
-    this.checkContent(this.newCommentaire.trim()).then(isSafe => {
+    const textToCheck = this.newCommentaire.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '[GIF]').trim();
+    this.checkContent(textToCheck).then(isSafe => {
       if (!isSafe) { this.moderating = false; this.moderationError = '🚫 Inappropriate content detected. Please rephrase your comment.'; return; }
       this.loading = true; this.moderating = false;
       this.commentaireService.createCommentaire(this.newCommentaire.trim(), this.publication.id, this.currentUserId).subscribe({
-        next: () => { this.newCommentaire = ''; this.loadAndEmit(); },
+        next: () => { this.newCommentaire = ''; this.commentSuggestions = []; this.suggestionsLoaded = false; this.loadAndEmit(); },
         error: (e) => { this.errorMessage = e.error || 'Error adding the comment'; this.loading = false; }
       });
     });
@@ -255,14 +508,18 @@ export class CommentaireModalComponent implements OnInit {
   cancelReply(): void {
     this.replyingToId = null; this.replyContent = ''; this.replyingToName = '';
     this.moderationReplyError = ''; this.closeMentionDropdown();
+    this.showEmojiPicker = false; this.showGifPicker = false;
   }
 
   submitReply(parentCommentaire: Commentaire): void {
     if (!this.replyContent || this.replyContent.trim().length < 2) { this.moderationReplyError = 'The reply must contain at least 2 characters.'; return; }
     if (!this.publication?.id) return;
 
+    this.showEmojiPicker = false; this.showGifPicker = false;
+
     this.moderatingReply = true; this.moderationReplyError = '';
-    this.checkContent(this.replyContent.trim()).then(isSafe => {
+    const textToCheck = this.replyContent.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '[GIF]').trim();
+    this.checkContent(textToCheck).then(isSafe => {
       if (!isSafe) { this.moderatingReply = false; this.moderationReplyError = '🚫 Inappropriate content detected. Please rephrase your reply.'; return; }
       this.loading = true; this.moderatingReply = false;
       this.commentaireService.replyToCommentaire(this.replyContent.trim(), parentCommentaire.id!, this.publication.id, this.currentUserId).subscribe({
@@ -284,12 +541,15 @@ export class CommentaireModalComponent implements OnInit {
   cancelEdit(): void {
     this.editingCommentaireId = null; this.editingContent = '';
     this.moderationEditError = ''; this.closeMentionDropdown();
+    this.showEmojiPicker = false; this.showGifPicker = false;
   }
 
   saveEdit(commentaire: Commentaire): void {
     if (!this.editingContent || this.editingContent.trim().length < 2) { this.moderationEditError = 'The comment must contain at least 2 characters.'; return; }
+    this.showEmojiPicker = false; this.showGifPicker = false;
     this.moderatingEdit = true; this.moderationEditError = '';
-    this.checkContent(this.editingContent.trim()).then(isSafe => {
+    const textToCheck = this.editingContent.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '[GIF]').trim();
+    this.checkContent(textToCheck).then(isSafe => {
       if (!isSafe) { this.moderatingEdit = false; this.moderationEditError = '🚫 Inappropriate content detected. Please rephrase your comment.'; return; }
       this.loading = true; this.moderatingEdit = false;
       this.commentaireService.updateCommentaire(commentaire.id!, this.editingContent.trim(), this.currentUserId).subscribe({
@@ -320,12 +580,10 @@ export class CommentaireModalComponent implements OnInit {
 
   canModifyCommentaire(commentaire: Commentaire): boolean { return commentaire.user?.id === this.currentUserId; }
 
-  // ✅ Vérifie si l'utilisateur actuel est le créateur de la publication
   isPublicationOwner(): boolean {
     return Number(this.publication?.user?.id) === Number(this.currentUserId);
   }
 
-  // ✅ Épingler / désépingler un commentaire
   togglePin(commentaire: Commentaire): void {
     if (!this.isPublicationOwner() || !commentaire.id) return;
     this.commentaireService.togglePin(commentaire.id, this.currentUserId).subscribe({

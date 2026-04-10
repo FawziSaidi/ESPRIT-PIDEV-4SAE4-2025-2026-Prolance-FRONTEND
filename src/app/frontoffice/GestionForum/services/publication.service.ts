@@ -5,7 +5,7 @@ import { Publication, TypePublication } from '../models/publication.model';
 
 export interface BlockStatus {
   blocked: boolean;
-  warningCount: number;
+  warningCount: number; // correspond au nombre de posts archivés côté back
 }
 
 @Injectable({ providedIn: 'root' })
@@ -14,7 +14,7 @@ export class PublicationService {
 
   constructor(private http: HttpClient) {}
 
-  // ── Lecture ───────────────────────────────────────────────────
+  // ── Lecture ──────────────────────────────────────────────────────
 
   /** Feed public : seulement les publications ACTIVES */
   getAllPublications(): Observable<Publication[]> {
@@ -29,7 +29,7 @@ export class PublicationService {
     return this.http.get<Publication[]>(`${this.baseUrl}/user/${userId}`);
   }
 
-  /** Publications archivées/en-attente de l'utilisateur */
+  /** Publications archivées de l'utilisateur */
   getArchivedByUserId(userId: number): Observable<Publication[]> {
     return this.http.get<Publication[]>(`${this.baseUrl}/user/${userId}/archived`);
   }
@@ -38,33 +38,30 @@ export class PublicationService {
     return this.http.get<Publication>(`${this.baseUrl}/${id}`);
   }
 
-  // ── Blocage ───────────────────────────────────────────────────
+  // ── Blocage ──────────────────────────────────────────────────────
 
   /**
-   * Vérifie si un utilisateur est bloqué (≥ 3 posts archivés).
+   * Vérifie si un utilisateur est bloqué (>= 3 posts archivés).
    * Retourne { blocked: boolean, warningCount: number }
    */
   getBlockStatus(userId: number): Observable<BlockStatus> {
     return this.http.get<BlockStatus>(`${this.baseUrl}/user/${userId}/block-status`);
   }
 
-  // ── Signalement ───────────────────────────────────────────────
+  // ── Signalement ──────────────────────────────────────────────────
 
-  /** Signale une publication. 3 signalements → archivage auto */
-  signalerPublication(id: number, userId: number): Observable<Publication> {
-    const params = new HttpParams().set('userId', userId.toString());
+  /**
+   * Signale une publication avec une raison.
+   * 3 signalements → archivage automatique.
+   */
+  signalerPublication(id: number, userId: number, raison: string): Observable<Publication> {
+    const params = new HttpParams()
+      .set('userId', userId.toString())
+      .set('raison', raison);
     return this.http.post<Publication>(`${this.baseUrl}/${id}/signaler`, null, { params });
   }
 
-  // ── Réactivation (user) ───────────────────────────────────────
-
-  /** L'auteur demande la réactivation → statut PENDING */
-  demanderReactivation(id: number, userId: number): Observable<Publication> {
-    const params = new HttpParams().set('userId', userId.toString());
-    return this.http.post<Publication>(`${this.baseUrl}/${id}/reactiver`, null, { params });
-  }
-
-  // ── CRUD existant ─────────────────────────────────────────────
+  // ── CRUD ─────────────────────────────────────────────────────────
 
   createPublication(formData: FormData): Observable<Publication> {
     return this.http.post<Publication>(this.baseUrl, formData);

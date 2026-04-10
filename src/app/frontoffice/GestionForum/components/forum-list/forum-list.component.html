@@ -11,8 +11,6 @@
       </div>
     </div>
 
-
-
     <!-- Galaxy Filter Card -->
     <div class="galaxy-card">
 
@@ -30,13 +28,6 @@
           (click)="onTypeChange('MYPOSTS')"
           class="tab-button">
           My Posts
-        </button>
-        <!-- Onglet Archives -->
-        <button
-          [class.active]="selectedType === 'ARCHIVED'"
-          (click)="onTypeChange('ARCHIVED')"
-          class="tab-button ">
-          Archives
         </button>
 
         <!-- ══ BOUTON ADD POST : disabled si bloqué ══ -->
@@ -82,6 +73,15 @@
 
     </div><!-- end galaxy-card -->
 
+    <!-- Avertissement (1 ou 2 posts archivés, non bloqué) -->
+    <div class="archives-warning" *ngIf="!isUserBlocked && archivedCount > 0">
+      <span class="archives-warning-icon">⚠️</span>
+      <div class="archives-warning-text">
+        <strong>Warning:</strong> {{ archivedCount }}/3 of your posts have been archived due to reports.
+        {{ 3 - archivedCount }} more will block your account.
+      </div>
+    </div>
+
     <!-- Error -->
     <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
 
@@ -91,125 +91,8 @@
       <p>Loading posts...</p>
     </div>
 
-    <!-- ══════ VUE ARCHIVES ══════ -->
-    <div *ngIf="selectedType === 'ARCHIVED' && !loading" class="archives-section">
-      <!-- Avertissement inline dans la section archives -->
-      <div class="archives-warning" *ngIf="!isUserBlocked && archivedCount > 0">
-        <span class="archives-warning-icon">⚠️</span>
-        <div class="archives-warning-text">
-          <strong>Warning:</strong> {{ archivedCount }}/3 of your posts have been archived due to reports.
-          {{ 3 - archivedCount }} more will block your account.
-        </div>
-      </div>
-
-      <div class="archives-header">
-        <h2>🗄️ My Archived Posts</h2>
-        <p class="archives-subtitle">Posts archived after 3 reports. You can request reactivation.</p>
-      </div>
-
-      <div *ngIf="archivedPublications.length === 0" class="empty-state">
-        <div class="empty-icon">🗄️</div>
-        <h3>No archived posts</h3>
-        <p>All your posts are currently active.</p>
-      </div>
-
-      <div *ngIf="archivedPublications.length > 0" class="publications-grid">
-        <div *ngFor="let pub of archivedPublications" class="publication-card archived-card" [attr.data-statut]="pub.statut">
-
-          <div class="card-main">
-            <!-- Bandeau statut -->
-            <div class="archive-status-banner" [class.pending]="pub.statut === 'PENDING'">
-              <span *ngIf="pub.statut === 'ARCHIVED'">🚫 Archived — {{ (pub.signalements?.length ?? 0) }} report(s)</span>
-              <span *ngIf="pub.statut === 'PENDING'">⏳ Pending admin review</span>
-            </div>
-
-            <div class="card-header">
-              <div class="user-info">
-                <div class="user-avatar" data-type="ARCHIVED">
-                  {{ pub.user?.name?.charAt(0) }}{{ pub.user?.lastName?.charAt(0) }}
-                </div>
-                <div class="user-details">
-                  <h3 class="user-name">{{ pub.user?.name }} {{ pub.user?.lastName }}</h3>
-                  <p class="publication-time">{{ getTimeAgo(pub.createAt!) }}</p>
-                </div>
-              </div>
-              <div class="type-badge" [attr.data-type]="pub.type">
-                {{ getTypeLabel(pub.type) }}
-              </div>
-            </div>
-
-            <div class="card-content">
-              <h2 class="publication-titre"
-                  [style.color]="pub.titleColor || '#2d1f4e'"
-                  [style.font-size]="pub.titleFontSize || '1.1rem'">{{ pub.titre }}</h2>
-              <p class="publication-contenue"
-                 [class.clamped]="!isExpanded(pub.id!)"
-                 [style.color]="pub.contentColor || '#555'">{{ pub.contenue }}</p>
-              <button
-                *ngIf="pub.contenue && pub.contenue.length > 300"
-                class="btn-see-more"
-                (click)="toggleExpand(pub.id!)">
-                {{ isExpanded(pub.id!) ? 'See less ▲' : 'See more ▼' }}
-              </button>
-
-              <!-- PDFs -->
-              <div *ngIf="pub.pdfs && pub.pdfs.length > 0" class="pub-pdfs-list">
-                <a *ngFor="let pdf of pub.pdfs"
-                  [href]="getPdfUrl(pdf)" target="_blank" rel="noopener noreferrer"
-                  class="pub-pdf-link">
-                  <span class="pub-pdf-icon">📄</span>
-                  <span class="pub-pdf-name">{{ pdf.substring(pdf.indexOf('_') + 1) }}</span>
-                  <span class="pub-pdf-open">↗</span>
-                </a>
-              </div>
-
-              <!-- Images -->
-              <div *ngIf="pub.images && pub.images.length > 0" class="pub-images-row"
-                   [class.center-single]="pub.images.length === 1">
-                <div *ngIf="pub.images.length === 1" class="pub-img-wrapper" (click)="openLightbox(pub.images, 0)">
-                  <img [src]="getImageUrl(pub.images[0])" [alt]="pub.titre" (error)="onImageError($event)" class="pub-img">
-                </div>
-                <ng-container *ngIf="pub.images.length === 2">
-                  <div class="pub-img-wrapper" (click)="openLightbox(pub.images, 0)">
-                    <img [src]="getImageUrl(pub.images[0])" [alt]="pub.titre" (error)="onImageError($event)" class="pub-img">
-                  </div>
-                  <div class="pub-img-wrapper" (click)="openLightbox(pub.images, 1)">
-                    <img [src]="getImageUrl(pub.images[1])" [alt]="pub.titre" (error)="onImageError($event)" class="pub-img">
-                  </div>
-                </ng-container>
-                <ng-container *ngIf="pub.images.length > 2">
-                  <div class="pub-img-wrapper" (click)="openLightbox(pub.images, 0)">
-                    <img [src]="getImageUrl(pub.images[0])" [alt]="pub.titre" (error)="onImageError($event)" class="pub-img">
-                  </div>
-                  <div class="pub-img-wrapper pub-img-wrapper--more" (click)="openLightbox(pub.images, 1)">
-                    <img [src]="getImageUrl(pub.images[1])" [alt]="pub.titre" (error)="onImageError($event)" class="pub-img">
-                    <div class="pub-img-overlay">+{{ pub.images.length - 2 }}</div>
-                  </div>
-                </ng-container>
-              </div>
-            </div>
-
-            <div class="card-footer">
-              <div class="archived-footer-actions">
-                <button
-                  *ngIf="pub.statut === 'ARCHIVED'"
-                  class="btn-reactiver"
-                  (click)="demanderReactivation(pub)">
-                  🔄 Request Reactivation
-                </button>
-                <span *ngIf="pub.statut === 'PENDING'" class="pending-label">
-                  ⏳ Waiting for admin decision…
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- ══════ FIN VUE ARCHIVES ══════ -->
-
-    <!-- Cards normales (tous les autres onglets) -->
-    <div *ngIf="selectedType !== 'ARCHIVED' && !loading && filteredPublications.length > 0" class="publications-grid">
+    <!-- Cards normales -->
+    <div *ngIf="!loading && filteredPublications.length > 0" class="publications-grid">
       <div
         *ngFor="let publication of paginatedPublications"
         class="publication-card"
@@ -236,13 +119,13 @@
                 {{ getTypeLabel(publication.type) }}
               </div>
 
-              <!-- Bouton Signaler -->
+              <!-- Bouton Signaler — ouvre le modal de signalement -->
               <button
                 *ngIf="!canModifyPublication(publication)"
                 class="btn-signaler"
                 [class.already-signaled]="hasUserSignaled(publication)"
                 [disabled]="hasUserSignaled(publication)"
-                (click)="signalerPublication(publication)"
+                (click)="openSignalementModal(publication)"
                 [title]="hasUserSignaled(publication) ? 'Already reported' : 'Report this post'">
                 <span>🚩</span>
                 <span class="signaler-count" *ngIf="(publication.signalements?.length ?? 0) > 0">
@@ -316,6 +199,34 @@
             </div>
           </div>
 
+          <!-- ══ REPORT INFO (visible seulement par l'auteur du post) ══ -->
+          <div class="report-info-section"
+               *ngIf="canModifyPublication(publication) && (publication.signalements?.length ?? 0) > 0">
+            <button class="report-toggle-btn" (click)="toggleReportPanel(publication.id!)">
+              <span class="report-flag">🚩</span>
+              <span class="report-count-label">
+                {{ publication.signalements!.length }} report{{ publication.signalements!.length > 1 ? 's' : '' }} on your post
+              </span>
+              <span class="report-toggle-arrow">{{ isReportPanelOpen(publication.id!) ? '▲' : '▼' }}</span>
+            </button>
+
+            <div class="report-panel" *ngIf="isReportPanelOpen(publication.id!)">
+              <div class="report-panel-inner">
+                <div class="report-row" *ngFor="let userId of publication.signalements; let i = index">
+                  <div class="report-row-left">
+                    <span class="report-user-badge">{{ getUserName(userId) }}</span>
+                    <span class="report-reason" *ngIf="publication.signalementRaisons && publication.signalementRaisons[i]">
+                      {{ publication.signalementRaisons[i] }}
+                    </span>
+                    <span class="report-reason report-no-reason" *ngIf="!publication.signalementRaisons || !publication.signalementRaisons[i]">
+                      No reason given
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Footer -->
           <div class="card-footer">
             <div class="footer-actions">
@@ -332,15 +243,15 @@
     </div>
 
     <!-- Pagination -->
-    <div *ngIf="selectedType !== 'ARCHIVED' && !loading && totalPages > 1" class="pagination-bar">
+    <div *ngIf="!loading && totalPages > 1" class="pagination-bar">
       <button class="page-btn page-nav" (click)="prevPage()" [disabled]="currentPage === 1">&#8592;</button>
       <button *ngFor="let page of pageNumbers" class="page-btn" [class.active]="page === currentPage" (click)="goToPage(page)">{{ page }}</button>
       <button class="page-btn page-nav" (click)="nextPage()" [disabled]="currentPage === totalPages">&#8594;</button>
       <span class="page-info">Page {{ currentPage }} / {{ totalPages }}</span>
     </div>
 
-    <!-- Empty state (hors archives) -->
-    <div *ngIf="selectedType !== 'ARCHIVED' && !loading && filteredPublications.length === 0" class="empty-state">
+    <!-- Empty state -->
+    <div *ngIf="!loading && filteredPublications.length === 0" class="empty-state">
       <div class="empty-icon">{{ searchQuery.trim() ? '🔍' : '💬' }}</div>
       <h3>{{ searchQuery.trim() ? 'No results found' : 'No posts yet' }}</h3>
       <p *ngIf="searchQuery.trim()">No author matches <strong>« {{ searchQuery.trim() }} »</strong></p>
@@ -353,12 +264,42 @@
   </div>
 </div>
 
-<!-- Modals -->
-<app-publication-form *ngIf="showAddModal" [mode]="'create'" (close)="closeAddModal()" (saved)="onPublicationCreated()"></app-publication-form>
-<app-publication-form *ngIf="showEditModal && selectedPublication" [mode]="'edit'" [publication]="selectedPublication" (close)="closeEditModal()" (saved)="onPublicationUpdated()"></app-publication-form>
-<app-commentaire-modal *ngIf="showCommentModal && selectedPublication" [publication]="selectedPublication" [currentUserId]="currentUserId" (close)="closeCommentModal()" (commentCountChanged)="onCommentCountChanged($event)"></app-commentaire-modal>
+<!-- ══════ MODALS ══════ -->
+<app-publication-form
+  *ngIf="showAddModal"
+  [mode]="'create'"
+  (close)="closeAddModal()"
+  (saved)="onPublicationCreated()">
+</app-publication-form>
 
-<!-- Lightbox -->
+<app-publication-form
+  *ngIf="showEditModal && selectedPublication"
+  [mode]="'edit'"
+  [publication]="selectedPublication"
+  (close)="closeEditModal()"
+  (saved)="onPublicationUpdated()">
+</app-publication-form>
+
+<app-commentaire-modal
+  *ngIf="showCommentModal && selectedPublication"
+  [publication]="selectedPublication"
+  [currentUserId]="currentUserId"
+  (close)="closeCommentModal()"
+  (commentCountChanged)="onCommentCountChanged($event)">
+</app-commentaire-modal>
+
+<!-- ══════ MODAL SIGNALEMENT ══════ -->
+<app-signalement-modal
+  *ngIf="showSignalementModal && pubToSignal"
+  [publicationId]="pubToSignal.id!"
+  [pubTitre]="pubToSignal.titre"
+  [currentUserId]="currentUserId"
+  (cancelled)="onSignalementCancelled()"
+  (reported)="onSignalementReported($event)"
+  (alreadyReported)="onSignalementAlreadyReported()">
+</app-signalement-modal>
+
+<!-- ══════ LIGHTBOX ══════ -->
 <div class="lightbox-overlay" *ngIf="showLightbox" (click)="closeLightbox()">
   <div class="lightbox-box" (click)="$event.stopPropagation()">
     <button class="lightbox-close" (click)="closeLightbox()">✕</button>
@@ -375,6 +316,7 @@
   </div>
 </div>
 
+<!-- ══════ DELETE MODAL ══════ -->
 <div class="delete-modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
   <div class="delete-modal-box" (click)="$event.stopPropagation()">
     <div class="delete-modal-icon">🗑️</div>
@@ -387,7 +329,7 @@
   </div>
 </div>
 
-<!-- Toast notification -->
+<!-- ══════ TOAST ══════ -->
 <div class="toast-notif" *ngIf="toastMessage" [class.toast-error]="toastIsError">
   {{ toastMessage }}
 </div>

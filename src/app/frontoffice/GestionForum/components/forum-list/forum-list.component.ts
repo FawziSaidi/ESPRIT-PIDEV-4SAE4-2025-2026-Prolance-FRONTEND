@@ -1,8 +1,9 @@
 import { Component, OnInit, HostListener } from '@angular/core';
-import { Publication, TypePublication, StatutPublication } from '../../models/publication.model';
+import { Publication, TypePublication } from '../../models/publication.model';
 import { PublicationService, BlockStatus } from '../../services/publication.service';
 import { CommentaireService } from '../../services/commentaire.service';
 import { AuthService } from '../../../../services/auth.services';
+import { UserSearchService, UserSuggestion } from '../../services/user-search.service';
 
 @Component({
   selector: 'app-forum-list',
@@ -13,9 +14,6 @@ export class ForumListComponent implements OnInit {
 
   publications: Publication[] = [];
   filteredPublications: Publication[] = [];
-
-  /** Publications archivées/en-attente de l'utilisateur courant */
-  archivedPublications: Publication[] = [];
 
   selectedType: string = 'TOUS';
   showAddModal = false;
@@ -29,12 +27,26 @@ export class ForumListComponent implements OnInit {
   errorMessage = '';
   activeMenuId: number | null = null;
   expandedPosts = new Set<number>();
+  openReportPanels = new Set<number>();
+  usersMap: Map<number, string> = new Map(); // userId → "Prénom Nom"
+
+  toggleReportPanel(id: number): void {
+    this.openReportPanels.has(id) ? this.openReportPanels.delete(id) : this.openReportPanels.add(id);
+  }
+
+  isReportPanelOpen(id: number): boolean {
+    return this.openReportPanels.has(id);
+  }
 
   // ── Blocage utilisateur ───────────────────────────────────────
   /** true si l'utilisateur courant a ≥ 3 posts archivés */
   isUserBlocked = false;
   /** Nombre de posts archivés (compteur d'avertissements) */
   archivedCount = 0;
+
+  // ── Modal de signalement ──────────────────────────────────────
+  showSignalementModal = false;
+  pubToSignal: Publication | null = null;
 
   // Toast
   toastMessage = '';
@@ -69,10 +81,10 @@ export class ForumListComponent implements OnInit {
   nextPage(): void { this.goToPage(this.currentPage + 1); }
 
   typeOptions = [
-    { value: 'TOUS', label: 'All' },
+    { value: 'TOUS',     label: 'All' },
     { value: 'QUESTION', label: 'Questions' },
-    { value: 'ARTICLE', label: 'Articles' },
-    { value: 'REVIEW', label: 'Reviews' }
+    { value: 'ARTICLE',  label: 'Articles' },
+    { value: 'REVIEW',   label: 'Reviews' }
   ];
 
   isExpanded(id: number): boolean { return this.expandedPosts.has(id); }
@@ -83,7 +95,8 @@ export class ForumListComponent implements OnInit {
   constructor(
     private publicationService: PublicationService,
     private commentaireService: CommentaireService,
-    private authService: AuthService
+    private authService: AuthService,
+    private userSearchService: UserSearchService
   ) {}
 
   @HostListener('document:click', ['$event'])
@@ -103,6 +116,20 @@ export class ForumListComponent implements OnInit {
       this.checkBlockStatus();
     }
     this.loadPublications();
+    this.loadUsersMap();
+  }
+
+  loadUsersMap(): void {
+    this.userSearchService.getAllUsers().subscribe({
+      next: (users: UserSuggestion[]) => {
+        users.forEach(u => this.usersMap.set(u.id, `${u.name} ${u.lastName}`));
+      },
+      error: () => {}
+    });
+  }
+
+  getUserName(userId: number): string {
+    return this.usersMap.get(userId) || `User #${userId}`;
   }
 
   // ── Vérification du statut de blocage ────────────────────────
@@ -115,7 +142,6 @@ export class ForumListComponent implements OnInit {
         this.archivedCount = status.warningCount;
       },
       error: () => {
-        // En cas d'erreur réseau, ne pas bloquer l'utilisateur
         this.isUserBlocked = false;
         this.archivedCount = 0;
       }
@@ -131,29 +157,10 @@ export class ForumListComponent implements OnInit {
         this.filterPublications();
         this.loading = false;
         this.loadCommentCounts();
-        // Rafraîchir le statut de blocage à chaque chargement
         if (this.currentUserId) this.checkBlockStatus();
       },
       error: () => {
         this.errorMessage = 'Error loading posts';
-        this.loading = false;
-      }
-    });
-  }
-
-  /** Charge les publications archivées/en-attente de l'utilisateur */
-  loadArchivedPublications(): void {
-    if (!this.currentUserId) return;
-    this.loading = true;
-    this.publicationService.getArchivedByUserId(this.currentUserId).subscribe({
-      next: (data) => {
-        this.archivedPublications = data;
-        this.loading = false;
-        // Mettre à jour le compteur d'avertissements
-        this.checkBlockStatus();
-      },
-      error: () => {
-        this.archivedPublications = [];
         this.loading = false;
       }
     });
@@ -193,60 +200,60 @@ export class ForumListComponent implements OnInit {
 
   onTypeChange(type: string): void {
     this.selectedType = type;
-    if (type === 'ARCHIVED') {
-      this.loadArchivedPublications();
-    } else {
-      this.filterPublications();
-    }
+    this.filterPublications();
   }
 
   onSearchChange(): void { this.filterPublications(); }
   clearSearch(): void { this.searchQuery = ''; this.filterPublications(); }
 
-  // ── Signalement ────────────────────────────────────────────────
+  // ── Signalement avec modal ────────────────────────────────────
 
   /** Vérifie si l'utilisateur courant a déjà signalé ce post */
   hasUserSignaled(publication: Publication): boolean {
     return (publication.signalements ?? []).includes(this.currentUserId);
   }
 
-  signalerPublication(publication: Publication): void {
+  /** Ouvre le modal de signalement pour ce post */
+  openSignalementModal(publication: Publication): void {
     if (!publication.id || this.hasUserSignaled(publication)) return;
-
-    this.publicationService.signalerPublication(publication.id, this.currentUserId).subscribe({
-      next: (updated) => {
-        const idx = this.publications.findIndex(p => p.id === updated.id);
-        if (idx >= 0) this.publications[idx] = { ...this.publications[idx], signalements: updated.signalements, statut: updated.statut };
-
-        if (updated.statut === StatutPublication.ARCHIVED) {
-          this.publications = this.publications.filter(p => p.id !== updated.id);
-          this.showToast('⚠️ This post has been archived after 3 reports.', false);
-        } else {
-          this.showToast('🚩 Post reported successfully.', false);
-        }
-        this.filterPublications();
-      },
-      error: (err) => {
-        const msg = err?.error ?? 'Error reporting post.';
-        this.showToast(msg, true);
-      }
-    });
+    this.pubToSignal = publication;
+    this.showSignalementModal = true;
   }
 
-  // ── Réactivation (onglet Archives) ────────────────────────────
+  onSignalementCancelled(): void {
+    this.showSignalementModal = false;
+    this.pubToSignal = null;
+  }
 
-  demanderReactivation(pub: Publication): void {
-    if (!pub.id) return;
-    this.publicationService.demanderReactivation(pub.id, this.currentUserId).subscribe({
-      next: (updated) => {
-        const idx = this.archivedPublications.findIndex(p => p.id === updated.id);
-        if (idx >= 0) this.archivedPublications[idx] = updated;
-        this.showToast('⏳ Reactivation request sent to admin.', false);
-      },
-      error: (err) => {
-        this.showToast(err?.error ?? 'Error sending request.', true);
-      }
-    });
+  onSignalementReported(updatedPub: Publication): void {
+    this.showSignalementModal = false;
+
+    // Mettre à jour la publication localement
+    const idx = this.publications.findIndex(p => p.id === updatedPub.id);
+    if (idx >= 0) {
+      this.publications[idx] = {
+        ...this.publications[idx],
+        signalements: updatedPub.signalements,
+        statut: updatedPub.statut
+      };
+    }
+
+    // Si archivée (3 signalements atteints), retirer du feed
+    if (updatedPub.statut === 'ARCHIVED') {
+      this.publications = this.publications.filter(p => p.id !== updatedPub.id);
+      this.showToast('⚠️ This post has been archived after 3 reports.', false);
+    } else {
+      this.showToast('🚩 Post reported successfully.', false);
+    }
+
+    this.filterPublications();
+    this.pubToSignal = null;
+  }
+
+  onSignalementAlreadyReported(): void {
+    this.showSignalementModal = false;
+    this.pubToSignal = null;
+    this.showToast('⚠️ You have already reported this post.', true);
   }
 
   // ── Toast ─────────────────────────────────────────────────────
@@ -258,7 +265,7 @@ export class ForumListComponent implements OnInit {
     this.toastTimer = setTimeout(() => this.toastMessage = '', 4000);
   }
 
-  // ── Modals / CRUD existants ───────────────────────────────────
+  // ── Modals / CRUD ─────────────────────────────────────────────
 
   openAddModal(): void {
     if (this.isUserBlocked) {
@@ -296,7 +303,6 @@ export class ForumListComponent implements OnInit {
   onPublicationCreated(): void {
     this.closeAddModal();
     this.loadPublications();
-    // Rafraîchir le compteur après création
     this.checkBlockStatus();
   }
   onPublicationUpdated(): void { this.closeEditModal(); this.loadPublications(); }
@@ -328,17 +334,19 @@ export class ForumListComponent implements OnInit {
   }
   closeActionMenu(): void { this.activeMenuId = null; }
 
+  // ── Helpers ───────────────────────────────────────────────────
+
   getTimeAgo(date: string): string {
     const now = new Date(); const d = new Date(date);
     const diffMs = now.getTime() - d.getTime();
-    const mins = Math.floor(diffMs / 60000);
+    const mins  = Math.floor(diffMs / 60000);
     const hours = Math.floor(diffMs / 3600000);
-    const days = Math.floor(diffMs / 86400000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins} min ago`;
+    const days  = Math.floor(diffMs / 86400000);
+    if (mins < 1)   return 'Just now';
+    if (mins < 60)  return `${mins} min ago`;
     if (hours < 24) return `${hours}h ago`;
     if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
+    if (days < 7)   return `${days} days ago`;
     return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
@@ -364,9 +372,9 @@ export class ForumListComponent implements OnInit {
   @HostListener('document:keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
     if (!this.showLightbox) return;
-    if (event.key === 'ArrowLeft') this.lightboxPrev();
+    if (event.key === 'ArrowLeft')  this.lightboxPrev();
     if (event.key === 'ArrowRight') this.lightboxNext();
-    if (event.key === 'Escape') this.closeLightbox();
+    if (event.key === 'Escape')     this.closeLightbox();
   }
 
   highlightName(fullName: string): string {

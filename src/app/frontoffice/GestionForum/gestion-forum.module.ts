@@ -8,6 +8,7 @@ import { PublicationFormComponent } from './components/publication-form/publicat
 import { CommentaireModalComponent } from './components/commentaire-modal/commentaire-modal.component';
 import { ReactionButtonComponent } from './components/reaction-button/reaction-button.component';
 import { ChatbotComponent } from './components/chatbot/chatbot.component';
+import { SignalementModalComponent } from './components/signalement-modal/signalement-modal.component';
 
 import { PublicationService } from './services/publication.service';
 import { CommentaireService } from './services/commentaire.service';
@@ -21,7 +22,8 @@ import { GestionForumRoutingModule } from './gestion-forum-routing.module';
     PublicationFormComponent,
     CommentaireModalComponent,
     ReactionButtonComponent,
-    ChatbotComponent         // ✅
+    ChatbotComponent,        // ✅
+    SignalementModalComponent
   ],
   imports: [
     CommonModule,

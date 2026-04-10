@@ -208,9 +208,28 @@
         </label>
       </div>
 
-      <button class="btn-publish" (click)="onSubmit()" [disabled]="loading">
-        <span *ngIf="!loading">{{ mode === 'create' ? 'Publish' : 'Update' }}</span>
-        <span *ngIf="loading" class="spinner-small"></span>
+    <div *ngIf="errorMessage && moderationErrors.length === 0" class="alert-error">{{ errorMessage }}</div>
+    <div *ngIf="moderationErrors.length > 0" class="moderation-error-box">
+      <div class="mod-error-header">
+        <span class="mod-error-icon">🚫</span>
+        <strong>Your post was blocked by our content policy</strong>
+      </div>
+      <ul class="mod-error-list">
+        <li *ngFor="let reason of moderationErrors">{{ reason }}</li>
+      </ul>
+      <p class="mod-error-hint">Please edit your title or description and try again.</p>
+    </div>
+
+    <!-- ══ MODERATION LOADING ══ -->
+    <div *ngIf="moderating" class="moderation-checking">
+      <span class="mod-spinner"></span>
+      <span>Checking content for policy compliance…</span>
+    </div>
+
+      <button class="btn-publish" (click)="onSubmit()" [disabled]="loading || moderating">
+        <span *ngIf="!loading && !moderating">{{ mode === 'create' ? 'Publish' : 'Update' }}</span>
+        <span *ngIf="moderating" class="spinner-small"></span>
+        <span *ngIf="loading && !moderating" class="spinner-small"></span>
       </button>
     </div>
 
