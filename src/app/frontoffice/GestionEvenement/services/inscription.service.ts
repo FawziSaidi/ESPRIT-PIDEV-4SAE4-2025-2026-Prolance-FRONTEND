@@ -42,6 +42,32 @@ export class InscriptionService {
   }
 
   downloadBadge(id: number): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/${id}/badge`, { responseType: 'blob' });
+    
+  return this.http.get(`${this.apiUrl}/${id}/badge`, { responseType: 'blob' });
   }
+
+  cancelInscription(id: number): Observable<EventInscriptionResponseDTO> {
+  return this.http.put<EventInscriptionResponseDTO>(`${this.apiUrl}/${id}/cancel`, {});
+}
+
+// Ajouter ces méthodes dans InscriptionService
+
+getWaitlist(eventId: number): Observable<EventInscriptionResponseDTO[]> {
+  return this.http.get<EventInscriptionResponseDTO[]>(`${this.apiUrl}/event/${eventId}/waitlist`);
+}
+
+increaseCapacity(eventId: number, newCapacity: number): Observable<any> {
+  return this.http.put(`${this.apiUrl}/event/${eventId}/capacity?newCapacity=${newCapacity}`, {});
+}
+
+getCapacityStatus(eventId: number): Observable<{
+  eventId: number;
+  capacity: number;
+  confirmedParticipants: number;
+  waitlistSize: number;
+  isFull: boolean;
+  isBeforeDeadline: boolean;
+}> {
+  return this.http.get<any>(`${this.apiUrl}/event/${eventId}/capacity-status`);
+}
 }

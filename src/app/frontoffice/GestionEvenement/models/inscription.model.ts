@@ -3,7 +3,10 @@
 export enum InscriptionStatus {
   PENDING = 'PENDING',
   ACCEPTED = 'ACCEPTED',
-  REJECTED = 'REJECTED'
+  REJECTED = 'REJECTED',
+   CANCELLED = 'CANCELLED',
+    WAITLIST  = 'WAITLIST',
+  PROMOTED  = 'PROMOTED'
 }
 
 export enum ParticipantRole {
@@ -29,6 +32,7 @@ export interface EventInscriptionRequestDTO {
   imageUrl?: string | null;
   userId: number;
   eventId: number;
+
 }
 
 export interface EventInscriptionResponseDTO {
@@ -46,5 +50,7 @@ export interface EventInscriptionResponseDTO {
   userId: number;
   eventId: number;
   eventTitle: string;
+   waitlistDate?:      string; 
+   waitlistPosition?:  number;  
 }
 

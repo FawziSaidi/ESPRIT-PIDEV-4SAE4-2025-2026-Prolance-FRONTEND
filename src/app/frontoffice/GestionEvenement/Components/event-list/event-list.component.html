@@ -1,6 +1,14 @@
 <div class="event-list-page">
   <div class="container">
 
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!--  CAROUSEL RECOMMANDATIONS                              -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <app-recommendation-carousel
+      *ngIf="currentUserId"
+      [userId]="currentUserId.toString()">
+    </app-recommendation-carousel>
+
     <!-- ─── Alerts ─── -->
     <div class="alert alert-success" *ngIf="successMsg">
       <i class="material-icons">check_circle</i> {{ successMsg }}
@@ -66,6 +74,34 @@
       <p>Aucun événement ne correspond à votre recherche.</p>
     </div>
 
+
+    <!-- ─── Recommandés pour vous ─── -->
+<div class="recommendations-strip" *ngIf="currentUserId && filteredEvents.length > 0">
+  <div class="recommendations-strip__header">
+    <i class="material-icons">auto_awesome</i>
+    <span>Recommandés pour vous</span>
+  </div>
+  <div class="recommendations-strip__chips">
+    <div
+      class="recommendation-chip"
+      *ngFor="let event of filteredEvents | slice:0:4"
+      (click)="openModal(event)"
+    >
+      <div
+        class="recommendation-chip__thumb"
+        [style.background-image]="event.imageUrl ? 'url(' + event.imageUrl + ')' : 'none'"
+      ></div>
+      <div class="recommendation-chip__info">
+        <span class="chip-title">{{ event.title }}</span>
+        <span class="chip-meta">
+          <i class="material-icons">place</i> {{ event.location }}
+        </span>
+      </div>
+      <span class="chip-category">{{ event.category }}</span>
+    </div>
+  </div>
+</div>
+
     <!-- ─── Events Grid ─── -->
     <div class="events-grid" *ngIf="!loading && filteredEvents.length > 0">
       <div class="event-card" *ngFor="let event of filteredEvents">
@@ -127,6 +163,17 @@
             [class.btn-participate--rejected]="getUserInscriptionStatus(event.idEvent!) === 'REJECTED'"
             (click)="participerEvent(event)">
             <i class="material-icons">how_to_reg</i> {{ getParticipateLabel(event.idEvent!) }}
+          </button>
+
+          <button class="btn-cancel"
+            *ngIf="getUserInscriptionStatus(event.idEvent!) === 'ACCEPTED'
+                || getUserInscriptionStatus(event.idEvent!) === 'PENDING'"
+            [disabled]="!canCancelInscription(event.idEvent!)"
+            [title]="!canCancelInscription(event.idEvent!)
+                     ? 'Annulation impossible à J-1'
+                     : 'Annuler mon inscription'"
+            (click)="cancelInscription(event.idEvent!, $event)">
+            <i class="material-icons">cancel</i>
           </button>
         </div>
 
@@ -227,12 +274,10 @@
         Activités ({{ selectedEvent.activities?.length || 0 }})
       </div>
 
-      <!-- Spinner pendant le chargement -->
       <div *ngIf="activityLoading" style="text-align:center; padding:16px; color:#888;">
         <i class="material-icons spin">autorenew</i> Chargement des activités...
       </div>
 
-      <!-- Aucune activité -->
       <div
         *ngIf="!activityLoading && (!selectedEvent.activities || selectedEvent.activities.length === 0)"
         class="no-activities-modal"
@@ -241,7 +286,6 @@
         Aucune activité pour cet événement.
       </div>
 
-      <!-- Liste des activités -->
       <div
         class="modal-activities-list"
         *ngIf="!activityLoading && selectedEvent.activities && selectedEvent.activities.length > 0"

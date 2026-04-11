@@ -105,7 +105,7 @@ export class AdminStatsComponent implements OnInit {
   };
 
   // Heatmap
-  heatSeries: ApexAxisChartSeries = [];
+ heatSeries: any[] = [];
   heatChart:  ApexChart = {
     type: 'heatmap', height: 240, background: 'transparent',
     toolbar: { show: false }, fontFamily: 'DM Sans, sans-serif'

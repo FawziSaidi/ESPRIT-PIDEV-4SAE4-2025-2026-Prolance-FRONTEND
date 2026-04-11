@@ -129,6 +129,14 @@ export class AdminEventsComponent implements OnInit, OnDestroy {
   aiDescLoading = false;
   aiActivityLoading: { [index: number]: boolean } = {};
 
+  // ── Waitlist ──
+
+showCapacityModal  = false;
+capacityModalEvent?: Event;
+newCapacityValue:  number | null = null;
+capacityStatus:    any = null;
+capacityLoading    = false;
+
   showEmailModal        = false;
   emailModalMode: 'accept' | 'reject' = 'accept';
   emailTargetReg?: EventInscriptionResponseDTO;
@@ -136,6 +144,17 @@ export class AdminEventsComponent implements OnInit, OnDestroy {
   emailSending          = false;
   emailSuccess          = '';
   emailError            = '';
+
+// ── Report ──
+showReportModal   = false;
+reportLoading     = false;
+reportAIText      = '';
+reportGenerated   = false;
+
+  // ── AI Auto-Evaluation ──
+autoEvaluateLoading  = false;
+autoEvaluateProgress = { current: 0, total: 0 };
+aiEvaluationReasons: { [id: number]: { decision: string; reason: string } } = {};
 
   private readonly EMAILJS_SERVICE_ID         = 'service_3d4iage';
   private readonly EMAILJS_ACCEPT_TEMPLATE_ID = 'template_md5sn32';
@@ -382,6 +401,9 @@ export class AdminEventsComponent implements OnInit, OnDestroy {
   get registrationStatusOptions(): string[] { return ['ALL', ...Object.values(InscriptionStatus)]; }
   countByStatus(status: string): number     { return this.registrations.filter(r => r.status === status).length; }
   get pendingCount(): number                { return this.countByStatus(InscriptionStatus.PENDING); }
+  get cancelledCount(): number { return this.countByStatus(InscriptionStatus.CANCELLED); } 
+  get waitlistCount(): number  { return this.countByStatus(InscriptionStatus.WAITLIST); }
+get promotedCount(): number  { return this.countByStatus(InscriptionStatus.PROMOTED); }
 
   approveRegistration(id: number): void {
     this.registrationActionLoading[id] = true;
@@ -498,14 +520,16 @@ export class AdminEventsComponent implements OnInit, OnDestroy {
 
   getRegistrationStatusColor(status: string): string {
     const map: { [k: string]: string } = {
-      [InscriptionStatus.PENDING]: '#f59e0b', [InscriptionStatus.ACCEPTED]: '#10b981', [InscriptionStatus.REJECTED]: '#ef4444',
+      [InscriptionStatus.PENDING]: '#f59e0b', [InscriptionStatus.ACCEPTED]: '#10b981', [InscriptionStatus.REJECTED]: '#ef4444', [InscriptionStatus.CANCELLED]: '#64748b', [InscriptionStatus.WAITLIST]:  '#3b82f6',   // ← bleu
+    [InscriptionStatus.PROMOTED]:  '#8b5cf6',
     };
     return map[status] || '#6b7280';
   }
 
   getRegistrationStatusIcon(status: string): string {
     const map: { [k: string]: string } = {
-      [InscriptionStatus.PENDING]: '⏳', [InscriptionStatus.ACCEPTED]: '✅', [InscriptionStatus.REJECTED]: '❌',
+      [InscriptionStatus.PENDING]: '⏳', [InscriptionStatus.ACCEPTED]: '✅', [InscriptionStatus.REJECTED]: '❌',  [InscriptionStatus.CANCELLED]: '🚫',     [InscriptionStatus.WAITLIST]:  '🕐',        // ← nouveau
+    [InscriptionStatus.PROMOTED]:  '🚀', 
     };
     return map[status] || '❓';
   }
@@ -764,4 +788,442 @@ export class AdminEventsComponent implements OnInit, OnDestroy {
       error: () => { this.formError = 'Erreur lors de la génération de la description.'; this.aiDescLoading = false; }
     });
   }
+
+
+  async autoEvaluateAllPending(): Promise<void> {
+  const pending = this.registrations.filter(r => r.status === 'PENDING');
+  if (pending.length === 0) return;
+
+  this.autoEvaluateLoading   = true;
+  this.autoEvaluateProgress  = { current: 0, total: pending.length };
+  this.aiEvaluationReasons   = {};
+
+  for (const reg of pending) {
+    // Find matching event
+    const matchedEvent = this.events.find(e => e.title === reg.eventTitle);
+    if (!matchedEvent) {
+      this.autoEvaluateProgress.current++;
+      continue;
+    }
+
+    try {
+      // Fetch full activities if not loaded
+      const activities = matchedEvent.activities?.length
+        ? matchedEvent.activities
+        : await this.activityService.getActivitiesByEvent(matchedEvent.idEvent!).toPromise().catch(() => []);
+
+      const result = await this.groqService.evaluateInscription(
+        {
+          title:               matchedEvent.title,
+          description:         matchedEvent.description,
+          activities:          activities || [],
+          capacity:            matchedEvent.capacity,
+          currentParticipants: matchedEvent.currentParticipants || 0
+        },
+        {
+          participantNom:    reg.participantNom,
+          participantPrenom: reg.participantPrenom,
+          participantRole:   reg.participantRole,
+          domaine:           reg.domaine,
+          message:           reg.message
+        }
+      ).toPromise();
+
+      if (result) {
+        // Store reason for display
+        this.aiEvaluationReasons[reg.id] = result;
+
+        // Apply decision
+        if (result.decision === 'ACCEPT') {
+          await this.inscriptionService.acceptInscription(reg.id).toPromise();
+          const idx = this.registrations.findIndex(r => r.id === reg.id);
+          if (idx !== -1) this.registrations[idx].status = InscriptionStatus.ACCEPTED;
+        } else {
+          await this.inscriptionService.rejectInscription(reg.id).toPromise();
+          const idx = this.registrations.findIndex(r => r.id === reg.id);
+         if (idx !== -1) this.registrations[idx].status = InscriptionStatus.REJECTED;
+        }
+      }
+    } catch (err) {
+      console.error('AI evaluation error for inscription', reg.id, err);
+    }
+
+    this.autoEvaluateProgress.current++;
+  }
+
+  this.autoEvaluateLoading = false;
+  this.loadAllEventsForStats();
+}
+
+openCapacityModal(event: Event): void {
+  this.capacityModalEvent = event;
+  this.newCapacityValue   = event.capacity ?? null;
+  this.capacityStatus     = null;
+  this.showCapacityModal  = true;
+  this.capacityLoading    = true;
+
+  this.inscriptionService.getCapacityStatus(event.idEvent!).subscribe({
+    next: (s) => { this.capacityStatus = s; this.capacityLoading = false; },
+    error: ()  => { this.capacityLoading = false; }
+  });
+}
+
+closeCapacityModal(): void {
+  this.showCapacityModal  = false;
+  this.capacityModalEvent = undefined;
+  this.newCapacityValue   = null;
+}
+
+confirmCapacityIncrease(): void {
+  if (!this.capacityModalEvent?.idEvent || !this.newCapacityValue) return;
+  const current = this.capacityModalEvent.capacity ?? 0;
+  if (this.newCapacityValue <= current) return;
+
+  this.capacityLoading = true;
+  this.inscriptionService.increaseCapacity(
+    this.capacityModalEvent.idEvent,
+    this.newCapacityValue
+  ).subscribe({
+    next: (updatedStatus) => {
+      this.capacityStatus  = updatedStatus;
+      this.capacityLoading = false;
+      this.loadAllEventsForStats();
+      this.loadFilteredEvents();
+      // Recharge les inscriptions si le modal est ouvert
+      if (this.showRegistrationsModal) this.loadAllRegistrations();
+      setTimeout(() => this.closeCapacityModal(), 1500);
+    },
+    error: () => { this.capacityLoading = false; }
+  });
+}
+
+getWaitlistPosition(reg: EventInscriptionResponseDTO): number {
+  const waitlist = this.registrations
+    .filter(r => r.eventId === reg.eventId && r.status === InscriptionStatus.WAITLIST)
+    .sort((a, b) => new Date(a.waitlistDate!).getTime() - new Date(b.waitlistDate!).getTime());
+  return waitlist.findIndex(r => r.id === reg.id) + 1;
+}
+
+getPromotionCount(newCap: number, status: any): number {
+  if (!status) return 0;
+  return Math.min(newCap - status.capacity, status.waitlistSize);
+}
+
+// reporting section
+
+openReportModal(): void {
+  this.showReportModal = true;
+  this.reportGenerated = false;
+  this.reportLoading   = true;
+  this.reportAIText    = '';
+
+  // Si les inscriptions sont déjà chargées, générer directement
+  if (this.registrations.length > 0) {
+    this.generateAIReport();
+    return;
+  }
+
+  // Sinon, charger d'abord toutes les inscriptions
+  const eventIds = this.events.map(e => e.idEvent).filter((id): id is number => id != null);
+  if (eventIds.length === 0) {
+    this.reportLoading = false;
+    this.reportGenerated = true;
+    this.reportAIText = 'No events found to analyze.';
+    return;
+  }
+
+  const requests = eventIds.map(id =>
+    this.inscriptionService.getInscriptionsByEvent(id).pipe(catchError(() => of([] as EventInscriptionResponseDTO[])))
+  );
+
+  forkJoin(requests).subscribe({
+    next: (results) => {
+      const all = ([] as EventInscriptionResponseDTO[]).concat(...results);
+      const seen = new Set<number>();
+      this.registrations = all.filter(r => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
+      this.generateAIReport(); // ← seulement après que les données sont prêtes
+    },
+    error: () => {
+      this.reportLoading   = false;
+      this.reportGenerated = true;
+      this.reportAIText    = 'Failed to load registration data.';
+    }
+  });
+}
+
+closeReportModal(): void {
+  this.showReportModal = false;
+}
+
+get reportAccepted(): number {
+  return this.registrations.filter(r => r.status === InscriptionStatus.ACCEPTED || r.status === InscriptionStatus.PROMOTED).length;
+}
+get reportRejected(): number {
+  return this.registrations.filter(r => r.status === InscriptionStatus.REJECTED).length;
+}
+get reportAcceptRate(): number {
+  const t = this.reportAccepted + this.reportRejected;
+  return t ? Math.round(this.reportAccepted / t * 100) : 0;
+}
+
+get reportByEvent(): { title: string; accepted: number; rejected: number; pending: number; rate: number }[] {
+  return this.events.map(event => {
+    const evtRegs = this.registrations.filter(r => r.eventTitle === event.title);
+    const accepted = evtRegs.filter(r => r.status === InscriptionStatus.ACCEPTED || r.status === InscriptionStatus.PROMOTED).length;
+    const rejected = evtRegs.filter(r => r.status === InscriptionStatus.REJECTED).length;
+    const pending  = evtRegs.filter(r => r.status === InscriptionStatus.PENDING).length;
+    const total    = accepted + rejected;
+    return { title: event.title, accepted, rejected, pending, rate: total ? Math.round(accepted / total * 100) : 0 };
+  }).filter(e => e.accepted + e.rejected + e.pending > 0);
+}
+
+get reportRoleStats(): { role: string; count: number; pct: number }[] {
+  const map: Record<string, number> = {};
+  this.registrations.forEach(r => {
+    if (r.participantRole) map[r.participantRole] = (map[r.participantRole] || 0) + 1;
+  });
+  const total = this.registrations.length || 1;
+  return Object.entries(map).sort((a, b) => b[1] - a[1])
+    .map(([role, count]) => ({ role, count, pct: Math.round(count / total * 100) }));
+}
+
+get reportDomainStats(): { domain: string; count: number; pct: number }[] {
+  const map: Record<string, number> = {};
+  this.registrations.forEach(r => {
+    if (r.domaine) map[r.domaine] = (map[r.domaine] || 0) + 1;
+  });
+  const total = this.registrations.length || 1;
+  return Object.entries(map).sort((a, b) => b[1] - a[1])
+    .map(([domain, count]) => ({ domain, count, pct: Math.round(count / total * 100) }));
+}
+
+generateAIReport(): void {
+  const summary = {
+    totalRegistrations: this.registrations.length,
+    accepted:           this.reportAccepted,
+    rejected:           this.reportRejected,
+    pending:            this.countByStatus(InscriptionStatus.PENDING),
+    acceptRate:         this.reportAcceptRate,
+    topRole:            this.reportRoleStats[0],
+    topDomain:          this.reportDomainStats[0],
+    bestEvent:          [...this.reportByEvent].sort((a, b) => b.rate - a.rate)[0],
+    worstEvent:         [...this.reportByEvent].sort((a, b) => a.rate - b.rate)[0],
+    byEvent:            this.reportByEvent,
+    roleStats:          this.reportRoleStats,
+    domainStats:        this.reportDomainStats,
+  };
+
+  const prompt = `You are an event analytics expert. Based on this participant registration data, write a professional report in English with 4-5 paragraphs covering: overall acceptance trends, participant profile (roles and domains), per-event performance highlights, anomalies or recommendations for improvement.
+
+DATA:
+- Total registrations: ${summary.totalRegistrations}
+- Accepted: ${summary.accepted}, Rejected: ${summary.rejected}, Pending: ${summary.pending}
+- Overall acceptance rate: ${summary.acceptRate}%
+- Top role: ${summary.topRole?.role} (${summary.topRole?.count} registrations, ${summary.topRole?.pct}%)
+- Top domain: ${summary.topDomain?.domain} (${summary.topDomain?.count} registrations, ${summary.topDomain?.pct}%)
+- Best performing event: "${summary.bestEvent?.title}" with ${summary.bestEvent?.rate}% acceptance rate
+- Lowest performing event: "${summary.worstEvent?.title}" with ${summary.worstEvent?.rate}% acceptance rate
+- Per-event details: ${summary.byEvent.map(e => `${e.title}: ${e.accepted} accepted, ${e.rejected} rejected, ${e.rate}% rate`).join(' | ')}
+- Roles: ${summary.roleStats.map(r => `${r.role}: ${r.count} (${r.pct}%)`).join(', ')}
+- Domains: ${summary.domainStats.map(d => `${d.domain}: ${d.count} (${d.pct}%)`).join(', ')}
+
+Write ONLY the report text, no headers, no bullet points. Paragraphs separated by double newlines.`;
+
+  this.groqService.generateRawText(prompt).subscribe({
+    next: (text) => {
+      this.reportAIText    = text;
+      this.reportLoading   = false;
+      this.reportGenerated = true;
+    },
+    error: () => {
+      this.reportAIText    = 'AI analysis unavailable. Please check your Groq configuration.';
+      this.reportLoading   = false;
+      this.reportGenerated = true;
+    }
+  });
+}
+
+get reportSchedule(): {
+  title: string;
+  category: string;
+  status: string;
+  location: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  durationDays: number;
+  capacity: number;
+  participants: number;
+  fillRate: number;
+}[] {
+  return this.events
+    .filter(e => e.startDate && e.endDate)
+    .map(e => {
+      const start       = new Date(e.startDate as string);
+      const end         = new Date(e.endDate   as string);
+      const durationMs  = end.getTime() - start.getTime();
+      const durationDays = Math.max(1, Math.round(durationMs / (1000 * 60 * 60 * 24)));
+      const participants = e.currentParticipants || 0;
+      const capacity     = e.capacity || 1;
+      return {
+        title:        e.title,
+        category:     e.category,
+        status:       e.eventStatus,
+        location:     e.location || '—',
+        startDate:    start,
+        endDate:      end,
+        durationDays,
+        capacity,
+        participants,
+        fillRate: Math.round((participants / capacity) * 100),
+      };
+    })
+    .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0));
+}
+
+formatScheduleDate(d: Date | null): string {
+  if (!d) return '—';
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+getScheduleBarStyle(event: {
+  startDate: Date | null;
+  endDate:   Date | null;
+  status:    string;
+}): { left: string; width: string; background: string } {
+  if (!this.reportSchedule.length) return { left: '0%', width: '5%', background: '#6b7280' };
+
+  const dates  = this.reportSchedule.filter(e => e.startDate && e.endDate);
+  const minTs  = Math.min(...dates.map(e => e.startDate!.getTime()));
+  const maxTs  = Math.max(...dates.map(e => e.endDate!.getTime()));
+  const total  = maxTs - minTs || 1;
+
+  const left  = ((( event.startDate?.getTime() ?? minTs) - minTs) / total) * 100;
+  const width = Math.max(2, (((event.endDate?.getTime()  ?? minTs) - (event.startDate?.getTime() ?? minTs)) / total) * 100);
+
+  const colors: Record<string, string> = {
+    PUBLISHED: 'linear-gradient(90deg,#10b981,#059669)',
+    PENDING:   'linear-gradient(90deg,#f59e0b,#d97706)',
+    CANCELLED: 'linear-gradient(90deg,#ef4444,#dc2626)',
+    COMPLETED: 'linear-gradient(90deg,#6366f1,#4f46e5)',
+  };
+
+  return {
+    left:       `${left.toFixed(1)}%`,
+    width:      `${width.toFixed(1)}%`,
+    background: colors[event.status] || 'linear-gradient(90deg,#6b7280,#4b5563)',
+  };
+}
+
+getScheduleTimelineMonths(): string[] {
+  if (!this.reportSchedule.length) return [];
+  const dates = this.reportSchedule.filter(e => e.startDate && e.endDate);
+  if (!dates.length) return [];
+  const minTs = Math.min(...dates.map(e => e.startDate!.getTime()));
+  const maxTs = Math.max(...dates.map(e => e.endDate!.getTime()));
+  const months: string[] = [];
+  const cur = new Date(minTs);
+  cur.setDate(1);
+  while (cur.getTime() <= maxTs) {
+    months.push(cur.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }));
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  return months;
+}
+
+async downloadReportPdf(): Promise<void> {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: html2canvas } = await import('html2canvas');
+  const el = document.getElementById('reportPrintArea') as HTMLElement;
+
+  // Sauvegarde les styles originaux
+  const originalOverflow  = el.style.overflow;
+  const originalMaxHeight = el.style.maxHeight;
+  const originalHeight    = el.style.height;
+  const originalWidth     = el.style.width;
+
+  // Force l'élément à afficher tout son contenu sans scroll
+  el.style.overflow  = 'visible';
+  el.style.maxHeight = 'none';
+  el.style.height    = 'auto';
+  el.style.width     = '900px';
+
+  await new Promise(resolve => setTimeout(resolve, 200));
+
+  const pdf  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pdfW = pdf.internal.pageSize.getWidth();   // 210mm
+  const pdfH = pdf.internal.pageSize.getHeight();  // 297mm
+  const margin    = 12; // mm
+  const contentW  = pdfW - margin * 2;
+  const contentH  = pdfH - margin * 2;
+
+  // Récupère tous les blocs enfants directs pour éviter les coupures
+  const children = Array.from(el.children) as HTMLElement[];
+
+  let currentY = margin; // position Y courante sur la page PDF (en mm)
+  let pageIndex = 0;
+
+  for (const child of children) {
+    const canvas = await html2canvas(child as HTMLElement, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+      width:  (child as HTMLElement).scrollWidth,
+      height: (child as HTMLElement).scrollHeight,
+    });
+
+    const imgData  = canvas.toDataURL('image/jpeg', 0.92);
+    const ratio    = contentW / canvas.width;         // px → mm
+    const blockH   = canvas.height * ratio;           // hauteur du bloc en mm
+
+    // Si le bloc ne rentre pas sur la page courante → nouvelle page
+    if (currentY + blockH > pdfH - margin && currentY > margin) {
+      pdf.addPage();
+      pageIndex++;
+      currentY = margin;
+    }
+
+    // Si le bloc est plus grand qu'une page entière, on le coupe proprement
+    if (blockH > contentH) {
+      let srcY = 0; // en pixels dans le canvas
+      while (srcY < canvas.height) {
+        const sliceHeightPx = Math.floor(contentH / ratio); // hauteur d'une page en px
+        const sliceCanvas   = document.createElement('canvas');
+        sliceCanvas.width   = canvas.width;
+        sliceCanvas.height  = Math.min(sliceHeightPx, canvas.height - srcY);
+        const ctx = sliceCanvas.getContext('2d')!;
+        ctx.drawImage(canvas, 0, srcY, sliceCanvas.width, sliceCanvas.height, 0, 0, sliceCanvas.width, sliceCanvas.height);
+        const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+        const sliceH    = sliceCanvas.height * ratio;
+        if (srcY > 0) { pdf.addPage(); currentY = margin; }
+        pdf.addImage(sliceData, 'JPEG', margin, currentY, contentW, sliceH);
+        currentY += sliceH + 4;
+        srcY     += sliceHeightPx;
+      }
+    } else {
+      pdf.addImage(imgData, 'JPEG', margin, currentY, contentW, blockH);
+      currentY += blockH + 4; // 4mm de spacing entre blocs
+    }
+  }
+
+  // Restaure les styles originaux
+  el.style.overflow  = originalOverflow;
+  el.style.maxHeight = originalMaxHeight;
+  el.style.height    = originalHeight;
+  el.style.width     = originalWidth;
+
+  pdf.save(`participant-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+
+
+
+
+
+
 }

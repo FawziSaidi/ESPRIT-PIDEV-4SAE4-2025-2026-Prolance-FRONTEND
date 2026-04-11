@@ -153,6 +153,7 @@ export class EventListComponent implements OnInit {
     if (status === 'PENDING')  return '⏳ En attente';
     if (status === 'ACCEPTED') return '✅ Inscrit';
     if (status === 'REJECTED') return '↩ Re-soumettre';
+    if (status === 'CANCELLED')  return '↩ Re-s\'inscrire';
     return 'Participer';
   }
 
@@ -180,4 +181,46 @@ export class EventListComponent implements OnInit {
       day: '2-digit', month: 'short', year: 'numeric'
     });
   }
+
+
+  canCancelInscription(eventId: number): boolean {
+  // Récupérer la startDate depuis la liste events déjà chargée
+  const event = this.events.find(e => e.idEvent === eventId);
+  if (!event?.startDate) return false;
+
+  const now       = new Date();
+  const startDate = new Date(event.startDate);
+  const diffMs    = startDate.getTime() - now.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  // Autorisé seulement si on est à plus de 24h du début
+  return diffHours > 24;
+}
+
+cancelInscription(eventId: number, event: MouseEvent): void {
+  event.stopPropagation(); // éviter d'ouvrir le modal
+
+  const inscription = this.userInscriptions.find(i => i.eventId === eventId);
+  if (!inscription) return;
+
+  if (!this.canCancelInscription(eventId)) {
+    this.errorMsg = 'Annulation impossible : l\'événement commence dans moins de 24h.';
+    setTimeout(() => this.errorMsg = '', 4000);
+    return;
+  }
+
+  if (!confirm('Confirmer l\'annulation de votre inscription ?')) return;
+
+  this.inscriptionService.cancelInscription(inscription.id).subscribe({
+    next: () => {
+      this.successMsg = 'Inscription annulée avec succès.';
+      this.loadUserInscriptions();
+      setTimeout(() => this.successMsg = '', 4000);
+    },
+    error: (err) => {
+      this.errorMsg = err?.error?.message || 'Erreur lors de l\'annulation.';
+      setTimeout(() => this.errorMsg = '', 4000);
+    }
+  });
+}
 }

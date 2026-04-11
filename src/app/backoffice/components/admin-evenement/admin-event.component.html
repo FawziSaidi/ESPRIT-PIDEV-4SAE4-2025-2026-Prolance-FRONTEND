@@ -8,13 +8,15 @@
         <p class="header-subtitle">Review, manage and monitor all events on the platform</p>
       </div>
       <div class="header-actions">
+          
         <!-- ── BOUTON ARCHIVES ── -->
+      <button class="btn-report" (click)="openReportModal()">AI Report </button>
         <button class="btn-archived" (click)="openArchivedModal()">
-          🗂️ Archived Events
+          Archived Events
           <span class="archived-badge" *ngIf="archivedEvents.length > 0">{{ archivedEvents.length }}</span>
         </button>
         <button class="btn-registrations" (click)="openRegistrationsModal()">
-          📋 Registration Requests
+           Registration Requests
           <span class="reg-badge" *ngIf="pendingCount > 0">{{ pendingCount }}</span>
         </button>
         <button class="btn-create" (click)="openCreateModal()">➕ Create Event</button>
@@ -591,6 +593,9 @@
           <span class="reg-pill pending">⏳ {{ countByStatus('PENDING') }} pending</span>
           <span class="reg-pill accepted">✅ {{ countByStatus('ACCEPTED') }} accepted</span>
           <span class="reg-pill rejected">❌ {{ countByStatus('REJECTED') }} rejected</span>
+           <span class="reg-pill cancelled">🚫 {{ cancelledCount }} annulé{{ cancelledCount > 1 ? 's' : '' }}</span>
+            <span class="reg-pill waitlist">🕐 {{ waitlistCount }} waitlist</span>
+  <span class="reg-pill promoted">🚀 {{ promotedCount }} promoted</span>
         </div>
         <button class="reg-modal-close" (click)="closeRegistrationsModal()">✕</button>
       </div>
@@ -608,8 +613,32 @@
           <span class="reg-tab-count" *ngIf="s !== 'ALL'">{{ countByStatus(s) }}</span>
         </button>
       </div>
+      <!-- Bouton Auto-Évaluation IA -->
+<button
+  class="reg-btn-ai-evaluate"
+  (click)="autoEvaluateAllPending()"
+  [disabled]="autoEvaluateLoading || pendingCount === 0"
+  title="Evaluate all pending inscriptions automatically with AI">
+
+  <span *ngIf="!autoEvaluateLoading">
+    🤖 Auto-Evaluate ({{ pendingCount }})
+  </span>
+  <span *ngIf="autoEvaluateLoading">
+    ⏳ {{ autoEvaluateProgress.current }}/{{ autoEvaluateProgress.total }}
+  </span>
+</button>
       <button class="reg-refresh-btn" (click)="loadAllRegistrations()" title="Refresh"><i class="material-icons">refresh</i></button>
     </div>
+
+    <!-- Barre de progression AI -->
+<div class="ai-eval-progress-bar" *ngIf="autoEvaluateLoading">
+  <div class="ai-eval-fill"
+    [style.width.%]="(autoEvaluateProgress.current / autoEvaluateProgress.total) * 100">
+  </div>
+  <span class="ai-eval-label">
+    🤖 Evaluating inscription {{ autoEvaluateProgress.current }} of {{ autoEvaluateProgress.total }}…
+  </span>
+</div>
 
     <!-- Body -->
     <div class="reg-modal-body">
@@ -660,6 +689,11 @@
                   [style.border-color]="getRegistrationStatusColor(reg.status) + '55'">
                   {{ getRegistrationStatusIcon(reg.status) }} {{ reg.status }}
                 </span>
+                <!-- AI reason tooltip -->
+  <div class="ai-reason-chip" *ngIf="aiEvaluationReasons[reg.id]"
+    [title]="aiEvaluationReasons[reg.id].reason">
+    🤖 {{ aiEvaluationReasons[reg.id].reason | slice:0:50 }}…
+  </div>
               </td>
               <td class="reg-td reg-td-actions">
                 <!-- PENDING → Accept + Reject -->
@@ -686,6 +720,31 @@
                     <i class="material-icons">mail</i> Email Refus
                   </button>
                 </div>
+
+                <!-- CANCELLED → aucune action -->
+<div class="reg-action-group" *ngIf="reg.status === 'CANCELLED'">
+  <span class="reg-cancelled-label">
+    <i class="material-icons">block</i> Annulé par le participant
+  </span>
+</div>
+
+<!-- WAITLIST → position dans la file -->
+<div class="reg-action-group" *ngIf="reg.status === 'WAITLIST'">
+  <span class="reg-waitlist-label">
+    🕐 Position {{ getWaitlistPosition(reg) }} in queue
+  </span>
+</div>
+
+<!-- PROMOTED → badge + email comme ACCEPTED -->
+<div class="reg-action-group" *ngIf="reg.status === 'PROMOTED'">
+  <button class="reg-btn-badge" (click)="downloadBadge(reg, 'png')">
+    <i class="material-icons">image</i> PNG
+  </button>
+  <button class="reg-btn-email-accept" (click)="openAcceptEmailModal(reg)">
+    <i class="material-icons">mail</i> Email
+  </button>
+  <span class="reg-promoted-chip">🚀 Promoted from waitlist</span>
+</div>
               </td>
             </tr>
           </tbody>
@@ -749,4 +808,362 @@
     </div>
 
   </div>
+
+
+  <!-- ══ MODAL CAPACITÉ / WAITLIST ══ -->
+<div class="delete-backdrop" *ngIf="showCapacityModal" (click)="closeCapacityModal()"></div>
+<div class="capacity-modal-container" *ngIf="showCapacityModal">
+  <div class="capacity-modal-box" (click)="$event.stopPropagation()">
+
+    <div class="capacity-modal-header">
+      <h3>⚡ Capacity & Waitlist</h3>
+      <button class="modal-close" (click)="closeCapacityModal()">✕</button>
+    </div>
+
+    <div class="capacity-modal-body">
+      <div *ngIf="capacityLoading && !capacityStatus" class="reg-loading">
+        <div class="spinner"></div><p>Loading...</p>
+      </div>
+
+      <ng-container *ngIf="capacityStatus">
+        <!-- Stats actuelles -->
+        <div class="capacity-stats-grid">
+          <div class="cap-stat">
+            <span class="cap-stat-value">{{ capacityStatus.capacity }}</span>
+            <span class="cap-stat-label">Total capacity</span>
+          </div>
+          <div class="cap-stat">
+            <span class="cap-stat-value" style="color:#10b981">{{ capacityStatus.confirmedParticipants }}</span>
+            <span class="cap-stat-label">Confirmed</span>
+          </div>
+          <div class="cap-stat">
+            <span class="cap-stat-value" style="color:#3b82f6">{{ capacityStatus.waitlistSize }}</span>
+            <span class="cap-stat-label">On waitlist</span>
+          </div>
+          <div class="cap-stat">
+            <span class="cap-stat-value" [style.color]="capacityStatus.isFull ? '#ef4444' : '#10b981'">
+              {{ capacityStatus.isFull ? '🔴 Full' : '🟢 Open' }}
+            </span>
+            <span class="cap-stat-label">Status</span>
+          </div>
+        </div>
+
+        <!-- Deadline warning -->
+        <div class="capacity-deadline-warn" *ngIf="!capacityStatus.isBeforeDeadline">
+          ⚠️ J-1 passed — increasing capacity will NOT trigger promotions.
+        </div>
+        <div class="capacity-deadline-ok" *ngIf="capacityStatus.isBeforeDeadline && capacityStatus.waitlistSize > 0">
+          ✅ Before J-1 — increasing capacity will automatically promote
+          waitlisted participants (FIFO).
+        </div>
+
+        <!-- Input nouvelle capacité -->
+        <div class="capacity-input-group">
+          <label>New capacity (current: {{ capacityStatus.capacity }})</label>
+          <input
+            type="number"
+            class="adv-input"
+            [(ngModel)]="newCapacityValue"
+            [min]="capacityStatus.capacity + 1"
+            placeholder="e.g. {{ capacityStatus.capacity + 5 }}">
+          <p class="capacity-input-hint" *ngIf="newCapacityValue && newCapacityValue > capacityStatus.capacity">
+            → Will free {{ newCapacityValue - capacityStatus.capacity }} seat(s)
+            <ng-container *ngIf="capacityStatus.isBeforeDeadline && capacityStatus.waitlistSize > 0">
+              and promote up to
+              {{ [newCapacityValue - capacityStatus.capacity, capacityStatus.waitlistSize] | min }}
+              participant(s) from the waitlist.
+            </ng-container>
+          </p>
+          <p class="capacity-input-error"
+             *ngIf="newCapacityValue && newCapacityValue <= capacityStatus.capacity">
+            ⚠ New capacity must be greater than current capacity ({{ capacityStatus.capacity }}).
+          </p>
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="capacity-modal-footer">
+      <button class="delete-btn-cancel" (click)="closeCapacityModal()">Cancel</button>
+      <button class="delete-btn-confirm"
+        (click)="confirmCapacityIncrease()"
+        [disabled]="capacityLoading || !newCapacityValue
+                    || !capacityStatus
+                    || newCapacityValue <= capacityStatus.capacity">
+        <i class="material-icons">{{ capacityLoading ? 'hourglass_empty' : 'upgrade' }}</i>
+        {{ capacityLoading ? 'Applying…' : 'Increase Capacity' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+
+</div>
+
+<!-- ══ MODAL REPORT ══ -->
+<div class="modal-backdrop" *ngIf="showReportModal" (click)="closeReportModal()"></div>
+<div class="report-modal-container" *ngIf="showReportModal">
+  <div class="report-modal-box" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="report-modal-header">
+      <div class="report-title-group">
+        <div class="report-icon">📊</div>
+        <div>
+          <h2>AI Participant Analysis Report</h2>
+          <p>{{ registrations.length }} registrations · {{ events.length }} events · {{ reportByEvent.length }} active</p>
+        </div>
+      </div>
+      <button class="report-close" (click)="closeReportModal()">✕</button>
+    </div>
+
+    <!-- Print area -->
+    <div class="report-body" id="reportPrintArea">
+
+      <!-- Loading -->
+      <div *ngIf="reportLoading" class="report-loading">
+        <div class="spinner"></div>
+        <p>AI is analyzing participant data…</p>
+      </div>
+
+      <ng-container *ngIf="reportGenerated">
+
+        <!-- Metric cards -->
+        <div class="report-metrics">
+          <div class="rpt-metric">
+            <span class="rpt-metric-val">{{ registrations.length }}</span>
+            <span class="rpt-metric-lbl">Total registrations</span>
+          </div>
+          <div class="rpt-metric green">
+            <span class="rpt-metric-val">{{ reportAccepted }}</span>
+            <span class="rpt-metric-lbl">Accepted</span>
+          </div>
+          <div class="rpt-metric red">
+            <span class="rpt-metric-val">{{ reportRejected }}</span>
+            <span class="rpt-metric-lbl">Rejected</span>
+          </div>
+          <div class="rpt-metric blue">
+            <span class="rpt-metric-val">{{ reportAcceptRate }}%</span>
+            <span class="rpt-metric-lbl">Accept rate</span>
+          </div>
+        </div>
+
+        <!-- Roles -->
+        <div class="report-section">
+          <h4 class="report-section-title">Registrations by role</h4>
+          <div *ngFor="let r of reportRoleStats" class="stat-bar-row">
+            <span class="stat-bar-label">{{ r.role }}</span>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill purple" [style.width.%]="r.pct"></div>
+            </div>
+            <span class="stat-bar-val">{{ r.count }} ({{ r.pct }}%)</span>
+          </div>
+        </div>
+
+        <!-- Domains -->
+        <div class="report-section">
+          <h4 class="report-section-title">Registrations by domain</h4>
+          <div *ngFor="let d of reportDomainStats" class="stat-bar-row">
+            <span class="stat-bar-label">{{ d.domain }}</span>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill teal" [style.width.%]="d.pct"></div>
+            </div>
+            <span class="stat-bar-val">{{ d.count }} ({{ d.pct }}%)</span>
+          </div>
+        </div>
+
+        <!-- Per-event table -->
+        <div class="report-section">
+          <h4 class="report-section-title">Per-event breakdown</h4>
+          <table class="rpt-table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Accepted</th>
+                <th>Rejected</th>
+                <th>Pending</th>
+                <th>Accept rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let e of reportByEvent">
+                <td><strong>{{ e.title }}</strong></td>
+                <td style="color:#0F6E56">{{ e.accepted }}</td>
+                <td style="color:#993C1D">{{ e.rejected }}</td>
+                <td style="color:#854F0B">{{ e.pending }}</td>
+                <td>
+                  {{ e.rate }}%
+                  <div class="mini-bar">
+                    <div class="mini-fill"
+                      [style.width.%]="e.rate"
+                      [style.background]="e.rate >= 70 ? '#1D9E75' : e.rate >= 50 ? '#BA7517' : '#D85A30'">
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── SCHEDULE SECTION ── -->
+<div class="report-section" style="margin-top:28px;">
+
+  <h3 style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:16px;
+              display:flex;align-items:center;gap:8px;">
+    <span style="background:linear-gradient(135deg,#6366f1,#8b5cf6);
+                 color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;">
+      📅 EVENT SCHEDULE
+    </span>
+    <span style="color:#64748b;font-size:12px;font-weight:400;">
+      — Timeline & Duration Tracker
+    </span>
+  </h3>
+
+  <!-- Gantt-style timeline -->
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;
+               padding:16px;margin-bottom:20px;overflow:hidden;">
+
+    <!-- Month axis -->
+    <div style="display:flex;margin-bottom:8px;padding-left:180px;">
+      <div *ngFor="let m of getScheduleTimelineMonths()"
+           style="flex:1;font-size:10px;color:#94a3b8;font-weight:600;text-align:center;">
+        {{m}}
+      </div>
+    </div>
+
+    <!-- Rows -->
+    <div *ngFor="let evt of reportSchedule; let i = index"
+         style="display:flex;align-items:center;margin-bottom:8px;">
+
+      <!-- Event name -->
+      <div style="width:175px;min-width:175px;font-size:11px;color:#334155;
+                  font-weight:600;padding-right:8px;overflow:hidden;
+                  white-space:nowrap;text-overflow:ellipsis;"
+           [title]="evt.title">
+        {{ getCategoryIcon(evt.category) }} {{evt.title}}
+      </div>
+
+      <!-- Bar container -->
+      <div style="flex:1;position:relative;height:22px;background:#e2e8f0;
+                  border-radius:4px;overflow:hidden;">
+        <div [ngStyle]="getScheduleBarStyle(evt)"
+             style="position:absolute;top:0;height:100%;border-radius:4px;
+                    display:flex;align-items:center;padding:0 6px;
+                    font-size:10px;color:#fff;font-weight:700;white-space:nowrap;
+                    overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2);">
+          {{evt.durationDays}}d
+        </div>
+      </div>
+
+      <!-- Fill rate badge -->
+      <div style="width:48px;text-align:right;font-size:11px;font-weight:700;margin-left:8px;"
+           [style.color]="evt.fillRate >= 80 ? '#ef4444' : evt.fillRate >= 50 ? '#f59e0b' : '#10b981'">
+        {{evt.fillRate}}%
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;gap:16px;margin-top:12px;padding-left:180px;flex-wrap:wrap;">
+      <span *ngFor="let s of ['PUBLISHED','PENDING','CANCELLED','COMPLETED']"
+            style="display:flex;align-items:center;gap:5px;font-size:10px;color:#64748b;">
+        <span style="width:12px;height:12px;border-radius:2px;display:inline-block;"
+              [style.background]="getStatusColor(s)"></span>
+        {{s}}
+      </span>
+      <span style="font-size:10px;color:#64748b;margin-left:8px;">
+        | Bar width = duration &nbsp;·&nbsp; % = capacity fill rate
+      </span>
+    </div>
+  </div>
+
+  <!-- Detail table -->
+  <table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead>
+      <tr style="background:linear-gradient(90deg,#1e293b,#334155);color:#fff;">
+        <th style="padding:8px 10px;text-align:left;border-radius:6px 0 0 0;">Event</th>
+        <th style="padding:8px 10px;text-align:center;">Category</th>
+        <th style="padding:8px 10px;text-align:center;">Status</th>
+        <th style="padding:8px 10px;text-align:center;">Start Date</th>
+        <th style="padding:8px 10px;text-align:center;">End Date</th>
+        <th style="padding:8px 10px;text-align:center;">Duration</th>
+        <th style="padding:8px 10px;text-align:center;">Location</th>
+        <th style="padding:8px 10px;text-align:center;border-radius:0 6px 0 0;">Fill Rate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let evt of reportSchedule; let i = index"
+          [style.background]="i % 2 === 0 ? '#ffffff' : '#f8fafc'">
+        <td style="padding:7px 10px;font-weight:600;color:#1e293b;max-width:160px;
+                   overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
+          {{evt.title}}
+        </td>
+        <td style="padding:7px 10px;text-align:center;color:#6366f1;font-weight:600;">
+          {{ getCategoryIcon(evt.category) }} {{evt.category}}
+        </td>
+        <td style="padding:7px 10px;text-align:center;">
+          <span style="padding:2px 8px;border-radius:20px;font-size:10px;
+                       font-weight:700;color:#fff;"
+                [style.background]="getStatusColor(evt.status)">
+            {{evt.status}}
+          </span>
+        </td>
+        <td style="padding:7px 10px;text-align:center;color:#475569;">
+          {{ formatScheduleDate(evt.startDate) }}
+        </td>
+        <td style="padding:7px 10px;text-align:center;color:#475569;">
+          {{ formatScheduleDate(evt.endDate) }}
+        </td>
+        <td style="padding:7px 10px;text-align:center;font-weight:700;color:#1e293b;">
+          {{evt.durationDays}} day{{evt.durationDays > 1 ? 's' : ''}}
+        </td>
+        <td style="padding:7px 10px;text-align:center;color:#64748b;font-size:10px;">
+          {{evt.location}}
+        </td>
+        <td style="padding:7px 10px;text-align:center;">
+          <div style="display:flex;align-items:center;gap:5px;justify-content:center;">
+            <div style="width:50px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+              <div [style.width]="evt.fillRate + '%'"
+                   [style.background]="getCapacityBarColor(evt.fillRate)"
+                   style="height:100%;border-radius:3px;"></div>
+            </div>
+            <span style="font-size:10px;font-weight:700;"
+                  [style.color]="evt.fillRate >= 80 ? '#ef4444' : '#10b981'">
+              {{evt.fillRate}}%
+            </span>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+        <!-- AI Insights -->
+        <div class="report-ai-block">
+          <div class="report-ai-header">
+            <span class="report-ai-icon">AI</span>
+            <strong>AI-generated insights</strong>
+            <span class="report-ai-badge">Groq · Llama 3</span>
+          </div>
+          <div class="report-ai-text">
+            <p *ngFor="let para of reportAIText.split('\n\n')">{{ para }}</p>
+          </div>
+        </div>
+
+      </ng-container>
+    </div>
+
+    <!-- Footer -->
+    <div class="report-footer">
+      <span class="report-footer-info">{{ reportByEvent.length }} events analyzed</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-cancel" (click)="closeReportModal()">Close</button>
+        <button class="btn-download-pdf" (click)="downloadReportPdf()" [disabled]="!reportGenerated">
+          ⬇ Export PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
