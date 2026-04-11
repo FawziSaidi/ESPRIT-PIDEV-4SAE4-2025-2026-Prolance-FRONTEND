@@ -43,6 +43,12 @@
           [class.counter-fill--full]="applicationCount >= MAX_APPLICATIONS">
         </div>
       </div>
+      <button class="btn-ai-recommendations" (click)="openAiRecommendations()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        AI Picks
+      </button>
     </div>
 
     <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
@@ -99,12 +105,30 @@
           </div>
         </div>
 
-        <div class="card-footer" *ngIf="isFreelancer">
-          <button *ngIf="hasApplied(project)" class="btn-applied" disabled>✅ Applied</button>
-          <button *ngIf="!hasApplied(project)" class="btn-apply-centered"
-            (click)="openApplyModal(project)"
-            [disabled]="applicationCount >= MAX_APPLICATIONS">
-            🚀 Apply
+        <div class="card-footer" [class.card-footer--client]="isClient && isMyProject(project)">
+          <!-- Freelancer actions -->
+          <ng-container *ngIf="isFreelancer">
+            <button *ngIf="hasApplied(project)" class="btn-applied" disabled>✅ Applied</button>
+            <button *ngIf="!hasApplied(project)" class="btn-apply-centered"
+              (click)="openApplyModal(project)"
+              [disabled]="applicationCount >= MAX_APPLICATIONS">
+              🚀 Apply
+            </button>
+          </ng-container>
+
+          <!-- Client: See All Applied button -->
+          <button
+            *ngIf="isClient && isMyProject(project)"
+            class="btn-see-applied"
+            (click)="openApplicantsModal(project)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            See All Applied
           </button>
         </div>
 
@@ -124,22 +148,16 @@
 <!-- ── Delete confirmation modal ─────────────────────────────────── -->
 <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
   <div class="modal-box modal-box--purple" (click)="$event.stopPropagation()">
-
     <div class="modal-glow-header"></div>
-
     <div class="modal-inner">
-
       <div class="modal-icon-circle modal-icon-circle--purple">
         <span>🗑️</span>
       </div>
-
       <h2 class="modal-title">Delete This Project?</h2>
-
       <p class="modal-message">
         This action is <strong>irreversible</strong>. The project and all its data
         will be permanently deleted.
       </p>
-
       <div class="modal-reason-box modal-reason-box--purple">
         <div class="reason-item">
           <span class="reason-dot reason-dot--purple">●</span>
@@ -150,39 +168,27 @@
           This project will no longer be visible to any freelancer.
         </div>
       </div>
-
       <div class="modal-actions">
-        <button class="btn-modal btn-modal--cancel" (click)="closeDeleteModal()">
-          Cancel
-        </button>
-        <button class="btn-modal btn-modal--danger" (click)="confirmDelete()">
-          Yes, Delete It
-        </button>
+        <button class="btn-modal btn-modal--cancel" (click)="closeDeleteModal()">Cancel</button>
+        <button class="btn-modal btn-modal--danger" (click)="confirmDelete()">Yes, Delete It</button>
       </div>
-
     </div>
   </div>
 </div>
 
-<!-- ── Blocked alert — freelancer already applied ─────────────────── -->
+<!-- ── Blocked alert ─────────────────────────────────── -->
 <div class="modal-overlay" *ngIf="showBlockedAlert" (click)="closeBlockedAlert()">
   <div class="modal-box modal-box--error" (click)="$event.stopPropagation()">
-
     <div class="modal-glow-header"></div>
-
     <div class="modal-inner">
-
       <div class="modal-icon-circle modal-icon-circle--error">
         <span>✕</span>
       </div>
-
       <h2 class="modal-title">Cannot Delete This Project</h2>
-
       <p class="modal-message">
         This project <strong>cannot be deleted</strong> because one or more
         freelancers have already submitted an application to it.
       </p>
-
       <div class="modal-reason-box modal-reason-box--error">
         <div class="reason-item">
           <span class="reason-dot reason-dot--error">●</span>
@@ -195,13 +201,9 @@
           all pending applications from the applications panel.
         </div>
       </div>
-
       <div class="modal-actions">
-        <button class="btn-modal btn-modal--close-error" (click)="closeBlockedAlert()">
-          I Understand
-        </button>
+        <button class="btn-modal btn-modal--close-error" (click)="closeBlockedAlert()">I Understand</button>
       </div>
-
     </div>
   </div>
 </div>
@@ -216,6 +218,18 @@
 <app-freelancer-skills-setup *ngIf="showSkillsSetupModal" [freelancerId]="currentUserId"
   (close)="closeSkillsSetupModal()" (skillsSaved)="onSkillsSetupDone()">
 </app-freelancer-skills-setup>
+<app-applicants-modal
+  *ngIf="showApplicantsModal && selectedProject"
+  [project]="selectedProject"
+  (close)="closeApplicantsModal()">
+</app-applicants-modal>
+<app-ai-recommendations
+  *ngIf="showAiRecommendations && isFreelancer && currentUserId"
+  [freelancerId]="currentUserId!"
+  [appliedProjectIds]="appliedProjectIds"
+  (close)="closeAiRecommendations()"
+  (applyProject)="openApplyModal($event)">
+</app-ai-recommendations>
 
 <!-- Toast -->
 <app-toast></app-toast>

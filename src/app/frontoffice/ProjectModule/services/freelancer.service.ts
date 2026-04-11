@@ -5,21 +5,22 @@ import { Observable } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class FreelancerService {
 
-  // ✅ MICROSERVICE — toutes les requêtes passent par l'API Gateway (port 8222)
-  // skill-service tourne sur 8093, mais on passe TOUJOURS par le gateway
   private apiUrl = 'http://localhost:8222/api';
 
   constructor(private http: HttpClient) {}
 
+getFreelancerById(freelancerId: number): Observable<any> {
+  return this.http.get<any>(`http://localhost:8222/users/${freelancerId}`);
+}
   // ─── SKILLS ───────────────────────────────────────────────────────────────
 
   getFreelancerSkills(freelancerId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/skills/freelancer/${freelancerId}`);
   }
-  getApplicationsByProjectId(projectId: number): Observable<any[]> {
-  return this.http.get<any[]>(`${this.apiUrl}/applications/project/${projectId}`);
 
-}
+  getApplicationsByProjectId(projectId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/applications/project/${projectId}`);
+  }
 
   createSkillForFreelancer(freelancerId: number, skill: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/skills/freelancer/${freelancerId}`, skill);
@@ -76,5 +77,9 @@ export class FreelancerService {
 
   getFreelancerApplications(freelancerId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/applications/freelancer/${freelancerId}`);
+  }
+
+  acceptApplication(applicationId: number): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/applications/${applicationId}/accept`, {});
   }
 }

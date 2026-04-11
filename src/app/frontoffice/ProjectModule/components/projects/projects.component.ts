@@ -3,7 +3,7 @@ import { ProjectsService } from '../../services/projects.service';
 import { AuthService } from '../../../../services/auth.services';
 import { Project } from '../../models/project.model';
 import { FreelancerService } from '../../services/freelancer.service';
-import { ToastService } from '../../services/toast.service'; // adapte le chemin
+import { ToastService } from '../../services/toast.service';
 import { EmailNotificationService } from '../../services/email-notification.service';
 import { Observable } from 'rxjs';
 
@@ -24,6 +24,8 @@ export class ProjectsComponent implements OnInit {
   showEditModal = false;
   showDetailsModal = false;
   showApplyModal = false;
+  showApplicantsModal = false;
+  showAiRecommendations = false;
   selectedProject?: Project;
 
   currentUserRole: string = '';
@@ -32,9 +34,7 @@ export class ProjectsComponent implements OnInit {
   isFreelancer: boolean = false;
   hasFilledSkills: boolean = false;
 
-  // IDs des projets où le freelancer a déjà appliqué
   appliedProjectIds: Set<number> = new Set();
-  // Nombre total d'applications du freelancer
   applicationCount: number = 0;
   readonly MAX_APPLICATIONS = 10;
 
@@ -58,7 +58,7 @@ export class ProjectsComponent implements OnInit {
     private freelancerService: FreelancerService,
     private toast: ToastService,
     private cdr: ChangeDetectorRef,
-     private emailService: EmailNotificationService 
+    private emailService: EmailNotificationService
   ) {}
 
   ngOnInit(): void {
@@ -80,20 +80,19 @@ export class ProjectsComponent implements OnInit {
     }
   }
 
-  // Charge toutes les applications du freelancer pour savoir lesquels il a déjà appliqué
- loadMyApplications(): void {
-  if (!this.currentUserId) return;
-  this.freelancerService.getFreelancerApplications(this.currentUserId).subscribe({
-    next: (apps) => {
-      console.log('Applied IDs:', apps);
-      this.applicationCount = apps.length;
-      this.appliedProjectIds = new Set(
-        apps.map((a: any) => a.project?.id ?? a.projectId).filter(Boolean)
-      );
-    },
-    error: () => {}
-  });
-}
+  loadMyApplications(): void {
+    if (!this.currentUserId) return;
+    this.freelancerService.getFreelancerApplications(this.currentUserId).subscribe({
+      next: (apps) => {
+        console.log('Applied IDs:', apps);
+        this.applicationCount = apps.length;
+        this.appliedProjectIds = new Set(
+          apps.map((a: any) => a.project?.id ?? a.projectId).filter(Boolean)
+        );
+      },
+      error: () => {}
+    });
+  }
 
   hasApplied(project: Project): boolean {
     return !!project.id && this.appliedProjectIds.has(project.id);
@@ -164,18 +163,14 @@ export class ProjectsComponent implements OnInit {
   }
 
   openApplyModal(project: Project): void {
-    // Déjà appliqué
     if (this.hasApplied(project)) {
       this.toast.info('You have already applied to this project.');
       return;
     }
-
-    // Max 10 applications
     if (this.applicationCount >= this.MAX_APPLICATIONS) {
       this.toast.warning(`You have reached the maximum of ${this.MAX_APPLICATIONS} applications.`);
       return;
     }
-
     this.selectedProject = project;
     if (!this.hasFilledSkills) {
       this.showSkillsSetupModal = true;
@@ -190,14 +185,13 @@ export class ProjectsComponent implements OnInit {
   }
 
   onApplicationSubmitted(): void {
-  if (this.selectedProject?.id) {
-    this.appliedProjectIds.add(this.selectedProject.id);
-    this.applicationCount++;
+    if (this.selectedProject?.id) {
+      this.appliedProjectIds.add(this.selectedProject.id);
+      this.applicationCount++;
+    }
+    this.showApplyModal = false;
+    this.selectedProject = undefined;
   }
-  this.showApplyModal = false;
-  this.selectedProject = undefined;
-  
-}
 
   closeSkillsSetupModal(): void {
     this.showSkillsSetupModal = false;
@@ -227,75 +221,70 @@ export class ProjectsComponent implements OnInit {
 
   openProjectDetails(project: Project): void { this.selectedProject = project; this.showDetailsModal = true; }
   closeDetailsModal(): void { this.showDetailsModal = false; this.selectedProject = undefined; }
-  
+
+  openApplicantsModal(project: Project): void { this.selectedProject = project; this.showApplicantsModal = true; }
+  closeApplicantsModal(): void { this.showApplicantsModal = false; this.selectedProject = undefined; }
+
+  openAiRecommendations(): void { this.showAiRecommendations = true; }
+  closeAiRecommendations(): void { this.showAiRecommendations = false; }
 
   openDeleteModal(project: Project): void {
-  if (!this.isMyProject(project)) {
-    this.errorMessage = 'Vous ne pouvez supprimer que vos propres projets.';
-    return;
-  }
-
-  // Check if this project has any applications before showing delete modal
-  this.freelancerService.getApplicationsByProjectId(project.id!).subscribe({
-    next: (apps) => {
-      if (apps && apps.length > 0) {
-        this.showBlockedAlert = true;
-      } else {
+    if (!this.isMyProject(project)) {
+      this.errorMessage = 'Vous ne pouvez supprimer que vos propres projets.';
+      return;
+    }
+    this.freelancerService.getApplicationsByProjectId(project.id!).subscribe({
+      next: (apps) => {
+        if (apps && apps.length > 0) {
+          this.showBlockedAlert = true;
+        } else {
+          this.projectToDelete = project;
+          this.showDeleteModal = true;
+        }
+      },
+      error: () => {
         this.projectToDelete = project;
         this.showDeleteModal = true;
       }
-    },
-    error: () => {
-      // If check fails, just proceed and let backend handle it
-      this.projectToDelete = project;
-      this.showDeleteModal = true;
-    }
-  });
-}
+    });
+  }
+
   closeDeleteModal(): void { this.showDeleteModal = false; this.projectToDelete = undefined; }
 
   confirmDelete(): void {
-  if (!this.projectToDelete?.id) return;
+    if (!this.projectToDelete?.id) return;
 
-  const idToDelete    = this.projectToDelete.id;
-  const projectTitle  = this.projectToDelete.title;
-  const projectBudget = this.projectToDelete.budget;
-  const projectCat    = this.projectToDelete.category;
-  const clientName    = `${this.projectToDelete.client?.name || ''} ${this.projectToDelete.client?.lastName || ''}`.trim();
-  const clientEmail   = this.projectToDelete.client?.email || '';
+    const idToDelete    = this.projectToDelete.id;
+    const projectTitle  = this.projectToDelete.title;
+    const projectBudget = this.projectToDelete.budget;
+    const projectCat    = this.projectToDelete.category;
+    const clientName    = `${this.projectToDelete.client?.name || ''} ${this.projectToDelete.client?.lastName || ''}`.trim();
+    const clientEmail   = this.projectToDelete.client?.email || '';
 
-  this.showDeleteModal = false;
-  this.projectToDelete = undefined;
-  this.cdr.detectChanges();
+    this.showDeleteModal = false;
+    this.projectToDelete = undefined;
+    this.cdr.detectChanges();
 
-  this.projectsService.deleteProject(idToDelete).subscribe({
-    next: () => {
-      // ← Envoyer l'email APRÈS suppression réussie
-      this.emailService.sendDeleteNotification({
-        clientName,
-        clientEmail,
-        projectTitle,
-        projectBudget,
-        projectCategory: projectCat
-      });
-
-      this.loadProjects();
-      this.toast.success('Project deleted successfully.');
-    },
-    error: (err) => {
-      if (err.status === 409) {
-        this.showBlockedAlert = true;
-        this.cdr.detectChanges();
-      } else {
-        this.toast.error('An unexpected error occurred. Please try again.');
+    this.projectsService.deleteProject(idToDelete).subscribe({
+      next: () => {
+        this.emailService.sendDeleteNotification({
+          clientName, clientEmail, projectTitle, projectBudget, projectCategory: projectCat
+        });
+        this.loadProjects();
+        this.toast.success('Project deleted successfully.');
+      },
+      error: (err) => {
+        if (err.status === 409) {
+          this.showBlockedAlert = true;
+          this.cdr.detectChanges();
+        } else {
+          this.toast.error('An unexpected error occurred. Please try again.');
+        }
       }
-    }
-  });
-}
-closeBlockedAlert(): void {
-  this.showBlockedAlert = false;
-}
+    });
+  }
 
+  closeBlockedAlert(): void { this.showBlockedAlert = false; }
   deleteProject(project: Project): void { this.openDeleteModal(project); }
 
   getCategoryBadgeClass(category: string): string {

@@ -8,9 +8,11 @@ import { FreelancerApplyComponent } from './components/freelancer-apply/freelanc
 import { ProjectDetailsComponent } from './components/projects-details/projectDetails.component';
 import { FreelancerSkillsSetupComponent } from './components/freelancer-skills-setup/freelancer-skills-setup.component';
 import { ToastComponent } from './components/toast/toast.component';
+import { ApplicantsModalComponent } from './components/applicants-modal/applicants-modal.component';
+import { AiRecommendationsComponent } from './components/ai-recommendations/ai-recommendations.component';
 
 @NgModule({
-  declarations: [ProjectsComponent, ProjectFormComponent, ProjectDetailsComponent, FreelancerApplyComponent,FreelancerSkillsSetupComponent, ToastComponent],
+  declarations: [ProjectsComponent, ProjectFormComponent, ProjectDetailsComponent, FreelancerApplyComponent,FreelancerSkillsSetupComponent, ToastComponent, ApplicantsModalComponent, AiRecommendationsComponent],
   imports: [CommonModule, ReactiveFormsModule, FormsModule, ProjectsRoutingModule]
 })
 export class ProjectsModule {}
