@@ -7,6 +7,7 @@ import { MatRippleModule } from '@angular/material/core';
 
 import { UserDashboardComponent } from '../../authentification/user-dashboard/user-dashboard.component';
 import { AdCenterComponent } from '../../pages/ads/ad-center.component';
+import { InvoiceAgentComponent } from '../../pages/ads/invoice-agent/invoice-agent.component';
 
 
 const userRoutes: Routes = [
@@ -26,6 +27,7 @@ const userRoutes: Routes = [
   declarations: [
     UserDashboardComponent,
     AdCenterComponent,
+    InvoiceAgentComponent,
   ]
 })
 export class UserLayoutModule {}

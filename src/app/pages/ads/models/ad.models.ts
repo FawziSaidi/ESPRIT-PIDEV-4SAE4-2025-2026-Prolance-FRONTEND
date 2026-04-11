@@ -1,69 +1,91 @@
-// ═══════════════════════════════════════════════
-// Backend Enums (Match Spring Boot exactly)
-// ═══════════════════════════════════════════════
+// ── Backend Enum Types ──────────────────────────
 export type AdType = 'BANNER' | 'FEATURED_PROFILE' | 'JOB_BOOST';
 export type AdLocation = 'LANDING_PAGE' | 'JOB_FEED' | 'SEARCH_SIDEBAR';
 export type CampaignStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'EXPIRED';
 export type RoleType = 'FREELANCER' | 'CLIENT';
+export type AdCreationOrigin = 'AI' | 'HUMAN';
+export type AdEventType = 'VIEW' | 'CLICK' | 'HOVER';
 
-// ═══════════════════════════════════════════════
-// AdPlan DTO (GET /plans response item)
-// ═══════════════════════════════════════════════
+// ── Plan DTO (GET /plans) ───────────────────────
 export interface AdPlan {
-  id: number;
-  name: string;
-  type: AdType;
-  price: number;
-  location: AdLocation;
-  roleType: RoleType;
-  description?: string;
-  icon?: string;           // Frontend-only (mapped locally)
+  readonly id: number;
+  readonly name: string;
+  readonly type: AdType;
+  readonly price: number;
+  readonly location: AdLocation;
+  readonly roleType: RoleType;
+  readonly description?: string;
+  icon?: string;
 }
 
-// ═══════════════════════════════════════════════
-// CampaignResponse DTO (GET /campaigns response item)
-// ═══════════════════════════════════════════════
+// ── Campaign DTO (GET /campaigns) ───────────────
 export interface AdCampaign {
-  id: number;
-  userId: number;
-  planId: number;
-  title: string;
-  description: string;
-  imageUrl: string;
-  targetUrl: string;
+  readonly id: number;
+  readonly userId: number;
+  readonly planId: number;
+  readonly title: string;
+  readonly description: string;
+  readonly imageUrl: string;
+  readonly targetUrl: string;
   status: CampaignStatus;
   rejectionReason?: string;
-  createdAt: Date | string;
+  readonly createdAt: Date | string;
   roleType: RoleType;
-  targetId?: number;
-  createdBy?: 'AI' | 'HUMAN'; // Track ad creation origin for Kafka events
-  // Enriched / joined fields from backend
-  planName?: string;
-  planType?: AdType;
-  planLocation?: AdLocation;
-  views?: number;
-  clicks?: number;
-  // Frontend-only display fields
+  readonly targetId?: number;
+  readonly createdBy?: AdCreationOrigin;
+  readonly planName?: string;
+  readonly planType?: AdType;
+  readonly planLocation?: AdLocation;
+  readonly views?: number;
+  readonly clicks?: number;
   sparklineData?: number[];
 }
 
-// ═══════════════════════════════════════════════
-// CreateCampaignRequest DTO (POST /campaigns body)
-// ═══════════════════════════════════════════════
+// ── Request DTOs ────────────────────────────────
 export interface CreateCampaignRequest {
-  planId: number;
-  title: string;
-  description: string;
-  imageUrl: string;
-  targetUrl: string;
-  roleType: RoleType;
-  targetId?: number;
-  usedAiSuggestion?: boolean; // Track if AI suggestion was used
+  readonly planId: number;
+  readonly title: string;
+  readonly description: string;
+  readonly imageUrl: string;
+  readonly targetUrl: string;
+  readonly roleType: RoleType;
+  readonly targetId?: number;
+  readonly usedAiSuggestion?: boolean;
 }
 
-// ═══════════════════════════════════════════════
-// Admin action DTOs
-// ═══════════════════════════════════════════════
 export interface RejectCampaignRequest {
-  rejectionReason: string;
+  readonly rejectionReason: string;
+}
+
+// ── Response DTOs ───────────────────────────────
+export interface ContentValidationResponse {
+  readonly isSafe: boolean;
+  readonly categoryCode?: string;
+}
+
+export interface AiSuggestionResponse {
+  readonly title: string;
+  readonly description: string;
+}
+
+export interface AdContactResponse {
+  readonly adId: number;
+  readonly adTitle: string;
+  readonly email: string;
+}
+
+// ── RAG (Retrieval-Augmented Generation) ────────
+export interface RagRelevantAd {
+  readonly adId: number;
+  readonly title: string;
+  readonly description: string;
+  readonly status: string;
+  readonly roleType: string;
+  readonly planName: string;
+  readonly score: number;
+}
+
+export interface RagResponse {
+  readonly answer: string;
+  readonly relevantAds: RagRelevantAd[];
 }

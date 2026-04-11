@@ -23,56 +23,9 @@
     </button>
   </div>
 
-  <!-- ════════ KPI CARDS ════════ -->
-  <div class="row kpi-row">
-    <div class="col-lg-3 col-md-6 col-sm-6">
-      <div class="card card-stats ad-card">
-        <div class="card-header card-header-icon purple-kpi purple-kpi-1">
-          <div class="card-icon"><i class="material-icons">play_circle_filled</i></div>
-          <p class="card-category">Active Ads</p>
-          <h3 class="card-title">{{ stats.activeAds }}</h3>
-        </div>
-        <div class="card-footer">
-          <div class="stats"><i class="material-icons">campaign</i> Currently running</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-3 col-md-6 col-sm-6">
-      <div class="card card-stats ad-card">
-        <div class="card-header card-header-icon purple-kpi purple-kpi-2">
-          <div class="card-icon"><i class="material-icons">visibility</i></div>
-          <p class="card-category">Total Impressions</p>
-          <h3 class="card-title">{{ stats.totalImpressions | number }}</h3>
-        </div>
-        <div class="card-footer">
-          <div class="stats"><i class="material-icons">trending_up</i> +12% this week</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-3 col-md-6 col-sm-6">
-      <div class="card card-stats ad-card">
-        <div class="card-header card-header-icon purple-kpi purple-kpi-3">
-          <div class="card-icon"><i class="material-icons">touch_app</i></div>
-          <p class="card-category">Total Clicks</p>
-          <h3 class="card-title">{{ stats.totalClicks | number }}</h3>
-        </div>
-        <div class="card-footer">
-          <div class="stats"><i class="material-icons">ads_click</i> {{ stats.totalImpressions > 0 ? ((stats.totalClicks / stats.totalImpressions) * 100).toFixed(1) : '0' }}% CTR</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-3 col-md-6 col-sm-6">
-      <div class="card card-stats ad-card">
-        <div class="card-header card-header-icon purple-kpi purple-kpi-4">
-          <div class="card-icon"><i class="material-icons">account_balance_wallet</i></div>
-          <p class="card-category">Remaining Budget</p>
-          <h3 class="card-title">${{ stats.remainingBudget | number }}</h3>
-        </div>
-        <div class="card-footer">
-          <div class="stats"><i class="material-icons">info</i> Auto-renew enabled</div>
-        </div>
-      </div>
-    </div>
+  <!-- ════════ AI INVOICE AGENT ════════ -->
+  <div class="invoice-agent-row">
+    <app-invoice-agent></app-invoice-agent>
   </div>
 
   <!-- ════════ PERFORMANCE CHART ════════ -->

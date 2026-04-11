@@ -452,6 +452,124 @@
   </div>
 </section>
 
+<!-- ========== RAG — AI-POWERED AD SEARCH ========== -->
+<section class="landing-section rag-section" id="rag-section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 text-center">
+
+        <!-- Teaser (before opening) -->
+        <div class="rag-teaser reveal" *ngIf="!ragOpen">
+          <div class="rag-teaser-icon">
+            <i class="material-icons">auto_awesome</i>
+          </div>
+          <h2 class="rag-teaser-title">Tired of scrolling through ads?</h2>
+          <p class="rag-teaser-subtitle">Just ask us about what you're looking for</p>
+          <button class="btn btn-primary btn-round btn-lg btn-pop rag-open-btn" (click)="openRagSearch()">
+            <i class="material-icons">search</i> Ask AI
+          </button>
+        </div>
+
+        <!-- Search Panel (after clicking) -->
+        <div class="rag-panel" *ngIf="ragOpen">
+          <div class="rag-panel-header">
+            <div class="rag-panel-icon">
+              <i class="material-icons">psychology</i>
+            </div>
+            <h3>AI-Powered Ad Search</h3>
+            <p>Describe what you're looking for in plain language</p>
+            <button class="rag-close-btn" (click)="closeRagSearch()" title="Close">
+              <i class="material-icons">close</i>
+            </button>
+          </div>
+
+          <!-- Input -->
+          <div class="rag-input-row">
+            <input type="text"
+                   class="rag-input"
+                   placeholder="e.g. Is anyone advertising web development services?"
+                   [(ngModel)]="ragQuery"
+                   (keydown.enter)="submitRagQuery()"
+                   [disabled]="ragLoading"
+                   autofocus />
+            <button class="rag-submit-btn"
+                    (click)="submitRagQuery()"
+                    [disabled]="ragLoading || !ragQuery.trim()">
+              <i class="material-icons" *ngIf="!ragLoading">send</i>
+              <div class="rag-spinner" *ngIf="ragLoading"></div>
+            </button>
+          </div>
+
+          <!-- Loading -->
+          <div class="rag-loading" *ngIf="ragLoading">
+            <div class="rag-loading-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <p>Searching through ads with AI... this may take a few seconds</p>
+          </div>
+
+          <!-- Error -->
+          <div class="rag-error" *ngIf="ragError && !ragLoading">
+            <i class="material-icons">error_outline</i>
+            <p>Something went wrong. The AI service might be unavailable. Please try again.</p>
+          </div>
+
+          <!-- Results -->
+          <div class="rag-results" *ngIf="ragResponse && !ragLoading">
+            <!-- AI Answer -->
+            <div class="rag-answer">
+              <div class="rag-answer-header">
+                <i class="material-icons">auto_awesome</i>
+                <span>AI Answer</span>
+              </div>
+              <p class="rag-answer-text">{{ ragResponse.answer }}</p>
+            </div>
+
+            <!-- Relevant Ads -->
+            <div class="rag-ads" *ngIf="ragResponse.relevantAds && ragResponse.relevantAds.length > 0">
+              <h4 class="rag-ads-title">
+                <i class="material-icons">campaign</i>
+                Related Ads ({{ ragResponse.relevantAds.length }})
+              </h4>
+              <div class="rag-ad-card" *ngFor="let ad of ragResponse.relevantAds">
+                <a [routerLink]="['/ads', ad.adId]" class="rag-ad-link">
+                  <div class="rag-ad-top">
+                    <span class="rag-ad-role"
+                          [class.role-freelancer]="ad.roleType === 'FREELANCER'"
+                          [class.role-client]="ad.roleType === 'CLIENT'">
+                      {{ ad.roleType === 'FREELANCER' ? 'Freelancer' : 'Client' }}
+                    </span>
+                    <span class="rag-ad-score">
+                      <i class="material-icons">trending_up</i>
+                      {{ getScorePercent(ad.score) }}% match
+                    </span>
+                  </div>
+                  <h5 class="rag-ad-title">{{ ad.title }}</h5>
+                  <p class="rag-ad-desc">{{ ad.description }}</p>
+                  <div class="rag-ad-meta">
+                    <span><i class="material-icons">label</i> {{ ad.planName }}</span>
+                    <span><i class="material-icons">info</i> {{ ad.status }}</span>
+                  </div>
+                  <div class="rag-score-bar">
+                    <div class="rag-score-fill" [style.width.%]="getScorePercent(ad.score)"></div>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <!-- No ads found -->
+            <div class="rag-empty" *ngIf="ragResponse.relevantAds && ragResponse.relevantAds.length === 0">
+              <i class="material-icons">search_off</i>
+              <p>No matching ads found, but the AI gave its best answer above.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ========== SOCIAL PROOF / STATS ========== -->
 <section class="landing-section stats-section" id="stats-section">
   <div class="stats-overlay"></div>

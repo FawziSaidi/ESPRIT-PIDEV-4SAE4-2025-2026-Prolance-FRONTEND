@@ -10,32 +10,31 @@ export interface AdSlot {
   rotationEnabled: boolean;
 }
 
+const CLOSED_POPUPS_KEY = 'closedAdPopups';
+const ROTATION_INTERVAL_MS = 9000;
+
 @Injectable({
   providedIn: 'root'
 })
 export class AdPlacementManagerService {
-  private slots: Map<string, AdSlot> = new Map();
-  private usedAdIds: Set<number> = new Set();
-  private rotationSubscriptions: Map<string, Subscription> = new Map();
-  private readonly ROTATION_INTERVAL = 9000; // 9 seconds
+  private readonly slots = new Map<string, AdSlot>();
+  private readonly usedAdIds = new Set<number>();
+  private readonly rotationSubscriptions = new Map<string, Subscription>();
 
-  // Session-based popup close state
-  private closedPopupSlots: Set<string> = new Set();
+  private closedPopupSlots = new Set<string>();
 
-  // Observables for each slot
-  private leftRailSubject = new BehaviorSubject<AdCampaign | null>(null);
-  private rightRailSubject = new BehaviorSubject<AdCampaign | null>(null);
-  private bottomLeftPopupSubject = new BehaviorSubject<AdCampaign | null>(null);
-  private bottomRightPopupSubject = new BehaviorSubject<AdCampaign | null>(null);
+  private readonly leftRailSubject = new BehaviorSubject<AdCampaign | null>(null);
+  private readonly rightRailSubject = new BehaviorSubject<AdCampaign | null>(null);
+  private readonly bottomLeftPopupSubject = new BehaviorSubject<AdCampaign | null>(null);
+  private readonly bottomRightPopupSubject = new BehaviorSubject<AdCampaign | null>(null);
 
-  leftRail$ = this.leftRailSubject.asObservable();
-  rightRail$ = this.rightRailSubject.asObservable();
-  bottomLeftPopup$ = this.bottomLeftPopupSubject.asObservable();
-  bottomRightPopup$ = this.bottomRightPopupSubject.asObservable();
+  readonly leftRail$ = this.leftRailSubject.asObservable();
+  readonly rightRail$ = this.rightRailSubject.asObservable();
+  readonly bottomLeftPopup$ = this.bottomLeftPopupSubject.asObservable();
+  readonly bottomRightPopup$ = this.bottomRightPopupSubject.asObservable();
 
   constructor() {
-    // Initialize session storage for closed popups
-    const stored = sessionStorage.getItem('closedAdPopups');
+    const stored = sessionStorage.getItem(CLOSED_POPUPS_KEY);
     if (stored) {
       this.closedPopupSlots = new Set(JSON.parse(stored));
     }
@@ -109,9 +108,11 @@ export class AdPlacementManagerService {
    * Start smooth rotation for a slot
    */
   private startRotation(slotId: string, subject: BehaviorSubject<AdCampaign | null>): void {
-    const subscription = interval(this.ROTATION_INTERVAL).subscribe(() => {
+    const subscription = interval(ROTATION_INTERVAL_MS).subscribe(() => {
       const slot = this.slots.get(slotId);
-      if (!slot || !slot.rotationEnabled) return;
+      if (!slot || !slot.rotationEnabled) {
+        return;
+      }
 
       // Remove current ad from used set
       if (slot.currentAd) {
@@ -139,7 +140,7 @@ export class AdPlacementManagerService {
    */
   closePopup(slotId: string): void {
     this.closedPopupSlots.add(slotId);
-    sessionStorage.setItem('closedAdPopups', JSON.stringify([...this.closedPopupSlots]));
+    sessionStorage.setItem(CLOSED_POPUPS_KEY, JSON.stringify([...this.closedPopupSlots]));
 
     // Stop rotation and clear the slot
     const subscription = this.rotationSubscriptions.get(slotId);
@@ -184,7 +185,7 @@ export class AdPlacementManagerService {
    */
   resetSession(): void {
     this.closedPopupSlots.clear();
-    sessionStorage.removeItem('closedAdPopups');
+    sessionStorage.removeItem(CLOSED_POPUPS_KEY);
     this.cleanup();
   }
 }

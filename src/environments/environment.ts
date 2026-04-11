@@ -5,5 +5,5 @@
 
 export const environment = {
   production: false,
-  adsServiceUrl: 'http://localhost:8090/ads-service/api'
+  adsServiceUrl: 'http://localhost:8222/api'
 };

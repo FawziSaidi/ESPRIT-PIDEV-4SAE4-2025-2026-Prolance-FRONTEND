@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.services';
 import { AdsService } from '../../services/ads.service';
 import { ImageGuardService, ValidationResult } from '../../services/image-guard.service';
-import { AdPlan, AdCampaign, CampaignStatus, AdType, RoleType, CreateCampaignRequest } from './models/ad.models';
+import { AdPlan, AdCampaign, CampaignStatus, RoleType, CreateCampaignRequest, ContentValidationResponse } from './models/ad.models';
 
 export const SAFETY_POLICIES: Record<string, string> = {
   S1: 'S1: Violent Crimes',
@@ -22,7 +22,18 @@ export const SAFETY_POLICIES: Record<string, string> = {
   S14: 'S14: Code Interpreter Abuse',
 };
 
-declare var Chart: any;
+declare let Chart: any;
+
+interface RoleColorPalette {
+  readonly primary: string;
+  readonly primaryLight: string;
+  readonly primaryDark: string;
+  readonly gradient: string;
+  readonly rgbaFill: string;
+  readonly rgbaFillLight: string;
+  readonly secondary: string;
+  readonly cardHeaderClass: string;
+}
 
 @Component({
   selector: 'app-ad-center',
@@ -34,7 +45,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   currentRole: RoleType = 'FREELANCER';
 
   // ── Role-Based Color Palette (Purple-Centric) ──
-  readonly ROLE_COLORS: Record<RoleType, any> = {
+  readonly ROLE_COLORS: Record<RoleType, RoleColorPalette> = {
     FREELANCER: {
       primary: '#7B68EE',        // Vibrant Purple (Medium Slate Blue)
       primaryLight: '#9370DB',   // Medium Purple
@@ -64,7 +75,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   toastMessage = '';
   toastType: 'success' | 'error' = 'success';
   showToast = false;
-  private toastTimer: any;
+  private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ── Modal State ──
   showCreateModal = false;
@@ -152,23 +163,19 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy(): void {
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    if (this.perfChartInstance) {
-      this.perfChartInstance.destroy();
+    if (this.toastTimer !== null) {
+      clearTimeout(this.toastTimer);
     }
-    if (this.reachChartInstance) {
-      this.reachChartInstance.destroy();
-    }
-    if (this.conversionChartInstance) {
-      this.conversionChartInstance.destroy();
-    }
+    this.perfChartInstance?.destroy();
+    this.reachChartInstance?.destroy();
+    this.conversionChartInstance?.destroy();
   }
 
   // ═══════════════════════════════════════════════
   // ROLE-AWARE ACCESSORS
   // ═══════════════════════════════════════════════
 
-  get roleColors() {
+  get roleColors(): RoleColorPalette {
     return this.ROLE_COLORS[this.currentRole];
   }
 
@@ -315,8 +322,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
       const validation = await this.imageGuard.validateLink(url);
       this.imageValidationState = validation.result;
       this.imageValidationMessage = validation.message;
-    } catch (error) {
-      console.error('Image validation error:', error);
+    } catch {
       this.imageValidationState = 'UNCERTAIN';
       this.imageValidationMessage = 'Your picture could not be scanned. You can post your ad, but it will go through our backend AI model for deeper analysis; your post may be flagged if it violates terms.';
     } finally {
@@ -339,42 +345,43 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
 
   submitCampaign(): void {
     const plan = this.selectedPlan;
-    if (!plan) return;
+    if (!plan) {
+      return;
+    }
 
-    // Reset moderation state
+    this.resetModerationState();
+
+    this.adsService.validateAdContent(this.formTitle, this.formDescription).subscribe({
+      next: (validation: ContentValidationResponse) => this.handleValidationResult(validation),
+      error: () => this.performSubmission()
+    });
+  }
+
+  private resetModerationState(): void {
     this.moderationViolation = false;
     this.violationCategory = '';
     this.showViolationAlert = false;
+  }
 
-    // Step 1: Validate content with Llama-Guard
-    this.adsService.validateAdContent(this.formTitle, this.formDescription).subscribe({
-      next: (validation) => {
-        const code = validation.categoryCode || '';
-        
-        // Only show violation if content is unsafe AND has a valid violation code (S1-S14)
-        if (!validation.isSafe && code && code.match(/^S\d+$/i)) {
-          // Block submission - show violation alert
-          this.moderationViolation = true;
-          // Show both code (S2) and full name (S2: Non-Violent Crimes)
-          this.violationCategory = SAFETY_POLICIES[code.toUpperCase()] || code || 'Unknown Policy Violation';
-          this.showViolationAlert = true;
-          return;
-        }
+  private handleValidationResult(validation: ContentValidationResponse): void {
+    const code = validation.categoryCode || '';
+    const isViolation = !validation.isSafe && /^S\d+$/i.test(code);
 
-        // Step 2: Content is safe - proceed with submission
-        this.performSubmission();
-      },
-      error: (err) => {
-        console.error('Moderation validation failed:', err);
-        // On error, allow submission (backend will validate again)
-        this.performSubmission();
-      }
-    });
+    if (isViolation) {
+      this.moderationViolation = true;
+      this.violationCategory = SAFETY_POLICIES[code.toUpperCase()] || code || 'Unknown Policy Violation';
+      this.showViolationAlert = true;
+      return;
+    }
+
+    this.performSubmission();
   }
 
   private performSubmission(): void {
     const plan = this.selectedPlan;
-    if (!plan) return;
+    if (!plan) {
+      return;
+    }
 
     const payload: CreateCampaignRequest = {
       planId: plan.id,
@@ -417,7 +424,9 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     this.toastMessage = message;
     this.toastType = type;
     this.showToast = true;
-    if (this.toastTimer) clearTimeout(this.toastTimer);
+    if (this.toastTimer !== null) {
+      clearTimeout(this.toastTimer);
+    }
     this.toastTimer = setTimeout(() => this.showToast = false, 4000);
   }
 
@@ -437,40 +446,35 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   generateAiSuggestion(): void {
-    if (!this.aiPrompt.trim()) return;
+    if (!this.aiPrompt.trim()) {
+      return;
+    }
 
     this.isGeneratingAi = true;
 
     this.adsService.generateAiSuggestion(this.aiPrompt).subscribe({
       next: (suggestion) => {
-        console.log('[AI Suggestion] Response received:', suggestion);
         this.isGeneratingAi = false;
         this.closeAiSuggestionModal();
-        
-        // Auto-fill Title and Description after modal closes
-        setTimeout(() => {
-          console.log('[AI Suggestion] Setting formTitle to:', suggestion.title);
-          console.log('[AI Suggestion] Setting formDescription to:', suggestion.description);
-          this.formTitle = suggestion.title;
-          this.formDescription = suggestion.description;
-          
-          // Mark as AI-generated and store original values
-          this.isAiGenerated = true;
-          this.aiGeneratedTitle = suggestion.title;
-          this.aiGeneratedDescription = suggestion.description;
-          
-          console.log('[AI Suggestion] Current formTitle:', this.formTitle);
-          console.log('[AI Suggestion] Current formDescription:', this.formDescription);
-          this.cdr.detectChanges();
-          this.displayToast('AI suggestion applied successfully!', 'success');
-        }, 100);
+        this.applyAiSuggestion(suggestion.title, suggestion.description);
       },
-      error: (err) => {
-        console.error('[AI Suggestion] Error:', err);
+      error: () => {
         this.isGeneratingAi = false;
         this.displayToast('Failed to generate AI suggestion. Please try again.', 'error');
       }
     });
+  }
+
+  private applyAiSuggestion(title: string, description: string): void {
+    setTimeout(() => {
+      this.formTitle = title;
+      this.formDescription = description;
+      this.isAiGenerated = true;
+      this.aiGeneratedTitle = title;
+      this.aiGeneratedDescription = description;
+      this.cdr.detectChanges();
+      this.displayToast('AI suggestion applied successfully!', 'success');
+    }, 100);
   }
 
   // ═══════════════════════════════════════════════

@@ -5,7 +5,7 @@ import { Subscription } from 'rxjs';
 import { AdsService } from '../../services/ads.service';
 import { AdPlacementManagerService } from '../../services/ad-placement-manager.service';
 import { AdTrackingService } from '../../services/ad-tracking.service';
-import { AdCampaign } from '../../pages/ads/models/ad.models';
+import { AdCampaign, RagResponse } from '../../pages/ads/models/ad.models';
 
 @Component({
   selector: 'app-landing',
@@ -78,6 +78,13 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   private impressionTimers = new Map<number, any>();
   private impressedAds = new Set<number>();
   private hoverTimers = new Map<number, any>();
+
+  // RAG Search state
+  ragOpen = false;
+  ragQuery = '';
+  ragLoading = false;
+  ragResponse: RagResponse | null = null;
+  ragError = false;
 
   constructor(
     private router: Router,
@@ -245,6 +252,47 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
       clearTimeout(timer);
       this.hoverTimers.delete(ad.id);
     }
+  }
+
+  // ── RAG Search ────────────────────────────────────
+
+  openRagSearch(): void {
+    this.ragOpen = true;
+    this.ragQuery = '';
+    this.ragResponse = null;
+    this.ragError = false;
+  }
+
+  closeRagSearch(): void {
+    this.ragOpen = false;
+    this.ragQuery = '';
+    this.ragResponse = null;
+    this.ragError = false;
+    this.ragLoading = false;
+  }
+
+  submitRagQuery(): void {
+    if (!this.ragQuery.trim() || this.ragLoading) {
+      return;
+    }
+    this.ragLoading = true;
+    this.ragResponse = null;
+    this.ragError = false;
+
+    this.adsService.askRag(this.ragQuery.trim()).subscribe({
+      next: (res) => {
+        this.ragResponse = res;
+        this.ragLoading = false;
+      },
+      error: () => {
+        this.ragError = true;
+        this.ragLoading = false;
+      }
+    });
+  }
+
+  getScorePercent(score: number): number {
+    return Math.round(score * 100);
   }
 
   ngAfterViewInit(): void {

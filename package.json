@@ -42,6 +42,8 @@
     "googleapis": "99.0.0",
     "hammerjs": "2.0.8",
     "jquery": "3.6.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "moment": "2.29.1",
     "nsfwjs": "^4.2.1",
     "perfect-scrollbar": "1.5.5",

@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
+import { Location } from '@angular/common';
 
-interface PolicyCategory {
-  code: string;
-  name: string;
-  description: string;
-  icon: string;
+export interface PolicyCategory {
+  readonly code: string;
+  readonly name: string;
+  readonly description: string;
+  readonly icon: string;
 }
 
 @Component({
@@ -13,8 +14,10 @@ interface PolicyCategory {
   styleUrls: ['./ad-policy.component.scss']
 })
 export class AdPolicyComponent {
-  
-  llamaGuardCategories: PolicyCategory[] = [
+
+  constructor(private location: Location) {}
+
+  readonly llamaGuardCategories: PolicyCategory[] = [
     {
       code: 'S1',
       name: 'Violent Crimes',
@@ -102,6 +105,6 @@ export class AdPolicyComponent {
   ];
 
   goBack(): void {
-    window.history.back();
+    this.location.back();
   }
 }
