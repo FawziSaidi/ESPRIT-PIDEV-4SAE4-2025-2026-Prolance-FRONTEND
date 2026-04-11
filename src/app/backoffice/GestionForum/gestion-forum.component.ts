@@ -508,4 +508,17 @@ Keep it factual, clear and actionable. No bullet points, write in prose.`;
     if (!user) return '?';
     return [(user.name || '').charAt(0), (user.lastName || '').charAt(0)].join('').toUpperCase() || '?';
   }
+
+  /** Extrait l'URL du GIF depuis le format [GIF:url] */
+  extractGifUrl(content: string): string | null {
+    if (!content) return null;
+    const match = content.match(/\[GIF:(https?:\/\/[^\]]+)\]/);
+    return match ? match[1] : null;
+  }
+
+  /** Retourne le texte du commentaire sans la balise [GIF:...] */
+  parseCommentContent(content: string): string {
+    if (!content) return '';
+    return content.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '').trim();
+  }
 }

@@ -309,7 +309,10 @@
                   <p class="cmt-date">{{ formatDate(c.createAt) }}</p>
                 </div>
               </div>
-              <p class="cmt-text">{{ c.contenue }}</p>
+              <p class="cmt-text">{{ parseCommentContent(c.contenue) }}</p>
+              <img *ngIf="extractGifUrl(c.contenue)"
+                   [src]="extractGifUrl(c.contenue)"
+                   class="cmt-gif" alt="GIF" />
               <button *ngIf="c.replies && c.replies.length > 0" class="cmt-replies-toggle" (click)="toggleReplies(c.id)">
                 {{ isRepliesExpanded(c.id) ? '▲ Hide' : '▶ Show' }} {{ c.replies.length }} repl{{ c.replies.length > 1 ? 'ies' : 'y' }}
               </button>
@@ -323,7 +326,10 @@
                       <p class="cmt-date">{{ formatDate(r.createAt) }}</p>
                     </div>
                   </div>
-                  <p class="cmt-text">{{ r.contenue }}</p>
+                  <p class="cmt-text">{{ parseCommentContent(r.contenue) }}</p>
+                  <img *ngIf="extractGifUrl(r.contenue)"
+                       [src]="extractGifUrl(r.contenue)"
+                       class="cmt-gif" alt="GIF" />
                 </div>
               </div>
             </div>

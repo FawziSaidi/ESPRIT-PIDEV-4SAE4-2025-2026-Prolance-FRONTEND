@@ -61,17 +61,22 @@
           <!-- Content (read) -->
           <div *ngIf="editingCommentaireId !== commentaire.id" class="commentaire-content">
             <p [innerHTML]="parseContent(commentaire.contenue)"></p>
-            <!-- GIF affiché si le commentaire contient une URL GIF -->
-            <img *ngIf="extractGifUrl(commentaire.contenue)" 
-                 [src]="extractGifUrl(commentaire.contenue)" 
+            <img *ngIf="extractGifUrl(commentaire.contenue)"
+                 [src]="extractGifUrl(commentaire.contenue)"
                  class="comment-gif" alt="GIF" />
           </div>
 
           <!-- Content (edit) -->
           <div *ngIf="editingCommentaireId === commentaire.id" class="edit-mode mention-wrapper">
-            <textarea [(ngModel)]="editingContent" class="edit-textarea" rows="3"
-              placeholder="Edit... (type @ to mention someone)"
-              (input)="onTextInput($event, 'edit')"></textarea>
+            <div class="textarea-container" [class.has-gif]="selectedGifEdit">
+              <textarea [(ngModel)]="editingContent" class="edit-textarea" rows="3"
+                placeholder="Edit... (type @ to mention someone)"
+                (input)="onTextInput($event, 'edit')"></textarea>
+              <div class="gif-inline-preview" *ngIf="selectedGifEdit">
+                <img [src]="selectedGifEdit" class="gif-inline-img" alt="GIF" />
+                <button class="btn-remove-gif" (click)="removeGif('edit')" title="Supprimer le GIF">✕</button>
+              </div>
+            </div>
             <div class="mention-dropdown" *ngIf="showMentionDropdown && activeMentionField === 'edit'" [ngStyle]="dropdownPosition">
               <div *ngFor="let user of mentionSuggestions" class="mention-item" (mousedown)="selectMention(user)">
                 <span class="mention-avatar">{{ user.name.charAt(0) }}{{ user.lastName.charAt(0) }}</span>
@@ -135,12 +140,18 @@
               <span class="at-icon">@</span> Replying to <strong>{{ replyingToName }}</strong>
             </div>
             <div class="reply-input-row mention-wrapper">
-              <textarea [(ngModel)]="replyContent" class="reply-textarea" rows="2"
-                placeholder="Your reply... (type @ to mention someone)"
-                [disabled]="loading || moderatingReply"
-                (input)="onTextInput($event, 'reply')"
-                (keydown.enter)="$event.ctrlKey && submitReply(commentaire)">
-              </textarea>
+              <div class="textarea-container" [class.has-gif]="selectedGifReply">
+                <textarea [(ngModel)]="replyContent" class="reply-textarea" rows="2"
+                  placeholder="Your reply... (type @ to mention someone)"
+                  [disabled]="loading || moderatingReply"
+                  (input)="onTextInput($event, 'reply')"
+                  (keydown.enter)="$event.ctrlKey && submitReply(commentaire)">
+                </textarea>
+                <div class="gif-inline-preview" *ngIf="selectedGifReply">
+                  <img [src]="selectedGifReply" class="gif-inline-img" alt="GIF" />
+                  <button class="btn-remove-gif" (click)="removeGif('reply')" title="Supprimer le GIF">✕</button>
+                </div>
+              </div>
               <div class="mention-dropdown" *ngIf="showMentionDropdown && activeMentionField === 'reply'" [ngStyle]="dropdownPosition">
                 <div *ngFor="let user of mentionSuggestions" class="mention-item" (mousedown)="selectMention(user)">
                   <span class="mention-avatar">{{ user.name.charAt(0) }}{{ user.lastName.charAt(0) }}</span>
@@ -276,42 +287,54 @@
       </div>
     </div>
 
-    <!-- Add comment section -->
+    <!-- ═══════════════════════ ADD COMMENT SECTION ═══════════════════════ -->
     <div class="add-comment-section">
       <div class="current-user-avatar">
         {{ currentUserId ? 'U' : '?' }}
       </div>
       <div class="comment-input-wrapper mention-wrapper">
 
-        <!-- ✅ AI Suggestions Section -->
-        <div class="ai-suggestions-wrapper">
-          <div class="ai-suggestions-header">
-            <span class="ai-suggestions-label">✨ Suggestions IA</span>
-            <button class="btn-load-suggestions" (click)="loadSuggestions()"
-              [disabled]="loadingSuggestions || suggestionsLoaded"
-              title="Générer des suggestions">
-              <span *ngIf="!loadingSuggestions && !suggestionsLoaded">Générer</span>
-              <span *ngIf="loadingSuggestions" class="loading-text"><span class="spinner-small"></span> IA...</span>
-              <span *ngIf="suggestionsLoaded && !loadingSuggestions">✓ Chargé</span>
-            </button>
+        <!-- Textarea avec bouton ✨ et aperçu GIF intégrés -->
+        <div class="textarea-container" [class.has-gif]="selectedGifNew">
+          <textarea [(ngModel)]="newCommentaire" class="comment-input"
+            placeholder="Add a comment... (type @ to mention someone)"
+            rows="3"
+            [disabled]="loading || moderating"
+            (input)="onTextInput($event, 'new')"
+            (keydown.enter)="$event.ctrlKey && addCommentaire()">
+          </textarea>
+
+          <!-- Aperçu GIF à l'intérieur de la zone input -->
+          <div class="gif-inline-preview" *ngIf="selectedGifNew">
+            <img [src]="selectedGifNew" class="gif-inline-img" alt="GIF" />
+            <button class="btn-remove-gif" (click)="removeGif('new')" title="Supprimer le GIF">✕</button>
           </div>
-          <div class="ai-suggestions-list" *ngIf="commentSuggestions.length > 0">
+
+          <!-- Bouton IA inline -->
+          <button class="btn-ai-inline"
+            (click)="loadSuggestions()"
+            [disabled]="loadingSuggestions"
+            [class.active]="suggestionsOpen && commentSuggestions.length > 0"
+            title="Suggestions IA">
+            <span *ngIf="!loadingSuggestions">✨</span>
+            <span *ngIf="loadingSuggestions" class="spinner-tiny"></span>
+          </button>
+        </div>
+
+        <!-- Panel suggestions compact -->
+        <div class="ai-suggestions-inline" *ngIf="commentSuggestions.length > 0 && suggestionsOpen">
+          <div class="ai-suggestions-scroll">
             <button *ngFor="let s of commentSuggestions; let i = index"
-              class="btn-suggestion"
+              class="btn-suggestion-inline"
+              [style.animation-delay]="(i * 50) + 'ms'"
               (click)="applySuggestion(s)">
-              <span class="suggestion-number">{{ i + 1 }}</span>
-              <span class="suggestion-text">{{ s }}</span>
+              <span class="sug-num">{{ i + 1 }}</span>
+              <span class="sug-text">{{ s }}</span>
+              <span class="sug-arrow">↵</span>
             </button>
           </div>
         </div>
 
-        <textarea [(ngModel)]="newCommentaire" class="comment-input"
-          placeholder="Add a comment... (type @ to mention someone)"
-          rows="3"
-          [disabled]="loading || moderating"
-          (input)="onTextInput($event, 'new')"
-          (keydown.enter)="$event.ctrlKey && addCommentaire()">
-        </textarea>
         <!-- Mention dropdown for new comment -->
         <div class="mention-dropdown" *ngIf="showMentionDropdown && activeMentionField === 'new'" [ngStyle]="dropdownPosition">
           <div *ngFor="let user of mentionSuggestions" class="mention-item" (mousedown)="selectMention(user)">
@@ -320,15 +343,17 @@
           </div>
         </div>
 
-        <!-- ✅ Toolbar: Emoji + GIF buttons -->
+        <!-- Toolbar: Emoji + GIF buttons -->
         <div class="toolbar-row">
-          <button class="btn-toolbar" (click)="toggleEmojiPicker('new')" title="Add emoji">😊</button>
-          <button class="btn-toolbar" (click)="toggleGifPicker('new')" title="Add GIF">
+          <button class="btn-toolbar"
+            (click)="toggleEmojiPicker('new')" title="Add emoji">😊</button>
+          <button class="btn-toolbar"
+            (click)="toggleGifPicker('new')" title="Add GIF">
             <span class="gif-label">GIF</span>
           </button>
         </div>
 
-        <!-- ✅ Emoji Picker Panel (new comment) -->
+        <!-- Emoji Picker Panel (new comment) -->
         <div class="emoji-picker-panel" *ngIf="showEmojiPicker && activeEmojiField === 'new'">
           <div class="emoji-categories">
             <button *ngFor="let cat of emojiCategories" class="emoji-cat-btn"
@@ -341,7 +366,7 @@
           </div>
         </div>
 
-        <!-- ✅ GIF Picker Panel (new comment) -->
+        <!-- GIF Picker Panel (new comment — mode 'all' ou 'gif') -->
         <div class="gif-picker-panel" *ngIf="showGifPicker && activeGifField === 'new'">
           <div class="gif-search-row">
             <input class="gif-search-input" [(ngModel)]="gifSearchQuery"
@@ -362,7 +387,7 @@
         <div class="input-footer">
           <span class="input-hint"></span>
           <button class="btn-send-comment" (click)="addCommentaire()"
-            [disabled]="loading || moderating || !newCommentaire.trim()">
+            [disabled]="loading || moderating || (!newCommentaire.trim() && !selectedGifNew)">
             <span *ngIf="!loading && !moderating">Send</span>
             <span *ngIf="moderating" class="loading-text"><span class="spinner-small"></span> Checking...</span>
             <span *ngIf="loading && !moderating" class="loading-text"><span class="spinner-small"></span></span>

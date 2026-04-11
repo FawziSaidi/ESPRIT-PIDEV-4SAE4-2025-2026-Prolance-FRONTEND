@@ -746,3 +746,13 @@
 
 @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+/* ═══════════════ GIF dans les commentaires (backoffice) ═══════════════ */
+.cmt-gif {
+  display: block;
+  max-width: 260px;
+  max-height: 200px;
+  border-radius: 10px;
+  margin-top: 0.5rem;
+  object-fit: contain;
+  border: 1.5px solid #e8d5f5;
+}

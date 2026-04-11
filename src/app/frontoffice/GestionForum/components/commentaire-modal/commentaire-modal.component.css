@@ -38,7 +38,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 1.4rem 1.6rem 1.2rem;
+  padding: 0.7rem 1.4rem 0.6rem;
   border-bottom: 1px solid #f0eef8;
   flex-shrink: 0;
   background: linear-gradient(135deg, #fdf4ff, #f8f9fe);
@@ -48,9 +48,9 @@
 
 .modal-title {
   color: #2d1f4e;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 800;
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.15rem;
   letter-spacing: -0.3px;
   display: flex;
   align-items: center;
@@ -305,14 +305,14 @@
 .at-icon { font-weight: 800; }
 .reply-textarea {
   width: 100%; padding: 0.65rem 0.85rem;
-  background: #fff; border: 1.5px solid #e8eaf0;
-  border-radius: 10px; color: #222;
+  background: transparent; border: none;
+  outline: none;
+  border-radius: 0; color: #222;
   font-size: 0.88rem; font-family: 'Poppins', sans-serif;
-  resize: vertical; min-height: 65px;
-  transition: border-color 0.2s;
+  resize: none; min-height: 65px;
   box-sizing: border-box;
 }
-.reply-textarea:focus { outline: none; border-color: #9c27b0; box-shadow: 0 0 0 3px rgba(156,39,176,0.1); }
+.reply-textarea:focus { outline: none; }
 .reply-textarea:disabled { opacity: 0.6; }
 .reply-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 
@@ -364,7 +364,7 @@
 
 /* ═══════════════════════ ADD COMMENT ═══════════════════════ */
 .add-comment-section {
-  padding: 1.2rem 1.6rem;
+  padding: 0.6rem 1.4rem 0.7rem;
   border-top: 1px solid #f0eef8;
   display: flex; gap: 0.9rem;
   flex-shrink: 0;
@@ -382,28 +382,149 @@
 }
 
 .comment-input-wrapper {
-  flex: 1; display: flex; flex-direction: column; gap: 0.65rem;
+  flex: 1; display: flex; flex-direction: column; gap: 0.4rem;
 }
 
-.comment-input {
-  width: 100%; padding: 0.8rem 1rem;
-  background: #f8f9fe;
-  border: 1.5px solid #e8eaf0;
-  border-radius: 12px;
-  color: #222; font-size: 0.9rem;
-  font-family: 'Poppins', sans-serif;
-  resize: vertical; min-height: 80px;
-  transition: all 0.2s;
-  box-sizing: border-box;
-}
-.comment-input:focus {
-  outline: none;
-  border-color: #9c27b0;
+/* ═══════════════════════ TEXTAREA CONTAINER WITH AI BUTTON ═══════════════════════ */
+
+/* reply-input-row: le textarea-container dedans hérite du style */
+.reply-input-row .textarea-container {
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(156,39,176,0.1);
 }
-.comment-input::placeholder { color: #bbb; }
-.comment-input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Bouton ✨ flottant en bas à droite dans la textarea */
+.btn-ai-inline {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd6fe;
+  background: #f5f3ff;
+  color: #7c3aed;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 2;
+  padding: 0;
+  line-height: 1;
+}
+.btn-ai-inline:hover:not(:disabled) {
+  background: #ede9fe;
+  border-color: #7c3aed;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(124,58,237,0.2);
+}
+.btn-ai-inline.active {
+  background: linear-gradient(135deg, #7c3aed, #9c27b0);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(124,58,237,0.35);
+}
+.btn-ai-inline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner-tiny {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(124,58,237,0.3);
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* ═══════════════════════ AI SUGGESTIONS INLINE PANEL ═══════════════════════ */
+.ai-suggestions-inline {
+  border: 1.5px solid #ddd6fe;
+  border-radius: 10px;
+  background: #faf8ff;
+  overflow: hidden;
+  animation: suggPanelIn 0.22s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+@keyframes suggPanelIn {
+  from { opacity: 0; transform: translateY(-6px) scaleY(0.92); }
+  to   { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
+.ai-suggestions-scroll {
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 0.35rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: #c4b5fd #f5f3ff;
+}
+.ai-suggestions-scroll::-webkit-scrollbar { width: 4px; }
+.ai-suggestions-scroll::-webkit-scrollbar-track { background: #f5f3ff; }
+.ai-suggestions-scroll::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 4px; }
+
+.btn-suggestion-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.42rem 0.65rem;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.8rem;
+  color: #374151;
+  width: 100%;
+  transition: all 0.18s ease;
+  animation: suggestionIn 0.24s ease both;
+}
+@keyframes suggestionIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.btn-suggestion-inline:hover {
+  background: #f5f3ff;
+  border-color: #a78bfa;
+  color: #6d28d9;
+}
+
+.sug-num {
+  min-width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #7c3aed, #9c27b0);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.62rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sug-text {
+  flex: 1;
+  line-height: 1.35;
+}
+
+.sug-arrow {
+  font-size: 0.78rem;
+  color: #c4b5fd;
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+  transform: translateX(-3px);
+  flex-shrink: 0;
+}
+.btn-suggestion-inline:hover .sug-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
 
 .input-footer { display: flex; justify-content: flex-end; align-items: center; }
 .input-hint { color: #bbb; font-size: 0.78rem; }
@@ -431,6 +552,7 @@
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  display: inline-block;
 }
 
 /* ═══════════════════════ DELETE CONFIRM MODAL ═══════════════════════ */
@@ -481,10 +603,11 @@
 /* ═══════════════════════ RESPONSIVE ═══════════════════════ */
 @media (max-width: 600px) {
   .modal-container { width: 97%; max-height: 92vh; }
-  .add-comment-section { padding: 1rem; }
+  .add-comment-section { padding: 0.5rem 1rem; }
   .current-user-avatar { display: none; }
   .commentaires-section { padding: 1rem; }
 }
+
 /* ═══════════════════════ AI MODERATION ═══════════════════════ */
 .moderation-error {
   background: #fff5f5;
@@ -502,6 +625,7 @@
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
 /* ═══════════════════════ AUTHOR BADGE ═══════════════════════ */
 .author-badge {
   display: inline-block;
@@ -516,14 +640,12 @@
   vertical-align: middle;
   letter-spacing: 0.02em;
 }
-/* ═══════════════════════ @MENTION STYLES ═══════════════════════ */
 
-/* Wrapper for positioning the dropdown relative to textarea */
+/* ═══════════════════════ @MENTION STYLES ═══════════════════════ */
 .mention-wrapper {
   position: relative;
 }
 
-/* Dropdown list of user suggestions - fixed pour échapper au overflow:hidden des parents */
 .mention-dropdown {
   position: fixed;
   background: #ffffff;
@@ -534,32 +656,20 @@
   overflow-y: auto;
   min-width: 220px;
   animation: dropdownFadeIn 0.15s ease;
-  /* scrollbar visible */
   scrollbar-width: thin;
   scrollbar-color: #d8b5f0 #f3f0fa;
 }
 
-.mention-dropdown::-webkit-scrollbar {
-  width: 5px;
-}
-.mention-dropdown::-webkit-scrollbar-track {
-  background: #f3f0fa;
-  border-radius: 10px;
-}
-.mention-dropdown::-webkit-scrollbar-thumb {
-  background: #d8b5f0;
-  border-radius: 10px;
-}
-.mention-dropdown::-webkit-scrollbar-thumb:hover {
-  background: #9c27b0;
-}
+.mention-dropdown::-webkit-scrollbar { width: 5px; }
+.mention-dropdown::-webkit-scrollbar-track { background: #f3f0fa; border-radius: 10px; }
+.mention-dropdown::-webkit-scrollbar-thumb { background: #d8b5f0; border-radius: 10px; }
+.mention-dropdown::-webkit-scrollbar-thumb:hover { background: #9c27b0; }
 
 @keyframes dropdownFadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Each user suggestion item */
 .mention-item {
   display: flex;
   align-items: center;
@@ -568,24 +678,11 @@
   cursor: pointer;
   transition: background 0.15s;
 }
+.mention-item:hover { background: #f0f4ff; }
+.mention-item:first-child { border-radius: 10px 10px 0 0; }
+.mention-item:last-child { border-radius: 0 0 10px 10px; }
+.mention-item:only-child { border-radius: 10px; }
 
-.mention-item:hover {
-  background: #f0f4ff;
-}
-
-.mention-item:first-child {
-  border-radius: 10px 10px 0 0;
-}
-
-.mention-item:last-child {
-  border-radius: 0 0 10px 10px;
-}
-
-.mention-item:only-child {
-  border-radius: 10px;
-}
-
-/* Small avatar circle in the dropdown */
 .mention-avatar {
   display: inline-flex;
   align-items: center;
@@ -600,14 +697,12 @@
   flex-shrink: 0;
 }
 
-/* Full name in the dropdown */
 .mention-name {
   font-size: 0.88rem;
   font-weight: 500;
   color: #2d3748;
 }
 
-/* ✅ Highlighted @mention tag inside rendered comment text */
 :host ::ng-deep .mention-tag {
   display: inline-block;
   color: #1a73e8;
@@ -617,9 +712,8 @@
   font-weight: 600;
   font-size: 0.9em;
 }
-/* ✅ PIN FEATURE */
 
-/* Commentaire épinglé : fond distinctif */
+/* ═══════════════════════ PIN FEATURE ═══════════════════════ */
 .commentaire-item.is-pinned {
   background: linear-gradient(135deg, #fffbea 0%, #fff8e1 100%);
   border-left: 3px solid #f59e0b;
@@ -627,14 +721,12 @@
   padding-left: 12px;
 }
 
-/* Conteneur droite du header (badge + bouton + actions) */
 .comment-actions-right {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-/* Badge "Pinned" visible par tous */
 .pinned-badge {
   display: inline-flex;
   align-items: center;
@@ -649,7 +741,6 @@
   letter-spacing: 0.02em;
 }
 
-/* Bouton 📌 pour le créateur du post */
 .btn-pin {
   background: transparent;
   border: 1.5px solid #d1d5db;
@@ -664,24 +755,15 @@
   opacity: 0.45;
   transition: all 0.2s;
 }
+.btn-pin:hover { opacity: 1; border-color: #f59e0b; background: #fef3c7; }
+.btn-pin.pinned { opacity: 1; border-color: #f59e0b; background: #fef3c7; }
 
-.btn-pin:hover {
-  opacity: 1;
-  border-color: #f59e0b;
-  background: #fef3c7;
-}
-
-.btn-pin.pinned {
-  opacity: 1;
-  border-color: #f59e0b;
-  background: #fef3c7;
-}
 /* ═══════════════════════ TOOLBAR (Emoji + GIF buttons) ═══════════════════════ */
 .toolbar-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 0.3rem;
+  margin-top: 0;
 }
 
 .btn-toolbar {
@@ -698,7 +780,6 @@
   transition: all 0.2s ease;
   padding: 0;
 }
-
 .btn-toolbar:hover {
   background: #f0e6f6;
   border-color: #9c27b0;
@@ -729,7 +810,6 @@
   z-index: 9999;
 }
 
-/* Category tabs */
 .emoji-categories {
   display: flex;
   gap: 0.25rem;
@@ -751,14 +831,12 @@
   justify-content: center;
   transition: all 0.15s;
 }
-
 .emoji-cat-btn:hover,
 .emoji-cat-btn.active {
   background: #f0e6f6;
   border-color: #9c27b0;
 }
 
-/* Emoji grid */
 .emoji-grid {
   display: flex;
   flex-wrap: wrap;
@@ -768,7 +846,6 @@
   scrollbar-width: thin;
   scrollbar-color: #d8b5f0 #f3f0fa;
 }
-
 .emoji-grid::-webkit-scrollbar { width: 5px; }
 .emoji-grid::-webkit-scrollbar-track { background: #f3f0fa; }
 .emoji-grid::-webkit-scrollbar-thumb { background: #d8b5f0; border-radius: 5px; }
@@ -787,7 +864,6 @@
   transition: all 0.12s;
   padding: 0;
 }
-
 .emoji-btn:hover {
   background: #f0e6f6;
   transform: scale(1.25);
@@ -824,7 +900,6 @@
   outline: none;
   transition: border-color 0.2s;
 }
-
 .gif-search-input:focus {
   border-color: #9c27b0;
   box-shadow: 0 0 0 2px rgba(156,39,176,0.1);
@@ -845,7 +920,6 @@
   flex-shrink: 0;
   transition: all 0.2s;
 }
-
 .btn-gif-search:hover { transform: scale(1.1); }
 
 .gif-grid {
@@ -857,7 +931,6 @@
   scrollbar-width: thin;
   scrollbar-color: #d8b5f0 #f3f0fa;
 }
-
 .gif-grid::-webkit-scrollbar { width: 5px; }
 .gif-grid::-webkit-scrollbar-track { background: #f3f0fa; }
 .gif-grid::-webkit-scrollbar-thumb { background: #d8b5f0; border-radius: 5px; }
@@ -871,7 +944,6 @@
   transition: all 0.18s;
   border: 2px solid transparent;
 }
-
 .gif-thumb:hover {
   border-color: #9c27b0;
   transform: scale(1.04);
@@ -913,103 +985,105 @@
   object-fit: contain;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
-/* ═══════════════════════ AI SUGGESTIONS ═══════════════════════ */
-.ai-suggestions-wrapper {
-  background: linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%);
-  border: 1px solid #c4b5fd;
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.75rem;
-}
 
-.ai-suggestions-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.ai-suggestions-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #7c3aed;
-  letter-spacing: 0.02em;
-}
-
-.btn-load-suggestions {
-  background: linear-gradient(135deg, #7c3aed, #9c27b0);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.3rem 0.85rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 90px;
-  justify-content: center;
-}
-
-.btn-load-suggestions:hover:not(:disabled) {
-  background: linear-gradient(135deg, #6d28d9, #7b1fa2);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
-}
-
-.btn-load-suggestions:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.ai-suggestions-list {
+/* ═══════════════════════ GIF INLINE PREVIEW (dans la zone input) ═══════════════════════ */
+.textarea-container {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  margin-top: 0.5rem;
+  background: #f8f9fe;
+  border: 1.5px solid #e8eaf0;
+  border-radius: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
 }
 
-.btn-suggestion {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
+.textarea-container:focus-within {
+  border-color: #9c27b0;
   background: #fff;
-  border: 1.5px solid #ddd6fe;
-  border-radius: 10px;
-  padding: 0.55rem 0.85rem;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s;
-  font-size: 0.82rem;
-  color: #374151;
-  line-height: 1.4;
+  box-shadow: 0 0 0 3px rgba(156,39,176,0.1);
+}
+
+/* Quand GIF présent : border violette douce */
+.textarea-container.has-gif {
+  border-color: #ddd6fe;
+}
+
+/* La textarea sans border propre (le container s'en charge) */
+.comment-input {
   width: 100%;
+  padding: 0.6rem 2.8rem 0.6rem 1rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  border-radius: 0;
+  color: #222;
+  font-size: 0.9rem;
+  font-family: 'Poppins', sans-serif;
+  resize: none;
+  min-height: 60px;
+  box-sizing: border-box;
+}
+.comment-input::placeholder { color: #bbb; }
+.comment-input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* edit-textarea aussi sans border */
+.edit-textarea {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  border-radius: 0;
+  color: #222;
+  font-size: 0.9rem;
+  font-family: 'Poppins', sans-serif;
+  resize: none;
+  min-height: 80px;
+  transition: none;
+  box-sizing: border-box;
 }
 
-.btn-suggestion:hover {
-  border-color: #7c3aed;
-  background: #f5f3ff;
-  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.15);
-  transform: translateX(2px);
+/* Zone GIF à l'intérieur du container input */
+.gif-inline-preview {
+  position: relative;
+  display: inline-block;
+  margin: 0 0.75rem 0.6rem 0.75rem;
+  align-self: flex-start;
 }
 
-.suggestion-number {
-  display: inline-flex;
+.gif-inline-img {
+  display: block;
+  max-width: 160px;
+  max-height: 110px;
+  border-radius: 8px;
+  border: 2px solid #ddd6fe;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.12);
+}
+
+.btn-remove-gif {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #ef5350;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  background: linear-gradient(135deg, #7c3aed, #9c27b0);
-  color: #fff;
-  border-radius: 50%;
-  font-size: 0.68rem;
-  font-weight: 700;
-  flex-shrink: 0;
-  margin-top: 1px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  transition: background 0.15s, transform 0.15s;
+  line-height: 1;
+  padding: 0;
 }
-
-.suggestion-text {
-  flex: 1;
+.btn-remove-gif:hover {
+  background: #c62828;
+  transform: scale(1.15);
 }

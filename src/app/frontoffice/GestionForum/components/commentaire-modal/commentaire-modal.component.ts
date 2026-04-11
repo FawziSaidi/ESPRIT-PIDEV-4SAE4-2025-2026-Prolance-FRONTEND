@@ -57,6 +57,7 @@ export class CommentaireModalComponent implements OnInit {
   commentSuggestions: string[] = [];
   loadingSuggestions: boolean = false;
   suggestionsLoaded: boolean = false;
+  suggestionsOpen: boolean = false;
 
   showDeleteModal: boolean = false;
   commentaireToDelete: Commentaire | null = null;
@@ -121,14 +122,19 @@ export class CommentaireModalComponent implements OnInit {
     }
   ];
 
-  // ✅ GIF PICKER — GIPHY API (remplace Tenor qui est arrêté depuis jan 2026)
-  private readonly GIPHY_API_KEY = '';
+  // ✅ GIF PICKER — GIPHY API
+  private readonly GIPHY_API_KEY = 'eZt5wvGwdhhEimbbSHRoUnxAHhLkPcCj';
   showGifPicker: boolean = false;
   activeGifField: 'new' | 'reply' | 'edit' | null = null;
   gifSearchQuery: string = '';
   gifResults: GifItem[] = [];
   gifLoading: boolean = false;
   private gifDebounce: any = null;
+
+  // ✅ Aperçu GIF sélectionné
+  selectedGifNew: string | null = null;
+  selectedGifReply: string | null = null;
+  selectedGifEdit: string | null = null;
 
   constructor(
     private commentaireService: CommentaireService,
@@ -151,9 +157,12 @@ export class CommentaireModalComponent implements OnInit {
       return;
     }
     this.loadCommentaires();
-    // Charger les GIFs tendance au démarrage
     this.loadTrendingGifs();
   }
+
+  // ─────────────────────────────────────────────────
+  // ✅ MODE SELECTOR
+  // ─────────────────────────────────────────────────
 
   // ─────────────────────────────────────────────────
   // ✅ EMOJI METHODS
@@ -252,7 +261,6 @@ export class CommentaireModalComponent implements OnInit {
       });
   }
 
-  // ✅ Recherche automatique avec debounce (déclenché à chaque frappe)
   onGifInput(): void {
     clearTimeout(this.gifDebounce);
     this.gifDebounce = setTimeout(() => {
@@ -260,27 +268,24 @@ export class CommentaireModalComponent implements OnInit {
     }, 400);
   }
 
-  /**
-   * Insère l'URL du GIF dans le commentaire sous forme de balise spéciale
-   * Format: [GIF:url] — sera rendu visuellement dans parseContent()
-   */
   insertGif(url: string, field: 'new' | 'reply' | 'edit'): void {
-    const gifTag = `[GIF:${url}]`;
     if (field === 'new') {
-      this.newCommentaire = this.newCommentaire.trim() + '\n' + gifTag;
+      this.selectedGifNew = url;
     } else if (field === 'reply') {
-      this.replyContent = this.replyContent.trim() + '\n' + gifTag;
+      this.selectedGifReply = url;
     } else if (field === 'edit') {
-      this.editingContent = this.editingContent.trim() + '\n' + gifTag;
+      this.selectedGifEdit = url;
     }
     this.showGifPicker = false;
     this.activeGifField = null;
   }
 
-  /**
-   * Extrait l'URL du GIF depuis le texte du commentaire (format [GIF:url])
-   * Retourne null si aucun GIF trouvé
-   */
+  removeGif(field: 'new' | 'reply' | 'edit'): void {
+    if (field === 'new') this.selectedGifNew = null;
+    else if (field === 'reply') this.selectedGifReply = null;
+    else if (field === 'edit') this.selectedGifEdit = null;
+  }
+
   extractGifUrl(content: string): string | null {
     if (!content) return null;
     const match = content.match(/\[GIF:(https?:\/\/[^\]]+)\]/);
@@ -288,7 +293,7 @@ export class CommentaireModalComponent implements OnInit {
   }
 
   // ─────────────────────────────────────────────────
-  // Méthodes existantes (inchangées)
+  // Méthodes existantes
   // ─────────────────────────────────────────────────
 
   countTotal(comments: any[]): number {
@@ -411,9 +416,6 @@ export class CommentaireModalComponent implements OnInit {
     clearTimeout(this.mentionDebounce);
   }
 
-  /**
-   * Render @mentions — GIFs are rendered separately via extractGifUrl()
-   */
   parseContent(content: string): string {
     if (!content) return '';
     const withoutGif = content.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '').trim();
@@ -426,8 +428,19 @@ export class CommentaireModalComponent implements OnInit {
   // ─────────────────────────────────────────────────
 
   loadSuggestions(): void {
-    if (this.loadingSuggestions || this.suggestionsLoaded) return;
+    if (this.loadingSuggestions) return;
+    if (this.suggestionsLoaded) {
+      this.suggestionsOpen = !this.suggestionsOpen;
+      if (!this.suggestionsOpen) {
+        this.commentSuggestions = [];
+      } else {
+        this.suggestionsLoaded = false;
+        this.loadSuggestions();
+      }
+      return;
+    }
     this.loadingSuggestions = true;
+    this.suggestionsOpen = true;
     this.commentSuggestions = [];
     this.aiContentService.generateCommentSuggestions(
       this.publication.titre,
@@ -477,7 +490,9 @@ export class CommentaireModalComponent implements OnInit {
   }
 
   addCommentaire(): void {
-    if (!this.newCommentaire || this.newCommentaire.trim().length < 2) {
+    const hasText = this.newCommentaire && this.newCommentaire.trim().length >= 2;
+    const hasGif = !!this.selectedGifNew;
+    if (!hasText && !hasGif) {
       this.moderationError = 'The comment must contain at least 2 characters.'; return;
     }
     if (!this.publication?.id) { this.errorMessage = 'Error: Missing publication ID'; return; }
@@ -485,13 +500,23 @@ export class CommentaireModalComponent implements OnInit {
     this.showEmojiPicker = false;
     this.showGifPicker = false;
 
+    let finalContent = this.newCommentaire.trim();
+    if (this.selectedGifNew) {
+      finalContent = finalContent ? finalContent + '\n[GIF:' + this.selectedGifNew + ']' : '[GIF:' + this.selectedGifNew + ']';
+    }
+
     this.moderating = true; this.moderationError = '';
-    const textToCheck = this.newCommentaire.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '[GIF]').trim();
-    this.checkContent(textToCheck).then(isSafe => {
+    const textToCheck = finalContent.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '[GIF]').trim();
+    this.checkContent(textToCheck || 'GIF').then(isSafe => {
       if (!isSafe) { this.moderating = false; this.moderationError = '🚫 Inappropriate content detected. Please rephrase your comment.'; return; }
       this.loading = true; this.moderating = false;
-      this.commentaireService.createCommentaire(this.newCommentaire.trim(), this.publication.id, this.currentUserId).subscribe({
-        next: () => { this.newCommentaire = ''; this.commentSuggestions = []; this.suggestionsLoaded = false; this.loadAndEmit(); },
+      this.commentaireService.createCommentaire(finalContent, this.publication.id, this.currentUserId).subscribe({
+        next: () => {
+          this.newCommentaire = '';
+          this.selectedGifNew = null;
+          this.commentSuggestions = []; this.suggestionsLoaded = false; this.suggestionsOpen = false;
+          this.loadAndEmit();
+        },
         error: (e) => { this.errorMessage = e.error || 'Error adding the comment'; this.loading = false; }
       });
     });
@@ -509,21 +534,29 @@ export class CommentaireModalComponent implements OnInit {
     this.replyingToId = null; this.replyContent = ''; this.replyingToName = '';
     this.moderationReplyError = ''; this.closeMentionDropdown();
     this.showEmojiPicker = false; this.showGifPicker = false;
+    this.selectedGifReply = null;
   }
 
   submitReply(parentCommentaire: Commentaire): void {
-    if (!this.replyContent || this.replyContent.trim().length < 2) { this.moderationReplyError = 'The reply must contain at least 2 characters.'; return; }
+    const hasText = this.replyContent && this.replyContent.trim().length >= 2;
+    const hasGif = !!this.selectedGifReply;
+    if (!hasText && !hasGif) { this.moderationReplyError = 'The reply must contain at least 2 characters.'; return; }
     if (!this.publication?.id) return;
 
     this.showEmojiPicker = false; this.showGifPicker = false;
 
+    let finalContent = this.replyContent.trim();
+    if (this.selectedGifReply) {
+      finalContent = finalContent ? finalContent + '\n[GIF:' + this.selectedGifReply + ']' : '[GIF:' + this.selectedGifReply + ']';
+    }
+
     this.moderatingReply = true; this.moderationReplyError = '';
-    const textToCheck = this.replyContent.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '[GIF]').trim();
-    this.checkContent(textToCheck).then(isSafe => {
+    const textToCheck = finalContent.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '[GIF]').trim();
+    this.checkContent(textToCheck || 'GIF').then(isSafe => {
       if (!isSafe) { this.moderatingReply = false; this.moderationReplyError = '🚫 Inappropriate content detected. Please rephrase your reply.'; return; }
       this.loading = true; this.moderatingReply = false;
-      this.commentaireService.replyToCommentaire(this.replyContent.trim(), parentCommentaire.id!, this.publication.id, this.currentUserId).subscribe({
-        next: () => { this.cancelReply(); this.loadAndEmit(); },
+      this.commentaireService.replyToCommentaire(finalContent, parentCommentaire.id!, this.publication.id, this.currentUserId).subscribe({
+        next: () => { this.selectedGifReply = null; this.cancelReply(); this.loadAndEmit(); },
         error: (e) => { this.errorMessage = e.error || 'Error sending the reply'; this.loading = false; }
       });
     });
@@ -542,18 +575,27 @@ export class CommentaireModalComponent implements OnInit {
     this.editingCommentaireId = null; this.editingContent = '';
     this.moderationEditError = ''; this.closeMentionDropdown();
     this.showEmojiPicker = false; this.showGifPicker = false;
+    this.selectedGifEdit = null;
   }
 
   saveEdit(commentaire: Commentaire): void {
-    if (!this.editingContent || this.editingContent.trim().length < 2) { this.moderationEditError = 'The comment must contain at least 2 characters.'; return; }
+    const hasText = this.editingContent && this.editingContent.trim().length >= 2;
+    const hasGif = !!this.selectedGifEdit;
+    if (!hasText && !hasGif) { this.moderationEditError = 'The comment must contain at least 2 characters.'; return; }
     this.showEmojiPicker = false; this.showGifPicker = false;
+
+    let finalContent = this.editingContent.trim();
+    if (this.selectedGifEdit) {
+      finalContent = finalContent ? finalContent + '\n[GIF:' + this.selectedGifEdit + ']' : '[GIF:' + this.selectedGifEdit + ']';
+    }
+
     this.moderatingEdit = true; this.moderationEditError = '';
-    const textToCheck = this.editingContent.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '[GIF]').trim();
-    this.checkContent(textToCheck).then(isSafe => {
+    const textToCheck = finalContent.replace(/\[GIF:https?:\/\/[^\]]+\]/g, '[GIF]').trim();
+    this.checkContent(textToCheck || 'GIF').then(isSafe => {
       if (!isSafe) { this.moderatingEdit = false; this.moderationEditError = '🚫 Inappropriate content detected. Please rephrase your comment.'; return; }
       this.loading = true; this.moderatingEdit = false;
-      this.commentaireService.updateCommentaire(commentaire.id!, this.editingContent.trim(), this.currentUserId).subscribe({
-        next: () => { this.cancelEdit(); this.loadCommentaires(); },
+      this.commentaireService.updateCommentaire(commentaire.id!, finalContent, this.currentUserId).subscribe({
+        next: () => { this.selectedGifEdit = null; this.cancelEdit(); this.loadCommentaires(); },
         error: (e) => { this.errorMessage = e.error || 'Error updating the comment'; this.loading = false; }
       });
     });
