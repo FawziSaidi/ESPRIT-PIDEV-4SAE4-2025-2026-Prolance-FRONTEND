@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { AuthService } from './auth.services';
 
 export interface User {
@@ -11,15 +11,16 @@ export interface User {
   email: string;
   role: string;
   birthDate: string;
-  avatar?: string;      // ← ADD THIS
+  avatar?: string;
   enabled?: boolean;
+  bio?: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
-  private apiUrl = 'http://localhost:8089/pidev/users';
+  private apiUrl = 'http://localhost:8222/users';
 
   constructor(
     private http: HttpClient,
@@ -42,8 +43,19 @@ export class UserService {
   // ── Avatar ─────────────────────────────────────────────────
   updateAvatar(userId: number, avatarBase64: string): Observable<any> {
     return this.http.put(
-      `${this.apiUrl}/${userId}/avatar`,   // ← was this.API (wrong), now this.apiUrl
+      `${this.apiUrl}/${userId}/avatar`,
       { avatar: avatarBase64 },
+      { headers: this.getHeaders() }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // ── Bio ─────────────────────────────────────────────────────
+  updateBio(userId: number, bio: string): Observable<{ bio: string }> {
+    return this.http.put<{ bio: string }>(
+      `${this.apiUrl}/${userId}/bio`,
+      { bio },
       { headers: this.getHeaders() }
     ).pipe(
       catchError(this.handleError)
@@ -83,6 +95,12 @@ export class UserService {
     }).pipe(
       catchError(this.handleError)
     );
+  }
+
+  generateAiAvatar(prompt: string, seed: number): Observable<string> {
+    return this.http
+      .post<{ image: string }>('http://localhost:8222/api/ai/generate-avatar', { prompt, seed })
+      .pipe(map(res => res.image));
   }
 
   // ── Error handler ───────────────────────────────────────────

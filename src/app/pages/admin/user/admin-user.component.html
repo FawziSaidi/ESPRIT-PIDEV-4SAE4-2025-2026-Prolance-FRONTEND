@@ -10,11 +10,11 @@
 </div>
 
 <div class="admin-users compact">
+
   <!-- ════════ PAGE HEADER + KPI STRIP ════════ -->
   <div class="users-header">
     <div class="users-header-text">
       <h2 class="page-title">User Management</h2>
-      <p class="page-subtitle">Manage platform users: create, update, or remove accounts.</p>
     </div>
     <div class="kpi-strip">
       <div class="kpi-chip total-chip">
@@ -36,9 +36,7 @@
     </div>
   </div>
 
-  <!-- ════════════════════════════════════════════ -->
-  <!-- USER TABLE                                  -->
-  <!-- ════════════════════════════════════════════ -->
+  <!-- ════════ USER TABLE ════════ -->
   <section class="section-block">
     <div class="section-head">
       <div class="section-title-row">
@@ -46,9 +44,9 @@
         <h3>All Users</h3>
         <span class="count-badge">{{ users.length }}</span>
       </div>
-      <p class="section-desc">View all users and manage their roles and status.</p>
-      <button class="btn-create" (click)="openCreate()">
-        <i class="material-icons">person_add</i> Create User
+      <p class="section-desc">View, moderate, and manage user accounts.</p>
+      <button class="btn-export" (click)="exportToExcel()">
+        <i class="material-icons">download</i> Download Excel
       </button>
     </div>
 
@@ -68,6 +66,7 @@
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
+            <th>Reports</th>
             <th class="text-right">Actions</th>
           </tr>
         </thead>
@@ -84,16 +83,36 @@
               </span>
             </td>
             <td>
-              <span class="badge" [class.badge-active]="user.enabled" [class.badge-disabled]="!user.enabled">
-                {{ user.enabled ? 'Active' : 'Disabled' }}
+              <span class="badge" [ngClass]="getStatusClass(user)">
+                {{ getStatusLabel(user) }}
+              </span>
+              <span class="timeout-hint" *ngIf="user.timedOut && user.timeoutUntil">
+                Until {{ user.timeoutUntil }}
+              </span>
+            </td>
+            <td>
+              <span class="report-count" [class.report-high]="user.reportCount >= 3">
+                <i class="material-icons">flag</i> {{ user.reportCount || 0 }}
               </span>
             </td>
             <td class="text-right td-actions">
-              <button class="btn-icon btn-edit" (click)="openEdit(user)" title="Edit User">
-                <i class="material-icons">edit</i>
+              <!-- Report -->
+              <button class="btn-icon btn-report" (click)="openReportModal(user)" title="Report User">
+                <i class="material-icons">report_problem</i>
               </button>
-              <button class="btn-icon btn-delete" (click)="openDeleteConfirm(user.id)" title="Delete User">
-                <i class="material-icons">delete</i>
+              <!-- Timeout / Lift -->
+              <button class="btn-icon"
+                      [ngClass]="user.timedOut ? 'btn-lift' : 'btn-timeout'"
+                      (click)="user.timedOut ? liftTimeout(user) : openTimeoutModal(user)"
+                      [title]="user.timedOut ? 'Lift Timeout' : 'Time Out User'">
+                <i class="material-icons">{{ user.timedOut ? 'lock_open' : 'timer_off' }}</i>
+              </button>
+              <!-- Deactivate / Reactivate -->
+              <button class="btn-icon"
+                      [ngClass]="user.enabled ? 'btn-deactivate' : 'btn-activate'"
+                      (click)="toggleStatus(user)"
+                      [title]="user.enabled ? 'Deactivate User' : 'Reactivate User'">
+                <i class="material-icons">{{ user.enabled ? 'person_off' : 'person_add' }}</i>
               </button>
             </td>
           </tr>
@@ -109,76 +128,107 @@
   </section>
 </div>
 
-<!-- ════════════════════════════════════════════════ -->
-<!-- CREATE / EDIT USER MODAL                          -->
-<!-- ════════════════════════════════════════════════ -->
-<div class="modal-overlay" *ngIf="showUserModal" (click)="cancelUserModal()">
+<!-- ════════ TIMEOUT MODAL ════════ -->
+<div class="modal-overlay" *ngIf="showTimeoutModal" (click)="closeModals()">
   <div class="modal-container" (click)="$event.stopPropagation()">
-    <div class="modal-head">
-      <h3>
-        <i class="material-icons">{{ editingUser ? 'edit' : 'person_add' }}</i>
-        {{ editingUser ? 'Edit User' : 'Create User' }}
-      </h3>
-      <button class="modal-close" (click)="cancelUserModal()">
+    <div class="modal-head modal-head-warning">
+      <h3><i class="material-icons">timer_off</i> Time Out User</h3>
+      <button class="modal-close" (click)="closeModals()">
         <i class="material-icons">close</i>
       </button>
     </div>
     <div class="modal-body">
-      <label>First Name</label>
-      <input type="text" [(ngModel)]="formUser.name" placeholder="First Name" />
-      
-      <label>Last Name</label>
-      <input type="text" [(ngModel)]="formUser.lastName" placeholder="Last Name" />
-      
-      <label>Email</label>
-      <input type="email" [(ngModel)]="formUser.email" placeholder="Email" />
-      
-      <label>Role</label>
-      <select [(ngModel)]="formUser.role">
-        <option value="ADMIN">Admin</option>
-        <option value="CLIENT">Client</option>
-        <option value="FREELANCER">Freelancer</option>
-        <option value="USER">User</option>
-      </select>
-      
-      <label>Status</label>
-      <select [(ngModel)]="formUser.enabled">
-        <option [ngValue]="true">Active</option>
-        <option [ngValue]="false">Disabled</option>
-      </select>
+      <p class="modal-target">Applying timeout to <strong>{{ selectedUser?.name }} {{ selectedUser?.lastName }}</strong></p>
+
+      <label>Duration</label>
+      <div class="duration-grid">
+        <button class="duration-btn" *ngFor="let d of timeoutDurations"
+                [class.active]="selectedDuration === d.value"
+                (click)="selectedDuration = d.value">
+          {{ d.label }}
+        </button>
+      </div>
+
+      <label style="margin-top:1.2rem;">Reason <span class="optional">(optional)</span></label>
+      <textarea [(ngModel)]="actionReason" placeholder="Describe the reason…" rows="2"></textarea>
     </div>
     <div class="modal-foot">
-      <button class="btn-cancel" (click)="cancelUserModal()">Cancel</button>
-      <button class="btn-confirm" (click)="saveUser()">
-        <i class="material-icons">{{ editingUser ? 'edit' : 'person_add' }}</i>
-        {{ editingUser ? 'Update User' : 'Create User' }}
+      <button class="btn-cancel" (click)="closeModals()">Cancel</button>
+      <button class="btn-confirm btn-confirm-warning" (click)="confirmTimeout()">
+        <i class="material-icons">timer_off</i> Apply Timeout
       </button>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════ -->
-<!-- DELETE CONFIRMATION MODAL                       -->
-<!-- ════════════════════════════════════════════════ -->
-<div class="modal-overlay" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
-  <div class="modal-container modal-sm" (click)="$event.stopPropagation()">
-    <div class="modal-head">
-      <h3><i class="material-icons">warning</i> Delete User</h3>
-      <button class="modal-close" (click)="cancelDelete()">
+<!-- ════════ REPORT MODAL — with AI Analysis (Feature 1) ════════ -->
+<div class="modal-overlay" *ngIf="showReportModal" (click)="closeModals()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+
+    <div class="modal-head modal-head-danger">
+      <h3><i class="material-icons">report_problem</i> Report User</h3>
+      <button class="modal-close" (click)="closeModals()">
         <i class="material-icons">close</i>
       </button>
     </div>
-    <div class="modal-body center">
-      <div class="delete-icon-wrap">
-        <i class="material-icons">delete_forever</i>
+
+    <div class="modal-body">
+      <p class="modal-target">
+        Logging report against
+        <strong>{{ selectedUser?.name }} {{ selectedUser?.lastName }}</strong>
+      </p>
+
+      <label>Category</label>
+      <select [(ngModel)]="reportCategory">
+        <option value="spam">Spam / Fake Activity</option>
+        <option value="fraud">Fraud / Scam</option>
+        <option value="abuse">Abusive Behaviour</option>
+        <option value="tos">Terms of Service Violation</option>
+        <option value="other">Other</option>
+      </select>
+
+      <label>Details <span class="optional">(optional)</span></label>
+      <textarea [(ngModel)]="actionReason" placeholder="Describe the issue…" rows="3"></textarea>
+
+      <!-- ── AI Verdict block ── -->
+      <div class="ai-verdict-section">
+
+        <button class="btn-ai-analyse"
+                (click)="analyseWithAi()"
+                [disabled]="isAnalysing">
+          <i class="material-icons" [class.spin]="isAnalysing">
+            {{ isAnalysing ? 'autorenew' : 'psychology' }}
+          </i>
+          <span>{{ isAnalysing ? 'Analysing…' : 'Analyse with AI' }}</span>
+        </button>
+
+        <div class="ai-result-card" *ngIf="aiVerdict && !isAnalysing">
+          <div class="ai-result-header">
+            <i class="material-icons">smart_toy</i>
+            <span>AI Recommendation</span>
+          </div>
+          <div class="ai-result-body">
+            <div class="ai-chips">
+              <span class="ai-chip" [ngClass]="getSeverityClass(aiVerdict.severity)">
+                Severity: {{ aiVerdict.severity | titlecase }}
+              </span>
+              <span class="ai-chip" [ngClass]="getActionClass(aiVerdict.action)">
+                Action: {{ aiVerdict.action | titlecase }}
+              </span>
+            </div>
+            <p class="ai-justification">{{ aiVerdict.justification }}</p>
+          </div>
+        </div>
+
       </div>
-      <p>This will permanently delete the user account. This action cannot be undone.</p>
     </div>
+
     <div class="modal-foot">
-      <button class="btn-cancel" (click)="cancelDelete()">Cancel</button>
-      <button class="btn-confirm-delete" (click)="confirmDelete()">
-        <i class="material-icons">delete</i> Delete User
+      <button class="btn-cancel" (click)="closeModals()">Cancel</button>
+      <button class="btn-confirm btn-confirm-delete" (click)="confirmReport()">
+        <i class="material-icons">report_problem</i> Submit Report
       </button>
     </div>
+
   </div>
 </div>

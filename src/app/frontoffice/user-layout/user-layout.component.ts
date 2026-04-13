@@ -40,16 +40,19 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnInit(): void {
-    document.body.classList.add('user-portal');
-
-    // Use AuthService observable instead of reading localStorage directly
-    this.authService.currentUser$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
-        this.currentUser = user;
-      });
-  }
+ngOnInit(): void {
+  document.body.classList.add('user-portal');
+  
+  // Read immediately first
+  this.currentUser = this.authService.getCurrentUser();
+  
+  // Then subscribe for changes
+  this.authService.currentUser$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(user => {
+      this.currentUser = user;
+    });
+}
 
   ngOnDestroy(): void {
     document.body.classList.remove('user-portal');

@@ -7,32 +7,41 @@ import { AdminUser } from '../pages/admin/user/models/user.model';
   providedIn: 'root'
 })
 export class AdminUsersService {
-  private apiUrl = 'http://localhost:8089/pidev/api/auth/users';
-
+  private apiUrl    = 'http://localhost:8222/api/auth/users';  // GET list
+  private updateUrl = 'http://localhost:8222/users';           // moderation
 
   constructor(private http: HttpClient) {}
 
   getAll(): Observable<AdminUser[]> {
     return this.http.get<any>(this.apiUrl).pipe(
       map(res => {
-        // If backend wraps in { data: [...] }
         if (res.data) return res.data as AdminUser[];
-        // Otherwise return as is
         return res as AdminUser[];
       })
     );
   }
 
-  create(user: Partial<AdminUser>): Observable<AdminUser> {
-    return this.http.post<AdminUser>(this.apiUrl, user);
+  report(id: number): Observable<any> {
+    return this.http.post(`${this.updateUrl}/${id}/report`, {});
   }
 
-  update(id: number, user: Partial<AdminUser>): Observable<AdminUser> {
-    return this.http.put<AdminUser>(`${this.apiUrl}/${id}`, user);
+  timeout(id: number, until: string): Observable<any> {
+    return this.http.post(`${this.updateUrl}/${id}/timeout`, { until });
+  }
+
+  liftTimeout(id: number): Observable<any> {
+    return this.http.post(`${this.updateUrl}/${id}/lift-timeout`, {});
+  }
+
+  deactivate(id: number): Observable<any> {
+    return this.http.put(`${this.updateUrl}/${id}/deactivate`, {});
+  }
+
+  reactivate(id: number): Observable<any> {
+    return this.http.put(`${this.updateUrl}/${id}`, { enabled: true });
   }
 
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.http.delete<void>(`${this.updateUrl}/${id}`);
   }
 }
-

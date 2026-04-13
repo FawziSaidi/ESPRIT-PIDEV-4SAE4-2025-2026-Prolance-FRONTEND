@@ -16,6 +16,7 @@ export class SidebarComponent implements OnInit {
     { id: 'forum', icon: '💬', label: 'FORUM', link: '#', route: null },
     { id: 'ads', icon: '📷', label: 'ADS', link: '#', route: '/admin/ads' },
     { id: 'evenement', icon: '📅', label: 'EVENTS', link: '#', route: null },
+    { id: 'cours', icon: '🎓', label: 'COURSES', link: '#', route: '/admin/cours' },
     { id: 'logout', icon: '🔌', label: 'LOGOUT', link: '#', route: null }
   ];
 

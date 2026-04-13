@@ -27,6 +27,9 @@
           <a class="nav-link" routerLink="/app/ads" routerLinkActive="active" (click)="mobileMenuOpen = false">
             <i class="material-icons">campaign</i> Publicité
           </a>
+          <a class="nav-link" routerLink="/app/cours" routerLinkActive="active" (click)="mobileMenuOpen = false">
+  <i class="material-icons">school</i> Courses
+</a>
           <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
             <i class="material-icons">event</i> Événement
           </a>
@@ -35,20 +38,19 @@
     <!-- Right Section -->
     <div class="navbar-right">
       <!-- Role Switcher (compact) -->
-      <div class="role-chip-group">
-        <button class="role-chip" [class.active]="currentRole === 'freelancer'" (click)="toggleRole('freelancer')">
-          Freelancer
-        </button>
-        <button class="role-chip" [class.active]="currentRole === 'client'" (click)="toggleRole('client')">
-          Client
-        </button>
-      </div>
-
+      
+<span class="navbar-username" *ngIf="currentUser" style="font-size:14px;font-weight:500;color:inherit;margin-right:8px;">
+  {{ currentUser.name }} {{ currentUser.lastName }}
+</span>
       <!-- Profile Dropdown -->
       <div class="profile-dropdown-wrapper">
         <button class="profile-avatar" (click)="toggleProfileDropdown()">
-          <i class="material-icons">person</i>
-        </button>
+  <img *ngIf="currentUser?.imageUrl" 
+     [src]="currentUser!.imageUrl" 
+     alt="avatar"
+     style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+<i class="material-icons" *ngIf="!currentUser?.imageUrl">person</i>
+</button>
         <div class="profile-dropdown" [class.open]="profileDropdownOpen">
           <div class="dropdown-header">
   <span class="dropdown-name">

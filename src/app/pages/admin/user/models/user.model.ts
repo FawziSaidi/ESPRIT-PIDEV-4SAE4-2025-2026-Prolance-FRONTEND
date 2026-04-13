@@ -8,5 +8,8 @@ export interface AdminUser {
   role: UserRole;
   enabled: boolean;
   birthDate?: string;
+  timedOut?: boolean;
+  timeoutUntil?: string | null;
+  reportCount?: number;
 }
 

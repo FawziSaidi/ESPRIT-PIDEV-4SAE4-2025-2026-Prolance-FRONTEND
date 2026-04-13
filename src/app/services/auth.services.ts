@@ -1,4 +1,3 @@
-// services/auth.services.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap } from 'rxjs';
@@ -11,6 +10,8 @@ export interface SessionUser {
   token: string;
   name: string;
   lastName: string;
+  imageUrl?: string;
+  bio?: string;
 }
 
 @Injectable({
@@ -18,7 +19,7 @@ export interface SessionUser {
 })
 export class AuthService {
 
-  private apiUrl = 'http://localhost:8089/pidev/api/auth';
+  private apiUrl = 'http://localhost:8222/api/auth';
 
   private currentUserSubject = new BehaviorSubject<SessionUser | null>(
     this.getUserFromStorage()
@@ -43,19 +44,29 @@ export class AuthService {
   }
 
   // ---------- SESSION ----------
-  setSession(res: AuthResponse, email: string): void {
+  setSession(res: AuthResponse | SessionUser, email: string): void {
     const user: SessionUser = {
-      id: res.id,
+      id: (res as any).id,
       email,
-      role: res.role,
-      token: res.token,
-      name: res.name,          // ← now included
-      lastName: res.lastName   // ← now included
+      role: (res as any).role,
+      token: (res as any).token,
+      name: (res as any).name,
+      lastName: (res as any).lastName,
+      imageUrl: (res as any).imageUrl ?? undefined
     };
 
     console.log('Setting session user:', user);
     localStorage.setItem('sessionUser', JSON.stringify(user));
     this.currentUserSubject.next(user);
+  }
+
+  // Call this after avatar update to keep navbar in sync
+  updateSessionAvatar(imageUrl: string): void {
+    const current = this.currentUserSubject.value;
+    if (!current) return;
+    const updated: SessionUser = { ...current, imageUrl };
+    localStorage.setItem('sessionUser', JSON.stringify(updated));
+    this.currentUserSubject.next(updated);
   }
 
   logout(): void {

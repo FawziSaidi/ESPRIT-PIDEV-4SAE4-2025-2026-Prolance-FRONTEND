@@ -1,0 +1,107 @@
+<!-- src/app/pages/cours-catalog/cours-catalog.component.html -->
+
+<div class="catalog-page">
+
+  <div class="page-header">
+    <h1>Browse Courses</h1>
+    <p class="subtitle">Expand your skills with expert-led courses</p>
+  </div>
+
+  <!-- Search + Sort bar -->
+  <div class="search-sort-bar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input
+        class="search-input"
+        placeholder="Search courses, topics, tags…"
+        [formControl]="searchControl" />
+      <button *ngIf="searchControl.value" class="clear-btn" (click)="clearSearch()">✕</button>
+    </div>
+
+    <select class="sort-select" [ngModel]="sortBy" (ngModelChange)="setSortBy($event)">
+      <option value="default">Sort: Default</option>
+      <option value="price_asc">Price: Low → High</option>
+      <option value="price_desc">Price: High → Low</option>
+      <option value="popular">Most Popular</option>
+      <option value="rating">Highest Rated</option>
+    </select>
+  </div>
+
+  <!-- Category chips -->
+  <div class="filter-row">
+    <button
+      *ngFor="let cat of categories"
+      class="chip"
+      [class.active]="selectedCategory === cat"
+      (click)="filterBy(cat)">
+      {{ cat === '' ? 'All' : cat }}
+    </button>
+  </div>
+
+  <!-- Level chips -->
+  <div class="filter-row level-row">
+    <button
+      *ngFor="let lvl of levels"
+      class="chip level-chip"
+      [class.active]="selectedLevel === lvl"
+      (click)="filterByLevel(lvl)">
+      {{ lvl === '' ? 'All levels' : levelLabel(lvl) }}
+    </button>
+  </div>
+
+  <!-- Result count -->
+  <p *ngIf="!isLoading" class="result-count">
+    {{ courses.length }} course{{ courses.length !== 1 ? 's' : '' }} found
+  </p>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading courses…</p>
+  </div>
+
+  <div *ngIf="!isLoading && courses.length === 0" class="empty-state">
+    <p>😕 No courses match your search.</p>
+    <button class="btn-reset" (click)="clearSearch(); filterBy(''); filterByLevel('')">Reset filters</button>
+  </div>
+
+  <div *ngIf="!isLoading && courses.length > 0" class="courses-grid">
+    <div
+      *ngFor="let course of courses"
+      class="course-card"
+      (click)="goToCourse(course.id)">
+
+      <div class="course-thumb" [style.background]="thumbColor(course.category)">
+        <span class="thumb-emoji">{{ thumbEmoji(course.category) }}</span>
+        <span *ngIf="course.price === 0" class="free-badge">FREE</span>
+      </div>
+
+      <div class="course-body">
+        <span class="cat-badge" [style.background]="thumbColor(course.category)">
+          {{ course.category }}
+        </span>
+        <h3 class="course-title">{{ course.title }}</h3>
+
+        <!-- Star rating -->
+        <div *ngIf="course.averageRating" class="rating-row">
+          <span *ngFor="let s of stars(course.averageRating)" class="star">{{ s }}</span>
+          <span class="rating-num">{{ course.averageRating | number:'1.1-1' }}</span>
+        </div>
+
+        <p class="course-meta">
+          {{ course.lessonCount }} lessons
+          <span *ngIf="course.enrollmentCount"> · {{ course.enrollmentCount }} enrolled</span>
+        </p>
+
+        <div class="course-footer">
+          <span class="price" [class.free]="course.price === 0">
+            {{ course.price === 0 ? 'Free' : '$' + course.price }}
+          </span>
+          <span class="level-badge" [ngClass]="course.level.toLowerCase()">
+            {{ levelLabel(course.level) }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

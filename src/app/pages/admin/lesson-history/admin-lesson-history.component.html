@@ -1,0 +1,207 @@
+<!-- src/app/pages/admin/lesson-history/admin-lesson-history.component.html -->
+
+<div class="history-page">
+
+  <!-- Toast -->
+  <div class="toast-container">
+    <div *ngFor="let t of toasts" class="toast" [ngClass]="t.type">{{ t.message }}</div>
+  </div>
+
+  <div class="page-header">
+    <h1>Learning Analytics</h1>
+    <p class="subtitle">Track progress, completions, and revenue</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn" [class.active]="activeTab === 'history'"  (click)="setTab('history')">📋 Lesson History</button>
+    <button class="tab-btn" [class.active]="activeTab === 'progress'" (click)="setTab('progress')">📈 User Progress</button>
+    <button class="tab-btn" [class.active]="activeTab === 'payments'" (click)="setTab('payments')">💳 Payments</button>
+  </div>
+
+  <!-- ── Global Filters ─────────────────────────────────────────────────── -->
+  <div class="filters-bar">
+    <select class="filter-select" [(ngModel)]="filterCourseId" (change)="applyHistoryFilters()">
+      <option value="">All courses</option>
+      <option *ngFor="let c of courses" [value]="c.id">{{ c.title }}</option>
+    </select>
+
+    <ng-container *ngIf="activeTab === 'history'">
+      <input type="date" class="filter-input" [(ngModel)]="filterDateFrom" (change)="applyHistoryFilters()" />
+      <input type="date" class="filter-input" [(ngModel)]="filterDateTo"   (change)="applyHistoryFilters()" />
+      <button class="btn-reset" (click)="resetHistoryFilters()">Reset</button>
+      <button class="btn-export" (click)="exportCsv()">⬇ Export CSV</button>
+    </ng-container>
+  </div>
+
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+  <!-- HISTORY TAB                                                          -->
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'history'">
+
+    <div class="search-bar">
+      <input class="search-input" placeholder="Search by user, email, course, lesson…"
+             [(ngModel)]="historySearch" />
+      <span class="record-count">{{ filteredHistory.length }} of {{ historyTotal }} records</span>
+    </div>
+
+    <div *ngIf="historyLoading" class="loading-state">
+      <div class="spinner"></div>
+    </div>
+
+    <div *ngIf="!historyLoading" class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Course</th>
+            <th>Lesson</th>
+            <th>Completed At</th>
+            <th>Time Spent</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of filteredHistory">
+            <td class="user-cell">{{ r.userName }}</td>
+            <td class="email-cell">{{ r.userEmail }}</td>
+            <td>{{ r.courseTitle }}</td>
+            <td>{{ r.lessonTitle }}</td>
+            <td>{{ r.completedAt | date:'short' }}</td>
+            <td>{{ formatTime(r.timeSpentSeconds) }}</td>
+          </tr>
+          <tr *ngIf="filteredHistory.length === 0">
+            <td colspan="6" class="empty-row">No lesson completions found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button class="page-btn" [disabled]="historyPage === 1" (click)="goPage(historyPage - 1)">‹</button>
+      <button
+        *ngFor="let p of pages()"
+        class="page-btn"
+        [class.active]="p === historyPage"
+        (click)="goPage(p)">{{ p }}</button>
+      <button class="page-btn" [disabled]="historyPage === totalPages" (click)="goPage(historyPage + 1)">›</button>
+    </div>
+
+  </div>
+
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+  <!-- PROGRESS TAB                                                         -->
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'progress'">
+
+    <div *ngIf="progressLoading" class="loading-state"><div class="spinner"></div></div>
+
+    <div *ngIf="!progressLoading" class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Course</th>
+            <th>Completed</th>
+            <th>Total</th>
+            <th>Progress</th>
+            <th>Certificate</th>
+            <th>Last Activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of userProgress">
+            <td>{{ p.userId }}</td>
+            <td>{{ p.courseTitle }}</td>
+            <td>{{ p.completedLessons }}</td>
+            <td>{{ p.totalLessons }}</td>
+            <td>
+              <div class="mini-progress">
+                <div class="mini-fill" [style.width.%]="p.progressPercent"></div>
+              </div>
+              <span class="pct-label">{{ p.progressPercent }}%</span>
+            </td>
+            <td>
+              <span class="cert-badge" [class.earned]="p.certificateUnlocked">
+                {{ p.certificateUnlocked ? '🏆 Earned' : '—' }}
+              </span>
+            </td>
+            <td>{{ p.lastActivity | date:'shortDate' }}</td>
+          </tr>
+          <tr *ngIf="userProgress.length === 0">
+            <td colspan="7" class="empty-row">No progress data available.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+  <!-- PAYMENTS TAB                                                         -->
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'payments'">
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <span class="stat-value">${{ totalRevenue | number:'1.2-2' }}</span>
+        <span class="stat-label">Total Revenue</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ payments.length }}</span>
+        <span class="stat-label">Total Payments</span>
+      </div>
+      <div class="stat-card warn">
+        <span class="stat-value">{{ pendingCount }}</span>
+        <span class="stat-label">Pending</span>
+      </div>
+    </div>
+
+    <div class="search-bar">
+      <input class="search-input" placeholder="Search by user, email or course…"
+             [(ngModel)]="paymentSearch" />
+    </div>
+
+    <div *ngIf="paymentsLoading" class="loading-state"><div class="spinner"></div></div>
+
+    <div *ngIf="!paymentsLoading" class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Payment ID</th>
+            <th>User</th>
+            <th>Email</th>
+            <th>Course</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of filteredPayments">
+            <td class="id-cell">{{ p.paymentId }}</td>
+            <td>{{ p.userName }}</td>
+            <td class="email-cell">{{ p.userEmail }}</td>
+            <td>{{ p.courseTitle }}</td>
+            <td>${{ p.amount | number:'1.2-2' }}</td>
+            <td>{{ p.method }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="p.status.toLowerCase()">
+                {{ p.status }}
+              </span>
+            </td>
+            <td>{{ p.createdAt | date:'shortDate' }}</td>
+          </tr>
+          <tr *ngIf="filteredPayments.length === 0">
+            <td colspan="8" class="empty-row">No payments found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>

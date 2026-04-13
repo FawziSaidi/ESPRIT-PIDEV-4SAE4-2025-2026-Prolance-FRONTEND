@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BackofficeRoutingModule } from './backoffice-routing.module';
 
 import { HeaderComponent } from './components/header/header.component';
@@ -9,6 +9,8 @@ import { FooterComponent } from './components/footer/footer.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { BackofficeLayoutComponent } from './backoffice-layout.component';
 import { AdminAdsComponent } from '../pages/admin/ads/admin-ads.component';
+import { AdminUsersComponent } from '../pages/admin/user/admin-user.component';
+import { AdminCoursComponent } from '../pages/admin/cours/admin-cours.component';
 
 @NgModule({
   declarations: [
@@ -17,11 +19,14 @@ import { AdminAdsComponent } from '../pages/admin/ads/admin-ads.component';
     SidebarComponent,
     FooterComponent,
     DashboardComponent,
-    AdminAdsComponent
+    AdminAdsComponent,
+    AdminUsersComponent,
+    AdminCoursComponent
   ],
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     BackofficeRoutingModule
   ]
 })

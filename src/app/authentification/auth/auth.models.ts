@@ -20,4 +20,6 @@ export interface AuthResponse {
   role: 'ADMIN' | 'USER' | 'CLIENT' | 'FREELANCER';
   name: string;
   lastName: string;
+  imageUrl?: string;
+
 }

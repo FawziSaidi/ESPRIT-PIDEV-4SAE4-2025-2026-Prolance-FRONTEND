@@ -1,19 +1,19 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../services/auth.services';
+import { FaceAuthService } from '../../../services/face-auth.service';
 import { RegisterRequest } from '../auth.models';
 
 // ── Custom Validators ─────────────────────────────────────────
 function strongPasswordValidator(control: AbstractControl): ValidationErrors | null {
   const val: string = control.value || '';
   const errors: ValidationErrors = {};
-
   if (!/[A-Z]/.test(val))        errors['noUppercase']  = true;
   if (!/[a-z]/.test(val))        errors['noLowercase']  = true;
   if (!/[0-9]/.test(val))        errors['noNumber']     = true;
   if (!/[^A-Za-z0-9]/.test(val)) errors['noSpecial']    = true;
-
   return Object.keys(errors).length ? errors : null;
 }
 
@@ -31,13 +31,18 @@ function ageValidator(minAge: number) {
   };
 }
 
-// ── Password Strength Score ───────────────────────────────────
 export interface StrengthResult {
-  score: number;      // 0-4
+  score: number;
   label: string;
   color: string;
   width: string;
 }
+
+// Three registration stages:
+// 'form'  → filling out the form
+// 'face'  → optional face enrollment right after account creation
+// 'done'  → email sent screen
+type RegisterStage = 'form' | 'face' | 'done';
 
 @Component({
   selector: 'app-register',
@@ -45,23 +50,39 @@ export interface StrengthResult {
   styleUrls: ['./register.component.scss']
 })
 export class RegisterComponent implements OnInit, OnDestroy {
+
+  @ViewChild('enrollVideo') enrollVideoRef!: ElementRef<HTMLVideoElement>;
+
   registerForm: FormGroup;
-  isLoading       = false;
-  showPassword    = false;
-  googleLoading   = false;
-  currentYear     = new Date().getFullYear();
+  isLoading     = false;
+  showPassword  = false;
+  googleLoading = false;
+  currentYear   = new Date().getFullYear();
   userType: 'freelancer' | 'recruiter' = 'freelancer';
 
-  // password strength reactive
   passwordStrength: StrengthResult = { score: 0, label: '', color: '', width: '0%' };
-
-  // for username availability mock (extend with real HTTP call)
   emailTaken = false;
 
+  // Stage control
+  stage: RegisterStage = 'form';
+  registeredEmail = '';
+
+  // Face enroll state
+  faceStatus      = '';
+  faceStatusType: 'idle' | 'working' | 'ok' | 'fail' = 'idle';
+  faceRingState   = '';
+  enrollProgress  = 0;
+  isFaceWorking   = false;
+  private faceAbort = false;
+
+  private readonly API = 'http://localhost:8222/api/auth';
+
   constructor(
-    private fb:          FormBuilder,
-    private router:      Router,
-    private authService: AuthService
+    private fb:              FormBuilder,
+    private router:          Router,
+    private http:            HttpClient,
+    private authService:     AuthService,
+    private faceAuthService: FaceAuthService
   ) {
     this.registerForm = this.fb.group({
       fullName:   ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-ZÀ-ÿ\s'-]+$/)]],
@@ -72,31 +93,21 @@ export class RegisterComponent implements OnInit, OnDestroy {
       agreeTerms: [false, [Validators.requiredTrue]]
     });
 
-    // live password strength
     this.registerForm.get('password')!.valueChanges.subscribe(val => {
       this.passwordStrength = this.computeStrength(val || '');
     });
   }
 
-  ngOnInit(): void {
-    document.body.classList.add('auth-page');
-  }
-
+  ngOnInit(): void { document.body.classList.add('auth-page'); }
   ngOnDestroy(): void {
     document.body.classList.remove('auth-page');
+    this.stopFaceCamera();
   }
 
-  // ── Helpers ──────────────────────────────────────────────────
-  setUserType(type: 'freelancer' | 'recruiter'): void {
-    this.userType = type;
-  }
+  setUserType(type: 'freelancer' | 'recruiter'): void { this.userType = type; }
+  togglePassword(): void { this.showPassword = !this.showPassword; }
 
-  togglePassword(): void {
-    this.showPassword = !this.showPassword;
-  }
-
-  // Password criteria checklist helpers (used in template)
-  get pwVal(): string { return this.registerForm.get('password')?.value || ''; }
+  get pwVal(): string      { return this.registerForm.get('password')?.value || ''; }
   get pwTouched(): boolean { return !!this.registerForm.get('password')?.touched; }
   get hasUpper():   boolean { return /[A-Z]/.test(this.pwVal); }
   get hasLower():   boolean { return /[a-z]/.test(this.pwVal); }
@@ -104,30 +115,34 @@ export class RegisterComponent implements OnInit, OnDestroy {
   get hasSpecial(): boolean { return /[^A-Za-z0-9]/.test(this.pwVal); }
   get hasLength():  boolean { return this.pwVal.length >= 8; }
 
+  get maxDate(): string { return new Date().toISOString().split('T')[0]; }
+
   computeStrength(pw: string): StrengthResult {
     let score = 0;
-    if (pw.length >= 8)               score++;
-    if (/[A-Z]/.test(pw))            score++;
-    if (/[0-9]/.test(pw))            score++;
-    if (/[^A-Za-z0-9]/.test(pw))     score++;
-
+    if (pw.length >= 8)           score++;
+    if (/[A-Z]/.test(pw))        score++;
+    if (/[0-9]/.test(pw))        score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
     const map: Record<number, Omit<StrengthResult, 'score'>> = {
-      0: { label: '',         color: '',          width: '0%'   },
-      1: { label: 'Weak',     color: '#ef5350',   width: '25%'  },
-      2: { label: 'Fair',     color: '#ffa726',   width: '50%'  },
-      3: { label: 'Good',     color: '#66bb6a',   width: '75%'  },
-      4: { label: 'Strong',   color: '#43a047',   width: '100%' },
+      0: { label: '',       color: '',        width: '0%'   },
+      1: { label: 'Weak',   color: '#ef5350', width: '25%'  },
+      2: { label: 'Fair',   color: '#ffa726', width: '50%'  },
+      3: { label: 'Good',   color: '#66bb6a', width: '75%'  },
+      4: { label: 'Strong', color: '#43a047', width: '100%' },
     };
-
     return { score, ...map[score] };
   }
 
-  // Max date for birthdate (today)
-  get maxDate(): string {
-    return new Date().toISOString().split('T')[0];
+  resendVerification(): void {
+    this.isLoading = true;
+    this.http.post(`${this.API}/resend-verification`, { email: this.registeredEmail }).subscribe({
+      next: () => { this.isLoading = false; },
+      error: () => { this.isLoading = false; }
+    });
   }
 
-  // ── Submit ───────────────────────────────────────────────────
+  // ── Submit ────────────────────────────────────────────────
+
   onSubmit(): void {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
@@ -147,12 +162,14 @@ export class RegisterComponent implements OnInit, OnDestroy {
 
     this.authService.register(request).subscribe({
       next: () => {
-        this.isLoading = false;
-        this.router.navigate(['/login'], { queryParams: { registered: 'true' } });
+        this.isLoading       = false;
+        this.registeredEmail = request.email;
+        // Go to face enroll step
+        this.stage = 'face';
+        this.setFaceStatus('idle', '');
       },
       error: (err) => {
         this.isLoading = false;
-        // Check if email already taken (adjust based on your API error structure)
         if (err.status === 409 || err.error?.message?.toLowerCase().includes('email')) {
           this.emailTaken = true;
           this.registerForm.get('email')?.setErrors({ taken: true });
@@ -162,33 +179,84 @@ export class RegisterComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── Google OAuth ─────────────────────────────────────────────
+  // ── Face enroll (called from template button) ─────────────
+
+  async startFaceEnroll(): Promise<void> {
+    this.faceAbort      = false;
+    this.isFaceWorking  = true;
+    this.enrollProgress = 0;
+    this.setFaceStatus('working', 'Loading AI models…', 'scanning');
+
+    try {
+      await this.faceAuthService.loadModels();
+      await this.faceAuthService.startCamera(this.enrollVideoRef.nativeElement);
+      this.setFaceStatus('working', 'Look at the camera — capturing samples…', 'scanning');
+
+      await this.faceAuthService.enroll(
+        this.enrollVideoRef.nativeElement,
+        this.registeredEmail,
+        8,
+        (n, total) => {
+          if (!this.faceAbort) {
+            this.enrollProgress = Math.round((n / total) * 100);
+            this.faceStatus     = `Captured ${n} / ${total} samples`;
+          }
+        }
+      );
+
+      if (this.faceAbort) return;
+
+      this.setFaceStatus('ok', 'Face enrolled! Your account is ready.', 'success');
+      this.stopFaceCamera();
+      this.isFaceWorking = false;
+
+      // Move to done after short delay
+      setTimeout(() => { this.stage = 'done'; }, 1500);
+
+    } catch (e: any) {
+      if (this.faceAbort) return;
+      this.isFaceWorking = false;
+      this.setFaceStatus('fail', 'Camera error: ' + (e.message || e), 'error');
+      this.stopFaceCamera();
+    }
+  }
+
+  // Skip face enroll → go straight to done screen
+  skipFaceEnroll(): void {
+    this.stopFaceCamera();
+    this.stage = 'done';
+  }
+
+  private stopFaceCamera(): void {
+    this.faceAbort = true;
+    const vid = this.enrollVideoRef?.nativeElement;
+    if (vid) this.faceAuthService.stopCamera(vid);
+  }
+
+  private setFaceStatus(type: typeof this.faceStatusType, msg: string, ring = ''): void {
+    this.faceStatusType = type;
+    this.faceStatus     = msg;
+    this.faceRingState  = ring;
+  }
+
+  // ── Google OAuth ──────────────────────────────────────────
+
   registerWithGoogle(): void {
     this.googleLoading = true;
-
-    // ── Option A: redirect flow (recommended for production) ──
-    // window.location.href = 'http://localhost:8089/pidev/oauth2/authorization/google';
-
-    // ── Option B: popup flow ──────────────────────────────────
-    const width  = 500;
-    const height = 600;
-    const left   = window.screenX + (window.outerWidth  - width)  / 2;
-    const top    = window.screenY + (window.outerHeight - height) / 2;
+    const width = 500, height = 600;
+    const left  = window.screenX + (window.outerWidth  - width)  / 2;
+    const top   = window.screenY + (window.outerHeight - height) / 2;
 
     const popup = window.open(
-      'http://localhost:8089/pidev/oauth2/authorization/google',
+      'http://localhost:8222/oauth2/authorization/google',
       'GoogleOAuth',
       `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
     );
 
-    // Listen for the backend to post back a token after OAuth success
     const handler = (event: MessageEvent) => {
-      // Only trust messages from your backend origin
-      if (event.origin !== 'http://localhost:8089') return;
-
+      if (event.origin !== 'http://localhost:8081') return;
       const { token, id, role, name, lastName, email } = event.data;
       if (token) {
-        // Store session same way AuthService.setSession does
         const user = { id, email, role, token, name, lastName };
         localStorage.setItem('sessionUser', JSON.stringify(user));
         popup?.close();
@@ -199,8 +267,6 @@ export class RegisterComponent implements OnInit, OnDestroy {
     };
 
     window.addEventListener('message', handler);
-
-    // Fallback: stop spinner if popup closed manually
     const timer = setInterval(() => {
       if (popup?.closed) {
         clearInterval(timer);

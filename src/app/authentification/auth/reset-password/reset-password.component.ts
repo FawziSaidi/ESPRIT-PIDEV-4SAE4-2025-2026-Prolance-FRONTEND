@@ -45,7 +45,7 @@ export class ResetPasswordComponent implements OnInit {
   errorMessage = '';
   passwordStrength: StrengthResult = { score: 0, label: '', color: '', width: '0%' };
 
-  private readonly API = 'http://localhost:8089/pidev/api/auth';
+  private readonly API = 'http://localhost:8222/api/auth';
 
   constructor(
     private fb:    FormBuilder,

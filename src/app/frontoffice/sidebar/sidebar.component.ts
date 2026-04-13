@@ -8,14 +8,10 @@ declare interface RouteInfo {
     class: string;
 }
 export const ROUTES: RouteInfo[] = [
-    { path: '/dashboard', title: 'Dashboard',  icon: 'dashboard', class: '' },
-    { path: '/user-profile', title: 'User Profile',  icon:'person', class: '' },
-    { path: '/table-list', title: 'Transactions',  icon:'payments', class: '' },
-    { path: '/typography', title: 'Typography',  icon:'library_books', class: '' },
-    { path: '/icons', title: 'Icons',  icon:'bubble_chart', class: '' },
-    { path: '/maps', title: 'Maps',  icon:'location_on', class: '' },
-    { path: '/notifications', title: 'Notifications',  icon:'notifications', class: '' },
-    { path: '/upgrade', title: 'Upgrade to PRO',  icon:'unarchive', class: 'active-pro' },
+    { path: '/app/dashboard',  title: 'Dashboard',    icon: 'dashboard',      class: '' },
+    { path: '/app/profile',    title: 'My Profile',   icon: 'person',         class: '' },
+    { path: '/app/ads',        title: 'Ads',          icon: 'campaign',       class: '' },
+    { path: '/app/cours',      title: 'Courses',      icon: 'school',         class: '' },
 ];
 
 @Component({
@@ -31,10 +27,11 @@ export class SidebarComponent implements OnInit {
   ngOnInit() {
     this.menuItems = ROUTES.filter(menuItem => menuItem);
   }
+
   isMobileMenu() {
-      if ($(window).width() > 991) {
-          return false;
-      }
-      return true;
-  };
+    if ($(window).width() > 991) {
+      return false;
+    }
+    return true;
+  }
 }

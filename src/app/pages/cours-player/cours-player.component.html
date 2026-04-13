@@ -1,0 +1,338 @@
+<!-- src/app/pages/cours-player/cours-player.component.html -->
+
+<!-- Toast notifications -->
+<div class="toast-container">
+  <div *ngFor="let t of toasts" class="toast" [ngClass]="t.type">{{ t.message }}</div>
+</div>
+
+<div *ngIf="isLoading" class="loading-state">
+  <div class="spinner"></div>
+</div>
+
+<div *ngIf="!isLoading && course" class="player-page">
+
+  <div class="breadcrumb">
+    <a routerLink="/app/cours">Courses</a> › {{ course.title }}
+  </div>
+
+  <div class="player-layout">
+
+    <!-- ── Main Panel ──────────────────────────────────────────────────── -->
+    <div class="main-panel">
+
+      <!-- Video area -->
+      <div class="video-area">
+        <div *ngIf="activeLesson; else noLesson">
+          <div class="play-wrap">
+            <button class="play-btn" (click)="openVideo()">
+              <span class="play-icon"></span>
+            </button>
+            <p class="video-label">{{ activeLesson.title }}</p>
+          </div>
+        </div>
+        <ng-template #noLesson>
+          <p class="no-lesson-text">Select a lesson to begin</p>
+        </ng-template>
+      </div>
+
+      <!-- Tabs -->
+      <div *ngIf="activeLesson" class="tab-bar">
+        <button class="tab-btn" [class.active]="activeTab === 'overview'" (click)="activeTab = 'overview'">Overview</button>
+        <button class="tab-btn" [class.active]="activeTab === 'notes'"    (click)="activeTab = 'notes'">Notes</button>
+        <button class="tab-btn" [class.active]="activeTab === 'reviews'"  (click)="activeTab = 'reviews'">
+          Reviews <span *ngIf="reviews.length" class="tab-count">{{ reviews.length }}</span>
+        </button>
+      </div>
+
+      <!-- ── Overview Tab ─────────────────────────────────────────────── -->
+      <div *ngIf="activeLesson && activeTab === 'overview'" class="tab-content">
+
+        <div class="lesson-info">
+          <div class="lesson-info-header">
+            <div>
+              <h2>{{ activeLesson.title }}</h2>
+              <p class="lesson-meta">
+                {{ activeLesson.duration }} min &middot;
+                Lesson {{ activeLessonIndex + 1 }} of {{ lessons.length }}
+              </p>
+            </div>
+            <!-- Bookmark button -->
+            <button
+              *ngIf="isEnrolled"
+              class="bookmark-btn"
+              [class.bookmarked]="activeLesson.bookmarked"
+              (click)="toggleBookmark(activeLesson)"
+              title="{{ activeLesson.bookmarked ? 'Remove bookmark' : 'Bookmark this lesson' }}">
+              {{ activeLesson.bookmarked ? '🔖' : '📌' }}
+            </button>
+          </div>
+
+          <p class="lesson-desc">{{ activeLesson.description }}</p>
+
+          <!-- Time spent input -->
+          <div *ngIf="isEnrolled && !activeLesson.completed" class="time-input-row">
+            <label>Time spent (minutes):</label>
+            <input type="number" class="time-input" [(ngModel)]="timeSpentMinutes" min="0" />
+          </div>
+
+          <!-- Actions -->
+          <div class="lesson-actions">
+            <button
+              *ngIf="!activeLesson.completed && isEnrolled"
+              class="btn-complete"
+              [disabled]="submittingProgress"
+              (click)="submitProgress()">
+              {{ submittingProgress ? 'Saving…' : '✓ Mark complete & submit' }}
+            </button>
+            <span *ngIf="activeLesson.completed" class="completed-tag">✓ Completed</span>
+            <button
+              *ngIf="activeLessonIndex < lessons.length - 1"
+              class="btn-next"
+              (click)="goNext()">
+              Next lesson →
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div *ngIf="isEnrolled" class="progress-section">
+          <div class="progress-label">
+            <span>Course Progress</span>
+            <span>{{ progressPercent }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" [style.width.%]="progressPercent"></div>
+          </div>
+          <!-- FIX: replaced inline "loadCertificate(); showCertModal = true" with openCertModal() -->
+          <p *ngIf="progressPercent === 100" class="cert-hint">
+            🏆 Course complete! <button class="link-btn" (click)="openCertModal()">View certificate</button>
+          </p>
+        </div>
+
+      </div>
+
+      <!-- ── Notes Tab ────────────────────────────────────────────────── -->
+      <div *ngIf="activeLesson && activeTab === 'notes'" class="tab-content">
+        <div class="notes-panel">
+          <h4>My note for "{{ activeLesson.title }}"</h4>
+          <textarea
+            class="note-textarea"
+            rows="6"
+            placeholder="Write your notes here…"
+            [(ngModel)]="noteContent">
+          </textarea>
+          <button class="btn-save-note" [disabled]="savingNote" (click)="saveNote()">
+            {{ savingNote ? 'Saving…' : 'Save note' }}
+          </button>
+
+          <div *ngIf="userNotes.length > 0" class="notes-history">
+            <h5>All my notes</h5>
+            <div *ngFor="let note of userNotes" class="note-card">
+              <div class="note-card-header">
+                <span class="note-lesson">{{ note.lessonTitle }}</span>
+                <span class="note-date">{{ note.updatedAt | date:'short' }}</span>
+              </div>
+              <p class="note-body">{{ note.content }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Reviews Tab ──────────────────────────────────────────────── -->
+      <div *ngIf="activeLesson && activeTab === 'reviews'" class="tab-content">
+        <div class="reviews-panel">
+
+          <!-- Summary -->
+          <div class="review-summary">
+            <span class="avg-rating">{{ averageRating() }}</span>
+            <div>
+              <div class="stars-row">
+                <span *ngFor="let s of starsArray(averageRating())" class="star">{{ s }}</span>
+              </div>
+              <span class="review-count">{{ reviews.length }} review{{ reviews.length !== 1 ? 's' : '' }}</span>
+            </div>
+          </div>
+
+          <!-- Submit review -->
+          <div *ngIf="isEnrolled" class="review-form">
+            <h5>Leave a review</h5>
+            <div class="star-picker">
+              <span
+                *ngFor="let i of [1,2,3,4,5]"
+                class="star-pick"
+                [class.active]="i <= (hoverRating || userRating)"
+                (mouseenter)="hoverRating = i"
+                (mouseleave)="hoverRating = 0"
+                (click)="setRating(i)">★</span>
+            </div>
+            <textarea
+              class="review-textarea"
+              rows="3"
+              placeholder="Share your experience…"
+              [(ngModel)]="reviewComment">
+            </textarea>
+            <button class="btn-submit-review" [disabled]="!userRating || submittingReview" (click)="submitReview()">
+              {{ submittingReview ? 'Submitting…' : 'Submit review' }}
+            </button>
+          </div>
+
+          <!-- Reviews list -->
+          <div class="reviews-list">
+            <div *ngFor="let r of reviews" class="review-item">
+              <div class="review-header">
+                <span class="reviewer-name">{{ r.userName }}</span>
+                <span class="review-date">{{ r.createdAt | date:'mediumDate' }}</span>
+              </div>
+              <div class="stars-row">
+                <span *ngFor="let s of starsArray(r.rating)" class="star sm">{{ s }}</span>
+              </div>
+              <p class="review-comment">{{ r.comment }}</p>
+              <button class="helpful-btn" (click)="markHelpful(r.id)">
+                👍 Helpful ({{ r.helpful }})
+              </button>
+            </div>
+            <p *ngIf="reviews.length === 0" class="no-reviews">No reviews yet. Be the first!</p>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Sidebar ─────────────────────────────────────────────────────── -->
+    <div class="sidebar">
+
+      <!-- Enroll card -->
+      <div *ngIf="!isEnrolled" class="enroll-card">
+        <p class="enroll-price">{{ course.price === 0 ? 'Free' : '$' + course.price }}</p>
+        <p class="enroll-meta">{{ course.lessonCount }} lessons</p>
+        <button class="btn-enroll" [disabled]="enrolling" (click)="enroll()">
+          {{ enrolling ? 'Enrolling…' : (course.price > 0 ? 'Buy & Enroll' : 'Enroll now') }}
+        </button>
+        <p class="guarantee">30-day money-back guarantee</p>
+      </div>
+
+      <!-- Lessons list -->
+      <div class="lessons-card">
+        <div class="lessons-card-title">
+          Lessons
+          <span class="lesson-count-badge">{{ lessons.length }}</span>
+        </div>
+
+        <div
+          *ngFor="let lesson of lessons; let i = index"
+          class="lesson-row"
+          [class.active]="activeLesson?.id === lesson.id"
+          (click)="selectLesson(lesson, i)">
+
+          <div class="check-circle" [class.done]="lesson.completed">
+            <span *ngIf="lesson.completed">✓</span>
+          </div>
+          <span class="lesson-row-title">{{ lesson.title }}</span>
+          <div class="lesson-row-right">
+            <span *ngIf="lesson.bookmarked" class="bm-icon">🔖</span>
+            <span class="lesson-row-dur">{{ lesson.duration }}m</span>
+          </div>
+        </div>
+
+        <div *ngIf="lessons.length === 0" class="no-lessons">Enroll to see lessons</div>
+      </div>
+
+      <!-- Bookmarked lessons -->
+      <div *ngIf="isEnrolled" class="bookmarks-card">
+        <div class="lessons-card-title">Bookmarked</div>
+        <ng-container *ngFor="let lesson of lessons; let i = index">
+          <div *ngIf="lesson.bookmarked" class="lesson-row" (click)="selectLesson(lesson, i)">
+            <span class="lesson-row-title">🔖 {{ lesson.title }}</span>
+          </div>
+        </ng-container>
+        <!-- FIX: replaced !lessons.some(l => l.bookmarked) with !hasBookmarks getter -->
+        <p *ngIf="!hasBookmarks" class="no-lessons">No bookmarks yet</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Payment Modal ──────────────────────────────────────────────────────── -->
+<div class="modal-backdrop" [style.display]="showPaymentModal ? 'flex' : 'none'" (click)="closePaymentModal()">
+  <div class="payment-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <span>Enroll in {{ course?.title }}</span>
+      <button class="modal-close" (click)="closePaymentModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Method -->
+      <div class="field">
+        <label>Payment method</label>
+        <div class="method-row">
+          <button class="method-btn" [class.selected]="paymentMethod === 'CARD'" (click)="paymentMethod = 'CARD'">💳 Card</button>
+          <button class="method-btn" [class.selected]="paymentMethod === 'PAYPAL'" (click)="paymentMethod = 'PAYPAL'">🅿 PayPal</button>
+          <button class="method-btn" [class.selected]="paymentMethod === 'BANK_TRANSFER'" (click)="paymentMethod = 'BANK_TRANSFER'">🏦 Bank</button>
+        </div>
+      </div>
+
+      <!-- Coupon -->
+      <div class="field">
+        <label>Coupon code (optional)</label>
+        <div class="coupon-row">
+          <input class="coupon-input" placeholder="Enter code…" [(ngModel)]="couponCode" />
+          <button class="btn-apply" [disabled]="validatingCoupon" (click)="validateCoupon()">
+            {{ validatingCoupon ? '…' : 'Apply' }}
+          </button>
+        </div>
+        <p *ngIf="couponResult?.valid" class="coupon-ok">
+          ✓ Saves ${{ couponResult!.discountAmount?.toFixed(2) }}
+        </p>
+        <p *ngIf="couponResult && !couponResult.valid" class="coupon-err">
+          {{ couponResult.errorMessage }}
+        </p>
+      </div>
+
+      <!-- Price summary -->
+      <div class="price-summary">
+        <div class="price-row">
+          <span>Original price</span>
+          <span>${{ course?.price }}</span>
+        </div>
+        <div *ngIf="couponResult?.valid" class="price-row discount">
+          <span>Discount</span>
+          <span>-${{ couponResult!.discountAmount?.toFixed(2) }}</span>
+        </div>
+        <div class="price-row total">
+          <span>Total</span>
+          <span>${{ finalPrice.toFixed(2) }}</span>
+        </div>
+      </div>
+
+      <p class="guarantee-note">🛡️ 30-day money-back guarantee</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closePaymentModal()">Cancel</button>
+      <button class="btn-pay" [disabled]="processingPayment" (click)="pay()">
+        {{ processingPayment ? 'Processing…' : 'Pay $' + finalPrice.toFixed(2) }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Certificate Modal ──────────────────────────────────────────────────── -->
+<!-- FIX: replaced (click)="showCertModal = false" with closeCertModal() -->
+<div class="modal-backdrop" [style.display]="showCertModal ? 'flex' : 'none'" (click)="closeCertModal()">
+  <div class="cert-modal" (click)="$event.stopPropagation()">
+    <div class="cert-icon">🏆</div>
+    <h2 class="cert-title">Congratulations!</h2>
+    <p class="cert-subtitle">You have completed <strong>{{ course?.title }}</strong></p>
+    <p *ngIf="certificate" class="cert-code">
+      Certificate code: <code>{{ certificate.verificationCode }}</code>
+    </p>
+    <div class="cert-actions">
+      <a *ngIf="certificate" [href]="certificate.url" target="_blank" class="btn-download">
+        ⬇ Download certificate
+      </a>
+      <!-- FIX: replaced (click)="showCertModal = false" with closeCertModal() -->
+      <button class="btn-cancel" (click)="closeCertModal()">Close</button>
+    </div>
+  </div>
+</div>
