@@ -8,9 +8,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { BackofficeLayoutComponent } from './backoffice-layout.component';
-import { AdminAdsComponent } from '../pages/admin/ads/admin-ads.component';
 import { AdminUsersComponent } from '../pages/admin/user/admin-user.component';
-import { AdminCoursComponent } from '../pages/admin/cours/admin-cours.component';
 
 @NgModule({
   declarations: [
@@ -19,9 +17,7 @@ import { AdminCoursComponent } from '../pages/admin/cours/admin-cours.component'
     SidebarComponent,
     FooterComponent,
     DashboardComponent,
-    AdminAdsComponent,
     AdminUsersComponent,
-    AdminCoursComponent
   ],
   imports: [
     CommonModule,

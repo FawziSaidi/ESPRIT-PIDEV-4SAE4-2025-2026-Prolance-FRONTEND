@@ -6,7 +6,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatRippleModule } from '@angular/material/core';
 
 import { UserDashboardComponent } from '../../authentification/user-dashboard/user-dashboard.component';
-import { AdCenterComponent } from '../../pages/ads/ad-center.component';
 import { ProfileComponent } from '../../pages/user/profile.component';
 import { SupportChatComponent } from '../../components/support-chat/support-chat.component';  // ← ADD THIS
 
@@ -14,12 +13,8 @@ import { SupportChatComponent } from '../../components/support-chat/support-chat
 const userRoutes: Routes = [
   { path: '',          redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard', component: UserDashboardComponent },
-  { path: 'ads',       component: AdCenterComponent },
   { path: 'profile',   component: ProfileComponent },
-  {
-    path: 'cours',
-    loadChildren: () => import('../../pages/cours/cours.module').then(m => m.CoursModule)
-  },
+ 
 ];
 
 @NgModule({
@@ -33,7 +28,6 @@ const userRoutes: Routes = [
   ],
   declarations: [
     UserDashboardComponent,
-    AdCenterComponent,
     ProfileComponent,
     SupportChatComponent,
   ]
