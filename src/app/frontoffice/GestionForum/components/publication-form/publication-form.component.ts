@@ -11,9 +11,9 @@ interface ImagePreview {
 }
 
 interface PdfPreview {
-  file?: File;           // new file to upload
-  existingName?: string; // existing file name (edit mode)
-  fileName: string;      // display name
+  file?: File;
+  existingName?: string;
+  fileName: string;
 }
 
 @Component({
@@ -33,11 +33,9 @@ export class PublicationFormComponent implements OnInit {
     type: TypePublication.ARTICLE
   };
 
-  // ✅ Images
   imagePreviews: ImagePreview[] = [];
   readonly MAX_IMAGES = 5;
 
-  // ✅ PDFs
   pdfPreviews: PdfPreview[] = [];
   readonly MAX_PDFS = 5;
 
@@ -45,8 +43,8 @@ export class PublicationFormComponent implements OnInit {
 
   typeOptions = [
     { value: TypePublication.QUESTION, label: 'Question', icon: '❓' },
-    { value: TypePublication.ARTICLE, label: 'Article', icon: '📝' },
-    { value: TypePublication.REVIEW, label: 'Review', icon: '⭐' }
+    { value: TypePublication.ARTICLE,  label: 'Article',  icon: '📝' },
+    { value: TypePublication.REVIEW,   label: 'Review',   icon: '⭐' }
   ];
 
   errors = {
@@ -62,7 +60,8 @@ export class PublicationFormComponent implements OnInit {
   moderating: boolean = false;
   moderationErrors: string[] = [];
 
-  // ✅ AI Generation state
+  isOffTopic: boolean = false;
+
   generatingContent: boolean = false;
   aiError: string = '';
   showRegenerateBtn: boolean = false;
@@ -74,7 +73,8 @@ export class PublicationFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const userId = this.authService.getCurrentUserId();
+    // ✅ FIX: utiliser getCurrentUser()?.id au lieu de getCurrentUserId()
+    const userId = this.authService.getCurrentUser()?.id;
     if (userId) {
       this.currentUserId = userId;
     } else {
@@ -87,12 +87,10 @@ export class PublicationFormComponent implements OnInit {
         contenue: this.publication.contenue,
         type: this.publication.type
       };
-      // ✅ Restore style
       if (this.publication.titleColor)    this.titleColor    = this.publication.titleColor;
       if (this.publication.contentColor)  this.contentColor  = this.publication.contentColor;
       if (this.publication.titleFontSize) this.titleFontSize = this.publication.titleFontSize;
 
-      // Load existing images
       if (this.publication.images && this.publication.images.length > 0) {
         this.imagePreviews = this.publication.images.map(name => ({
           existingName: name,
@@ -100,7 +98,6 @@ export class PublicationFormComponent implements OnInit {
         }));
       }
 
-      // Load existing PDFs
       if (this.publication.pdfs && this.publication.pdfs.length > 0) {
         this.pdfPreviews = this.publication.pdfs.map(name => ({
           existingName: name,
@@ -123,7 +120,7 @@ export class PublicationFormComponent implements OnInit {
 
     for (const file of filesToProcess) {
       if (!file.type.startsWith('image/')) { this.errors.images = `"${file.name}" is not a valid image`; continue; }
-      if (file.size > 5 * 1024 * 1024) { this.errors.images = `"${file.name}" exceeds 5 MB`; continue; }
+      if (file.size > 5 * 1024 * 1024)    { this.errors.images = `"${file.name}" exceeds 5 MB`; continue; }
       const reader = new FileReader();
       reader.onload = (e: any) => { this.imagePreviews.push({ file, previewUrl: e.target.result }); };
       reader.readAsDataURL(file);
@@ -146,8 +143,8 @@ export class PublicationFormComponent implements OnInit {
     this.errors.pdfs = '';
 
     for (const file of filesToProcess) {
-      if (file.type !== 'application/pdf') { this.errors.pdfs = `"${file.name}" is not a valid PDF`; continue; }
-      if (file.size > 100 * 1024 * 1024) { this.errors.pdfs = `"${file.name}" exceeds 100 MB`; continue; }
+      if (file.type !== 'application/pdf')    { this.errors.pdfs = `"${file.name}" is not a valid PDF`; continue; }
+      if (file.size > 100 * 1024 * 1024)     { this.errors.pdfs = `"${file.name}" exceeds 100 MB`; continue; }
       this.pdfPreviews.push({ file, fileName: file.name });
     }
     event.target.value = '';
@@ -177,16 +174,9 @@ export class PublicationFormComponent implements OnInit {
 
     if (!this.formData.type) { this.errors.type = 'Type is required'; isValid = false; }
 
-    // ✅ Block images/PDFs for QUESTION type
     if (this.formData.type === TypePublication.QUESTION) {
-      if (this.imagePreviews.length > 0) {
-        this.errors.images = 'Images are not allowed for Question type posts.';
-        isValid = false;
-      }
-      if (this.pdfPreviews.length > 0) {
-        this.errors.pdfs = 'PDFs are not allowed for Question type posts.';
-        isValid = false;
-      }
+      if (this.imagePreviews.length > 0) { this.errors.images = 'Images are not allowed for Question type posts.'; isValid = false; }
+      if (this.pdfPreviews.length > 0)   { this.errors.pdfs   = 'PDFs are not allowed for Question type posts.';  isValid = false; }
     }
 
     return isValid;
@@ -195,26 +185,23 @@ export class PublicationFormComponent implements OnInit {
   // ── Submit ────────────────────────────────────────────────────
   onSubmit(): void {
     if (!this.validateForm()) return;
+
+    this.isOffTopic = false;
     this.moderating = true;
     this.moderationErrors = [];
     this.errorMessage = '';
 
-    // Collect images with mimeType for visual moderation
     const imageBase64List = this.imagePreviews
       .filter(p => p.file)
-      .map(p => ({
-        base64: p.previewUrl,
-        mimeType: p.file!.type || 'image/jpeg'
-      }));
+      .map(p => ({ base64: p.previewUrl, mimeType: p.file!.type || 'image/jpeg' }));
 
-    // Pass actual PDF files for text extraction
     const pdfFiles = this.pdfPreviews
       .filter(p => p.file)
       .map(p => ({ file: p.file!, fileName: p.fileName }));
 
     this.aiContentService.moderateContent({
-      titre: this.formData.titre.trim(),
-      contenue: this.formData.contenue.trim(),
+      titre:          this.formData.titre.trim(),
+      contenue:       this.formData.contenue.trim(),
       imageBase64List,
       pdfFiles
     }).subscribe({
@@ -222,13 +209,19 @@ export class PublicationFormComponent implements OnInit {
         this.moderating = false;
         if (!result.approved) {
           this.moderationErrors = result.reasons;
+          this.isOffTopic = result.reasons.some(r =>
+            r.toLowerCase().includes('hors sujet') ||
+            r.toLowerCase().includes('plateforme') ||
+            r.toLowerCase().includes('ui/ux') ||
+            r.toLowerCase().includes('développement')
+          );
           return;
         }
         this.submitToBackend();
       },
       error: () => {
         this.moderating = false;
-        this.submitToBackend(); // en cas d'erreur AI → on laisse passer
+        this.submitToBackend(); // fail-open si erreur AI
       }
     });
   }
@@ -238,16 +231,16 @@ export class PublicationFormComponent implements OnInit {
     this.errorMessage = '';
 
     const formData = new FormData();
-    formData.append('titre', this.formData.titre.trim());
-    formData.append('contenue', this.formData.contenue.trim());
-    formData.append('type', this.formData.type);
-    formData.append('userId', this.currentUserId.toString());
-    formData.append('titleColor', this.titleColor);
-    formData.append('contentColor', this.contentColor);
+    formData.append('titre',         this.formData.titre.trim());
+    formData.append('contenue',      this.formData.contenue.trim());
+    formData.append('type',          this.formData.type);
+    formData.append('userId',        this.currentUserId.toString());
+    formData.append('titleColor',    this.titleColor);
+    formData.append('contentColor',  this.contentColor);
     formData.append('titleFontSize', this.titleFontSize);
 
     for (const p of this.imagePreviews.filter(p => p.file)) formData.append('images', p.file!);
-    for (const p of this.pdfPreviews.filter(p => p.file)) formData.append('pdfs', p.file!);
+    for (const p of this.pdfPreviews.filter(p => p.file))  formData.append('pdfs',   p.file!);
 
     if (this.mode === 'create') {
       this.createPublication(formData);
@@ -263,12 +256,12 @@ export class PublicationFormComponent implements OnInit {
       next: () => { this.loading = false; this.saved.emit(); },
       error: (error) => {
         this.loading = false;
-        if (typeof error.error === 'string') {
-          this.errorMessage = error.error;
-        } else if (error.error?.message) {
-          this.errorMessage = error.error.message;
+        const msg: string = typeof error.error === 'string' ? error.error : (error.error?.message || '');
+        if (msg.startsWith('HORS_SUJET:')) {
+          this.isOffTopic = true;
+          this.moderationErrors = [msg.replace('HORS_SUJET:', '').trim()];
         } else {
-          this.errorMessage = 'Error creating the post. Please try again.';
+          this.errorMessage = msg || 'Error creating the post. Please try again.';
         }
       }
     });
@@ -279,12 +272,12 @@ export class PublicationFormComponent implements OnInit {
       next: () => { this.loading = false; this.saved.emit(); },
       error: (error) => {
         this.loading = false;
-        if (typeof error.error === 'string') {
-          this.errorMessage = error.error;
-        } else if (error.error?.message) {
-          this.errorMessage = error.error.message;
+        const msg: string = typeof error.error === 'string' ? error.error : (error.error?.message || '');
+        if (msg.startsWith('HORS_SUJET:')) {
+          this.isOffTopic = true;
+          this.moderationErrors = [msg.replace('HORS_SUJET:', '').trim()];
         } else {
-          this.errorMessage = 'Error updating the post. Please try again.';
+          this.errorMessage = msg || 'Error updating the post. Please try again.';
         }
       }
     });
@@ -319,12 +312,11 @@ export class PublicationFormComponent implements OnInit {
     });
   }
 
-  // ✅ Style options
+  // ── Style options ──────────────────────────────────────────────
   titleColor: string = '#1c1e21';
   contentColor: string = '#1c1e21';
   titleFontSize: string = '1.3rem';
 
-  // ✅ Popover visibility
   showTitleColorPicker: boolean = false;
   showTitleSizePicker: boolean = false;
   showContentColorPicker: boolean = false;
@@ -335,21 +327,19 @@ export class PublicationFormComponent implements OnInit {
   ];
 
   readonly fontSizes = [
-    { label: 'S',  value: '1rem' },
-    { label: 'M',  value: '1.3rem' },
-    { label: 'L',  value: '1.7rem' },
-    { label: 'XL', value: '2.1rem' },
+    { label: 'S',  value: '1rem'  },
+    { label: 'M',  value: '1.3rem'},
+    { label: 'L',  value: '1.7rem'},
+    { label: 'XL', value: '2.1rem'},
   ];
 
-  // ✅ Called on every type change — clears files if QUESTION is selected
   onTypeChange(): void {
     if (this.formData.type === TypePublication.QUESTION) {
       this.imagePreviews = [];
-      this.pdfPreviews = [];
+      this.pdfPreviews   = [];
       this.errors.images = '';
-      this.errors.pdfs = '';
+      this.errors.pdfs   = '';
     }
-    // Reset AI state on type change
     this.showRegenerateBtn = false;
     this.aiError = '';
   }

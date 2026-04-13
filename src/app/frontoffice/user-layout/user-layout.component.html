@@ -3,10 +3,10 @@
   <div class="container navbar-inner">
 
     <!-- Brand -->
-    <a class="navbar-brand" routerLink="/app/dashboard">
-      <img src="assets/img/prolance.png" alt="Prolance" class="brand-logo" />
-      <span class="brand-text">Prolance</span>
-    </a>
+<a class="navbar-brand" routerLink="/app/dashboard">
+  <img src="assets/img/prolance.png" alt="Prolance" class="brand-logo">
+  <span class="brand-text">Prolance</span>
+</a>
 
     <!-- Mobile Toggle -->
     <button class="navbar-toggler" (click)="toggleMobileMenu()">
@@ -15,60 +15,76 @@
 
     <!-- Nav Links -->
     <div class="navbar-links" [class.open]="mobileMenuOpen">
-          <a class="nav-link" routerLink="/app/dashboard" routerLinkActive="active" (click)="mobileMenuOpen = false">
+          <a class="dropdown-item" routerLink="/app/dashboard" (click)="profileDropdownOpen = false">
             <i class="material-icons">dashboard</i> Dashboard
           </a>
            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
             <i class="material-icons">folder_shared</i> Projects
           </a>
+          <!-- ← MODIFIÉ : lien Forum activé avec routerLink -->
           <a class="nav-link" routerLink="/app/forum" routerLinkActive="active" (click)="mobileMenuOpen = false">
             <i class="material-icons">forum</i> Forum
           </a>
-          <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+          <a class="nav-link" routerLink="/app/ads" routerLinkActive="active" (click)="mobileMenuOpen = false">
             <i class="material-icons">campaign</i> Publicité
           </a>
+          <a class="nav-link" routerLink="/app/cours" routerLinkActive="active" (click)="mobileMenuOpen = false">
+  <i class="material-icons">school</i> Courses
+</a>
           <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
             <i class="material-icons">event</i> Événement
           </a>
     </div>
 
-    <!-- Right Section -->
-    <div class="navbar-right">
-      <!-- Role Badge (statique – reflète le rôle du compte connecté) -->
-      <div class="role-badge-group">
-        <span class="role-badge" [class.active]="isFreelancer">Freelancer</span>
-        <span class="role-badge" [class.active]="isClient">Client</span>
+<!-- Right Section -->
+<div class="navbar-right">
+  <!-- Role Switcher comme dans l'image -->
+  <div class="role-switch">
+    <button 
+      class="role-btn" 
+      [class.active]="currentRole === 'freelancer'"
+      (click)="toggleRole('freelancer')">
+      FREELANCER
+    </button>
+    <button 
+      class="role-btn" 
+      [class.active]="currentRole === 'client'"
+      (click)="toggleRole('client')">
+      CLIENT
+    </button>
+  </div>
+  
+  <!-- Profile Dropdown -->
+  <div class="profile-dropdown-wrapper">
+    <button class="profile-avatar" (click)="toggleProfileDropdown()">
+      <img *ngIf="currentUser?.imageUrl" 
+           [src]="currentUser!.imageUrl" 
+           alt="avatar"
+           style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+      <i class="material-icons" *ngIf="!currentUser?.imageUrl">person</i>
+    </button>
+    <div class="profile-dropdown" [class.open]="profileDropdownOpen">
+      <!-- reste du dropdown inchangé -->
+      <div class="dropdown-header">
+        <span class="dropdown-name">
+          {{ currentUser ? currentUser.name + ' ' + currentUser.lastName : 'Guest' }}
+        </span>
+        <span class="dropdown-role">{{ currentRole | titlecase }}</span>
       </div>
-
-      <!-- Profile Dropdown -->
-      <div class="profile-dropdown-wrapper">
-        <button class="profile-avatar" (click)="toggleProfileDropdown()">
-          <i class="material-icons">person</i>
-        </button>
-        <div class="profile-dropdown" [class.open]="profileDropdownOpen">
-          <div class="dropdown-header">
-            <div class="dropdown-avatar">{{ userInitials }}</div>
-            <div class="dropdown-user-info">
-              <span class="dropdown-name">{{ userName || 'Chargement…' }}</span>
-              <span class="dropdown-email">{{ userEmail }}</span>
-              <span class="dropdown-role">{{ currentRole | titlecase }}</span>
-            </div>
-          </div>
-
-          <div class="dropdown-divider"></div>
-            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-              <i class="material-icons">person</i> Profil
-            </a>
-            <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
-              <i class="material-icons">track_changes</i> Suivie projets
-            </a>
-          <div class="dropdown-divider"></div>
-          <a class="dropdown-item logout-item" (click)="logout(); profileDropdownOpen = false">
-            <i class="material-icons">logout</i> Logout
-          </a>
-        </div>
-      </div>
+      <div class="dropdown-divider"></div>
+      <a class="nav-link" routerLink="/app/profile" (click)="mobileMenuOpen = false">
+        <i class="material-icons">person</i> Profile
+      </a>
+      <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
+        <i class="material-icons">track_changes</i> Suivie projets
+      </a>
+      <div class="dropdown-divider"></div>
+      <a class="dropdown-item logout-item" (click)="logout(); profileDropdownOpen = false">
+        <i class="material-icons">logout</i> Logout
+      </a>
     </div>
+  </div>
+</div>
 
   </div>
 </nav>

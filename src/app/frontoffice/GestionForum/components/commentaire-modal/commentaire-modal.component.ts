@@ -123,7 +123,7 @@ export class CommentaireModalComponent implements OnInit {
   ];
 
   // ✅ GIF PICKER — GIPHY API
-  private readonly GIPHY_API_KEY = 'eZt5wvGwdhhEimbbSHRoUnxAHhLkPcCj';
+  private readonly GIPHY_API_KEY = '';
   showGifPicker: boolean = false;
   activeGifField: 'new' | 'reply' | 'edit' | null = null;
   gifSearchQuery: string = '';
@@ -145,7 +145,8 @@ export class CommentaireModalComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const userId = this.authService.getCurrentUserId();
+    // ✅ FIX: utiliser getCurrentUser()?.id au lieu de getCurrentUserId()
+    const userId = this.authService.getCurrentUser()?.id;
     if (userId) this.currentUserId = userId;
 
     if (!this.publication || !this.publication.id) {
@@ -159,10 +160,6 @@ export class CommentaireModalComponent implements OnInit {
     this.loadCommentaires();
     this.loadTrendingGifs();
   }
-
-  // ─────────────────────────────────────────────────
-  // ✅ MODE SELECTOR
-  // ─────────────────────────────────────────────────
 
   // ─────────────────────────────────────────────────
   // ✅ EMOJI METHODS
@@ -566,7 +563,18 @@ export class CommentaireModalComponent implements OnInit {
     if (commentaire.user?.id === this.currentUserId) {
       this.cancelReply();
       this.editingCommentaireId = commentaire.id!;
-      this.editingContent = commentaire.contenue;
+
+      const gifUrl = this.extractGifUrl(commentaire.contenue);
+      if (gifUrl) {
+        this.selectedGifEdit = gifUrl;
+        this.editingContent = commentaire.contenue
+          .replace(/\n?\[GIF:https?:\/\/[^\]]+\]/g, '')
+          .trim();
+      } else {
+        this.selectedGifEdit = null;
+        this.editingContent = commentaire.contenue;
+      }
+
       this.moderationEditError = '';
     }
   }

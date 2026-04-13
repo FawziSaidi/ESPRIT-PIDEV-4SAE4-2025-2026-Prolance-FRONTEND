@@ -9,14 +9,15 @@ export class SidebarComponent implements OnInit {
   activeMenu: string = 'dashboard';
 
   menuItems = [
-    { id: 'dashboard', icon: '📊', label: 'DASHBOARD', link: '#/admin/dashboard' },
-    { id: 'profile', icon: '👤', label: 'PROFILE', link: '#' },
-    { id: 'users', icon: '👥', label: 'USERS TABLE', link: '#' },
-    { id: 'projet', icon: '📋', label: 'PROJECT', link: '#' },
-    { id: 'forum', icon: '💬', label: 'FORUM ', link: '#/admin/forum' },
-    { id: 'publicite', icon: '📷', label: 'ADVERTISING', link: '#' },
-    { id: 'evenement', icon: '📅', label: 'EVENTS', link: '#' },
-    { id: 'deconnexion', icon: '🔌', label: 'LOGOUT', link: '#' }
+    { id: 'dashboard', icon: '📊', label: 'DASHBOARD', link: '#', route: '/admin/dashboard' },
+    { id: 'profile',   icon: '👤', label: 'PROFILE',   link: '#', route: null },
+    { id: 'users',     icon: '👥', label: 'USERS',     link: '#', route: '/admin/users' },
+    { id: 'projet',    icon: '📋', label: 'PROJET',    link: '#', route: null },
+    { id: 'forum',     icon: '💬', label: 'FORUM',     link: '#', route: '/admin/forum' }, // ← route activée
+    { id: 'ads',       icon: '📷', label: 'ADS',       link: '#', route: '/admin/ads' },
+    { id: 'evenement', icon: '📅', label: 'EVENTS',    link: '#', route: null },
+    { id: 'cours',     icon: '🎓', label: 'COURSES',   link: '#', route: '/admin/cours' },
+    { id: 'logout',    icon: '🔌', label: 'LOGOUT',    link: '#', route: null }
   ];
 
   constructor() { }
@@ -25,5 +26,6 @@ export class SidebarComponent implements OnInit {
 
   setActiveMenu(menuId: string): void {
     this.activeMenu = menuId;
+    console.log('Menu actif:', menuId);
   }
 }

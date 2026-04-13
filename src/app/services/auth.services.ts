@@ -1,13 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { AuthRequest, AuthResponse, RegisterRequest } from '../authentification/auth/auth.module';
+import { Observable, BehaviorSubject, tap } from 'rxjs';
+import { AuthRequest, AuthResponse, RegisterRequest } from '../authentification/auth/auth.models';
 
 export interface SessionUser {
+  id: number;
   email: string;
   role: 'ADMIN' | 'USER' | 'CLIENT' | 'FREELANCER';
   token: string;
-  userId: number;
+  name: string;
+  lastName: string;
+  imageUrl?: string;
+  bio?: string;
 }
 
 @Injectable({
@@ -17,7 +21,6 @@ export class AuthService {
 
   private apiUrl = 'http://localhost:8222/api/auth';
 
-  // 🔐 session state (single source of truth)
   private currentUserSubject = new BehaviorSubject<SessionUser | null>(
     this.getUserFromStorage()
   );
@@ -32,24 +35,38 @@ export class AuthService {
   }
 
   login(request: AuthRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, request);
+    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, request).pipe(
+      tap((response) => {
+        console.log('Login response:', response);
+        this.setSession(response, request.email);
+      })
+    );
   }
 
   // ---------- SESSION ----------
-  setSession(res: AuthResponse, email: string): void {
+  setSession(res: AuthResponse | SessionUser, email: string): void {
     const user: SessionUser = {
+      id: (res as any).id,
       email,
-      role: res.role,
-      token: res.token,
-      userId: res.id
+      role: (res as any).role,
+      token: (res as any).token,
+      name: (res as any).name,
+      lastName: (res as any).lastName,
+      imageUrl: (res as any).imageUrl ?? undefined
     };
 
+    console.log('Setting session user:', user);
     localStorage.setItem('sessionUser', JSON.stringify(user));
     this.currentUserSubject.next(user);
   }
 
-  getCurrentUserId(): number | null {
-    return this.currentUserSubject.value?.userId ?? null;
+  // Call this after avatar update to keep navbar in sync
+  updateSessionAvatar(imageUrl: string): void {
+    const current = this.currentUserSubject.value;
+    if (!current) return;
+    const updated: SessionUser = { ...current, imageUrl };
+    localStorage.setItem('sessionUser', JSON.stringify(updated));
+    this.currentUserSubject.next(updated);
   }
 
   logout(): void {
@@ -71,19 +88,6 @@ export class AuthService {
 
   private getUserFromStorage(): SessionUser | null {
     const stored = localStorage.getItem('sessionUser');
-    if (!stored) return null;
-
-    const parsed: SessionUser = JSON.parse(stored);
-
-    // Si la session ne contient pas userId (ancienne session), on la supprime
-    if (!parsed.userId) {
-      localStorage.removeItem('sessionUser');
-      localStorage.removeItem('token');
-      localStorage.removeItem('userName');
-      localStorage.removeItem('role');
-      return null;
-    }
-
-    return parsed;
+    return stored ? JSON.parse(stored) : null;
   }
 }

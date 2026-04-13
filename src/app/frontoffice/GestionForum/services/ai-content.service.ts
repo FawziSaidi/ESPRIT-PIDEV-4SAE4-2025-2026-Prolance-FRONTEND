@@ -1,9 +1,18 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface ModerationResult {
   approved: boolean;
   reasons: string[];
+}
+
+// ── Réponse du microservice ML Python ────────────────────────────
+interface MlModerationResponse {
+  is_relevant: boolean;
+  confidence: number;
+  predicted_label: string;
+  message: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -12,7 +21,10 @@ export class AiContentService {
   private readonly API_KEY = '';
   private readonly API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-  constructor() {}
+  /** URL du microservice ML via l'API Gateway */
+  private readonly ML_MODERATION_URL = 'http://localhost:8222/api/moderation/check';
+
+  constructor(private http: HttpClient) {}
 
   // ── Content Generation ─────────────────────────────────────────
   generateContent(titre: string, type: string): Observable<string> {
@@ -40,7 +52,6 @@ Instructions:
       reader.onload = async (e: any) => {
         try {
           const typedArray = new Uint8Array(e.target.result);
-          // Load pdf.js from CDN if not already loaded
           if (!(window as any).pdfjsLib) {
             await new Promise<void>((res, rej) => {
               const script = document.createElement('script');
@@ -56,15 +67,15 @@ Instructions:
 
           const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
           let fullText = '';
-          const maxPages = Math.min(pdf.numPages, 10); // max 10 pages
+          const maxPages = Math.min(pdf.numPages, 10);
           for (let i = 1; i <= maxPages; i++) {
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
             fullText += content.items.map((item: any) => item.str).join(' ') + '\n';
           }
-          resolve(fullText.trim().substring(0, 3000)); // max 3000 chars
+          resolve(fullText.trim().substring(0, 3000));
         } catch {
-          resolve(''); // if extraction fails, skip
+          resolve('');
         }
       };
       reader.onerror = () => resolve('');
@@ -83,9 +94,7 @@ Instructions:
         role: 'user',
         content: [
           { type: 'image_url', image_url: { url: `data:${mime};base64,${pureBase64}` } },
-          { type: 'text', text: `You are a strict content moderation AI. Analyze this image.
-Check for: violence/fighting/gore, sexual/nudity content, hate symbols/weapons, drug use, bullying.
-Respond ONLY with JSON: {"approved": true, "reasons": []} or {"approved": false, "reasons": ["reason"]}` }
+          { type: 'text', text: `You are a strict content moderation AI. Analyze this image.\nCheck for: violence/fighting/gore, sexual/nudity content, hate symbols/weapons, drug use, bullying.\nRespond ONLY with JSON: {"approved": true, "reasons": []} or {"approved": false, "reasons": ["reason"]}` }
         ]
       }],
       max_tokens: 150,
@@ -106,7 +115,7 @@ Respond ONLY with JSON: {"approved": true, "reasons": []} or {"approved": false,
       .catch(() => ({ approved: true, reasons: [] }));
   }
 
-  // ── Moderate text content ──────────────────────────────────────
+  // ── Moderate text content via Groq ────────────────────────────
   private moderateText(titre: string, contenue: string): Promise<ModerationResult> {
     const prompt = `You are a strict content moderation AI for a professional developer forum.
 Analyze this post for inappropriate content:
@@ -158,6 +167,35 @@ Respond ONLY with JSON: {"approved": true, "reasons": []} or {"approved": false,
       .catch(() => ({ approved: true, reasons: [] }));
   }
 
+  // ── ML Domain Moderation (via microservice Python) ─────────────
+  /**
+   * Vérifie via le microservice ML Python que la publication
+   * est dans le domaine dev / UI-UX.
+   * Retourne { approved: false } si hors sujet.
+   * En cas d'erreur réseau → approve par défaut (fail-open).
+   */
+  private moderateDomain(titre: string, contenue: string): Promise<ModerationResult> {
+    return fetch(this.ML_MODERATION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titre, contenue })
+    })
+      .then(r => r.json())
+      .then((data: MlModerationResponse) => {
+        if (!data.is_relevant) {
+          return {
+            approved: false,
+            reasons: [
+              `Contenu hors sujet (${Math.round(data.confidence * 100)}% de confiance) — ` +
+              `Cette plateforme est réservée au développement logiciel et au design UI/UX.`
+            ]
+          };
+        }
+        return { approved: true, reasons: [] };
+      })
+      .catch(() => ({ approved: true, reasons: [] })); // fail-open si service indisponible
+  }
+
   // ── Main moderation entry point ────────────────────────────────
   moderateContent(params: {
     titre: string;
@@ -170,13 +208,19 @@ Respond ONLY with JSON: {"approved": true, "reasons": []} or {"approved": false,
         try {
           const checks: Promise<{ result: ModerationResult; label: string }>[] = [];
 
-          // 1. Text moderation
+          // 1. Vérification domaine ML (Python microservice) — prioritaire
+          checks.push(
+            this.moderateDomain(params.titre, params.contenue)
+              .then(r => ({ result: r, label: 'domain' }))
+          );
+
+          // 2. Text moderation (Groq — contenu inapproprié)
           checks.push(
             this.moderateText(params.titre, params.contenue)
               .then(r => ({ result: r, label: 'text' }))
           );
 
-          // 2. Image moderation (visual)
+          // 3. Image moderation (visual)
           params.imageBase64List.forEach((img, i) => {
             checks.push(
               this.moderateImage(img.base64, img.mimeType)
@@ -184,7 +228,7 @@ Respond ONLY with JSON: {"approved": true, "reasons": []} or {"approved": false,
             );
           });
 
-          // 3. PDF text extraction + moderation
+          // 4. PDF text extraction + moderation
           for (const pdf of params.pdfFiles) {
             const pdfText = await this.extractPdfText(pdf.file);
             checks.push(
@@ -202,7 +246,7 @@ Respond ONLY with JSON: {"approved": true, "reasons": []} or {"approved": false,
             if (!result.approved) {
               approved = false;
               result.reasons.forEach(reason => {
-                allReasons.push(label === 'text' ? reason : `${label}: ${reason}`);
+                allReasons.push(label === 'text' || label === 'domain' ? reason : `${label}: ${reason}`);
               });
             }
           });
@@ -210,7 +254,6 @@ Respond ONLY with JSON: {"approved": true, "reasons": []} or {"approved": false,
           observer.next({ approved, reasons: allReasons });
           observer.complete();
         } catch {
-          // On error, approve by default
           observer.next({ approved: true, reasons: [] });
           observer.complete();
         }

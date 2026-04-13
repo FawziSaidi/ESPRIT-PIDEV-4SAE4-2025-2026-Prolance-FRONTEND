@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { AuthService } from '../../services/auth.services';
+import { RoleService } from '../../services/role.service';
+import { AuthService, SessionUser } from '../../services/auth.services';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-user-layout',
@@ -13,35 +14,17 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   profileDropdownOpen = false;
   mobileMenuOpen = false;
   currentYear = new Date().getFullYear();
-
-  // Infos utilisateur connecté
-  userName = '';
-  userEmail = '';
+  currentUser: SessionUser | null = null;
+  private destroy$ = new Subject<void>();
 
   get currentRole(): string {
-    const role = this.authService.getRole();
-    return role ? role.toLowerCase() : '';
-  }
-
-  get isFreelancer(): boolean {
-    return this.currentRole === 'freelancer';
-  }
-
-  get isClient(): boolean {
-    return this.currentRole === 'client';
-  }
-
-  // Initiales pour l'avatar
-  get userInitials(): string {
-    if (!this.userName) return '?';
-    const parts = this.userName.trim().split(' ');
-    return parts.map(p => p.charAt(0).toUpperCase()).slice(0, 2).join('');
+    return this.roleService.currentRole;
   }
 
   constructor(
     private router: Router,
-    private authService: AuthService,
-    private http: HttpClient
+    private roleService: RoleService,
+    private authService: AuthService
   ) {}
 
   @HostListener('window:scroll')
@@ -57,33 +40,28 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnInit(): void {
-    document.body.classList.add('user-portal');
-    this.loadCurrentUser();
-  }
+ngOnInit(): void {
+  document.body.classList.add('user-portal');
+  
+  // Read immediately first
+  this.currentUser = this.authService.getCurrentUser();
+  
+  // Then subscribe for changes
+  this.authService.currentUser$
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(user => {
+      this.currentUser = user;
+    });
+}
 
   ngOnDestroy(): void {
     document.body.classList.remove('user-portal');
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  loadCurrentUser(): void {
-    const session = this.authService.getCurrentUser();
-    if (!session) return;
-
-    // L'email est déjà dans la session
-    this.userEmail = session.email;
-
-    // Charger le nom depuis l'API users
-    this.http.get<any>(`http://localhost:8222/users/${session.userId}`).subscribe({
-      next: (user) => {
-        const full = [user.name, user.lastName].filter(Boolean).join(' ').trim();
-        this.userName = full || session.email;
-      },
-      error: () => {
-        // Fallback sur l'email si l'API échoue
-        this.userName = session.email;
-      }
-    });
+  toggleRole(role: 'freelancer' | 'client'): void {
+    this.roleService.setRole(role);
   }
 
   toggleProfileDropdown(): void {
@@ -99,7 +77,7 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    this.authService.logout();
+    this.authService.logout(); // ← also clear the session properly
     this.router.navigate(['/login']);
   }
 }

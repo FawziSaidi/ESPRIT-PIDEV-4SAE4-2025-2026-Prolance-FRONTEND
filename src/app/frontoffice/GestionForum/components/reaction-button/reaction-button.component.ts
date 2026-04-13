@@ -65,7 +65,8 @@ export class ReactionButtonComponent implements OnInit, OnChanges {
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
     if (user) {
-      this.userId   = user.userId;
+      // ✅ FIX: utiliser user.id au lieu de user.userId
+      this.userId   = user.id;
       this.userName = user.email;
     }
     this.loadSummary();
@@ -81,7 +82,6 @@ export class ReactionButtonComponent implements OnInit, OnChanges {
     this.reactionService.getSummary(this.publicationId, this.userId).subscribe({
       next: (data) => {
         this.summary = data;
-        // Ensure null (not undefined) for userReaction
         if (!this.summary.userReaction) this.summary.userReaction = null;
       },
       error: (err) => {
@@ -105,7 +105,6 @@ export class ReactionButtonComponent implements OnInit, OnChanges {
     this.loading  = true;
     this.errorMsg = '';
 
-    // ✅ Optimistic update — change UI immediately
     const previous = { ...this.summary };
     this.applyOptimistic(type);
     this.pickerVisible = false;
@@ -113,13 +112,11 @@ export class ReactionButtonComponent implements OnInit, OnChanges {
     this.reactionService.toggleReaction(this.publicationId, this.userId, type).subscribe({
       next: () => {
         this.loading = false;
-        // Reload from DB to get accurate state
         this.loadSummary();
       },
       error: (err) => {
         console.error('[ReactionButton] toggleReaction error:', err);
         this.loading = false;
-        // Rollback optimistic update on error
         this.summary = previous;
         this.errorMsg = 'Error saving reaction. Please try again.';
         setTimeout(() => { this.errorMsg = ''; }, 3000);
@@ -127,24 +124,18 @@ export class ReactionButtonComponent implements OnInit, OnChanges {
     });
   }
 
-  /**
-   * Apply the reaction change immediately in the UI (before server response).
-   */
   private applyOptimistic(type: ReactionType): void {
     const prev = this.summary.userReaction;
 
     if (prev === type) {
-      // Remove reaction
       this.summary[type]--;
       this.summary.userReaction = null;
       this.summary.reactors = this.summary.reactors.filter(r => r.userId !== this.userId);
     } else {
       if (prev) {
-        // Remove old
         this.summary[prev]--;
         this.summary.reactors = this.summary.reactors.filter(r => r.userId !== this.userId);
       }
-      // Add new
       this.summary[type]++;
       this.summary.userReaction = type;
       this.summary.reactors.push({ userId: this.userId, userName: this.userName, type });

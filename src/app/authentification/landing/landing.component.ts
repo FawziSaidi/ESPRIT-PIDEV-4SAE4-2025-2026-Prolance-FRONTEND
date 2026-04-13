@@ -36,7 +36,10 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   private observer!: IntersectionObserver;
   private testimonialInterval: any;
 
-  constructor(private router: Router, private el: ElementRef) {}
+  constructor(
+    private router: Router,
+    private el: ElementRef
+  ) {}
 
   ngOnInit(): void {
     document.body.classList.add('landing-page');
@@ -49,12 +52,8 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnDestroy(): void {
     document.body.classList.remove('landing-page');
-    if (this.observer) {
-      this.observer.disconnect();
-    }
-    if (this.testimonialInterval) {
-      clearInterval(this.testimonialInterval);
-    }
+    if (this.observer) this.observer.disconnect();
+    if (this.testimonialInterval) clearInterval(this.testimonialInterval);
   }
 
   @HostListener('window:scroll')
@@ -90,7 +89,7 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
       });
     }, options);
 
-    const revealElements = this.el.nativeElement.querySelectorAll('.reveal');
+    const revealElements = this.el.nativeElement.querySelectorAll('.reveal:not(.visible)');
     revealElements.forEach((el: Element) => this.observer.observe(el));
   }
 

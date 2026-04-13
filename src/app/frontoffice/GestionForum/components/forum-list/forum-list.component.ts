@@ -39,9 +39,7 @@ export class ForumListComponent implements OnInit {
   }
 
   // ── Blocage utilisateur ───────────────────────────────────────
-  /** true si l'utilisateur courant a ≥ 3 posts archivés */
   isUserBlocked = false;
-  /** Nombre de posts archivés (compteur d'avertissements) */
   archivedCount = 0;
 
   // ── Modal de signalement ──────────────────────────────────────
@@ -106,11 +104,13 @@ export class ForumListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // ✅ FIX: utiliser user.id au lieu de user.userId
     this.authService.currentUser$.subscribe(user => {
-      this.currentUserId = user?.userId ?? 0;
+      this.currentUserId = user?.id ?? 0;
       if (this.currentUserId) this.checkBlockStatus();
     });
-    const userId = this.authService.getCurrentUserId();
+    // ✅ FIX: utiliser getCurrentUser()?.id au lieu de getCurrentUserId()
+    const userId = this.authService.getCurrentUser()?.id;
     if (userId) {
       this.currentUserId = userId;
       this.checkBlockStatus();
@@ -131,8 +131,6 @@ export class ForumListComponent implements OnInit {
   getUserName(userId: number): string {
     return this.usersMap.get(userId) || `User #${userId}`;
   }
-
-  // ── Vérification du statut de blocage ────────────────────────
 
   checkBlockStatus(): void {
     if (!this.currentUserId) return;
@@ -206,14 +204,10 @@ export class ForumListComponent implements OnInit {
   onSearchChange(): void { this.filterPublications(); }
   clearSearch(): void { this.searchQuery = ''; this.filterPublications(); }
 
-  // ── Signalement avec modal ────────────────────────────────────
-
-  /** Vérifie si l'utilisateur courant a déjà signalé ce post */
   hasUserSignaled(publication: Publication): boolean {
     return (publication.signalements ?? []).includes(this.currentUserId);
   }
 
-  /** Ouvre le modal de signalement pour ce post */
   openSignalementModal(publication: Publication): void {
     if (!publication.id || this.hasUserSignaled(publication)) return;
     this.pubToSignal = publication;
@@ -228,7 +222,6 @@ export class ForumListComponent implements OnInit {
   onSignalementReported(updatedPub: Publication): void {
     this.showSignalementModal = false;
 
-    // Mettre à jour la publication localement
     const idx = this.publications.findIndex(p => p.id === updatedPub.id);
     if (idx >= 0) {
       this.publications[idx] = {
@@ -238,7 +231,6 @@ export class ForumListComponent implements OnInit {
       };
     }
 
-    // Si archivée (3 signalements atteints), retirer du feed
     if (updatedPub.statut === 'ARCHIVED') {
       this.publications = this.publications.filter(p => p.id !== updatedPub.id);
       this.showToast('⚠️ This post has been archived after 3 reports.', false);
@@ -256,16 +248,12 @@ export class ForumListComponent implements OnInit {
     this.showToast('⚠️ You have already reported this post.', true);
   }
 
-  // ── Toast ─────────────────────────────────────────────────────
-
   showToast(message: string, isError: boolean): void {
     if (this.toastTimer) clearTimeout(this.toastTimer);
     this.toastMessage = message;
     this.toastIsError = isError;
     this.toastTimer = setTimeout(() => this.toastMessage = '', 4000);
   }
-
-  // ── Modals / CRUD ─────────────────────────────────────────────
 
   openAddModal(): void {
     if (this.isUserBlocked) {
@@ -333,8 +321,6 @@ export class ForumListComponent implements OnInit {
     this.activeMenuId = this.activeMenuId === publicationId ? null : publicationId;
   }
   closeActionMenu(): void { this.activeMenuId = null; }
-
-  // ── Helpers ───────────────────────────────────────────────────
 
   getTimeAgo(date: string): string {
     const now = new Date(); const d = new Date(date);
