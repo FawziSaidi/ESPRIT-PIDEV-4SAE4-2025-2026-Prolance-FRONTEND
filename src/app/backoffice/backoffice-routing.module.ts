@@ -3,7 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { BackofficeLayoutComponent } from './backoffice-layout.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { AdminUsersComponent } from '../pages/admin/user/admin-user.component';
-import { GestionForumComponent } from './GestionForum/gestion-forum.component'; // ← AJOUTÉ
+import { GestionForumComponent } from './GestionForum/gestion-forum.component';
 
 const routes: Routes = [
   {
@@ -13,13 +13,21 @@ const routes: Routes = [
       { path: '',          redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'users',     component: AdminUsersComponent },
-      { path: 'forum',     component: GestionForumComponent }, // ← AJOUTÉ
-    ]
-  }
+      { path: 'forum',     component: GestionForumComponent },
+      // ✅ AJOUTÉ : module subscription lazy-loaded
+      {
+        path: 'subscription',
+        loadChildren: () =>
+          import('./subscriptions/subscriptions.module').then(
+            (m) => m.SubscriptionsModule
+          ),
+      },
+    ],
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule], // ✅ IMPORTANT : nécessaire pour <router-outlet> dans BackofficeLayoutComponent
 })
-export class BackofficeRoutingModule { }
+export class BackofficeRoutingModule {}

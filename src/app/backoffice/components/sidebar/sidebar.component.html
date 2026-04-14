@@ -7,26 +7,15 @@
   </div>
 
   <nav class="menu">
-    <ng-container *ngFor="let item of menuItems">
-      <!-- Items with Angular routes -->
-      <a *ngIf="item.route"
-         [routerLink]="item.route"
-         routerLinkActive="active"
-         [class.active]="activeMenu === item.id"
-         (click)="setActiveMenu(item.id)"
-         class="menu-item">
-        <span class="menu-icon">{{ item.icon }}</span>
-        <span class="menu-label">{{ item.label }}</span>
-      </a>
-      <!-- Placeholder items (no route yet) -->
-      <a *ngIf="!item.route"
-         [href]="item.link"
-         [class.active]="activeMenu === item.id"
-         (click)="setActiveMenu(item.id)"
-         class="menu-item">
-        <span class="menu-icon">{{ item.icon }}</span>
-        <span class="menu-label">{{ item.label }}</span>
-      </a>
-    </ng-container>
+    <div
+      *ngFor="let item of menuItems"
+      [routerLink]="item.link"
+      routerLinkActive="active"
+      [class.active]="activeMenu === item.id"
+      (click)="setActiveMenu(item.id)"
+      class="menu-item">
+      <span class="menu-icon">{{ item.icon }}</span>
+      <span class="menu-label">{{ item.label }}</span>
+    </div>
   </nav>
 </aside>
