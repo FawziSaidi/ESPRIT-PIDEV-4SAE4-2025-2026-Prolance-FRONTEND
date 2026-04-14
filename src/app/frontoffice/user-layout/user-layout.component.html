@@ -28,8 +28,10 @@
           <a class="nav-link" routerLink="/app/ads" routerLinkActive="active" (click)="mobileMenuOpen = false">
             <i class="material-icons">campaign</i> Publicité
           </a>
-          <a class="nav-link" routerLink="/app/cours" routerLinkActive="active" (click)="mobileMenuOpen = false">
-  <i class="material-icons">school</i> Courses
+          
+          <!-- ✅ AJOUTÉ : lien vers les abonnements -->
+<a class="nav-link" routerLink="/app/subscription/plans" routerLinkActive="active" (click)="mobileMenuOpen = false">
+  <i class="material-icons">card_membership</i> Abonnements
 </a>
           <a class="nav-link" href="#" (click)="mobileMenuOpen = false">
             <i class="material-icons">event</i> Événement

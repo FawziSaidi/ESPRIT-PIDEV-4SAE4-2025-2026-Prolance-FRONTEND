@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
-import { CommonModule, } from '@angular/common';
-import { BrowserModule  } from '@angular/platform-browser';
+import { CommonModule } from '@angular/common';
+import { BrowserModule } from '@angular/platform-browser';
 import { Routes, RouterModule } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 
@@ -9,10 +9,8 @@ import { LandingComponent } from './authentification/landing/landing.component';
 import { LoginComponent } from './authentification/auth/login/login.component';
 import { RegisterComponent } from './authentification/auth/register/register.component';
 import { ResetPasswordComponent } from './authentification/auth/reset-password/reset-password.component';
- // ← ADD THIS
 
-
-const routes: Routes =[
+const routes: Routes = [
   {
     path: '',
     component: LandingComponent,
@@ -27,33 +25,48 @@ const routes: Routes =[
     component: RegisterComponent,
   },
   {
-  path: 'reset-password',
-  component: ResetPasswordComponent,
-},
+    path: 'reset-password',
+    component: ResetPasswordComponent,
+  },
   {
     path: 'app',
     component: UserLayoutComponent,
-    children: [{
-      path: '',
-      loadChildren: () => import('./frontoffice/user-layout/user-layout.module').then(m => m.UserLayoutModule)
-    }]
+    children: [
+      {
+        path: '',
+        loadChildren: () =>
+          import('./frontoffice/user-layout/user-layout.module').then(
+            (m) => m.UserLayoutModule
+          ),
+      },
+      // ✅ AJOUTÉ : route subscription manquante
+      {
+        path: 'subscription',
+        loadChildren: () =>
+          import('./frontoffice/subscriptions/subscriptions.module').then(
+            (m) => m.SubscriptionsModule
+          ),
+      },
+    ],
   },
   {
     path: 'admin',
-    loadChildren: () => import('./backoffice/backoffice.module').then(m => m.BackofficeModule)
-  }
+    loadChildren: () =>
+      import('./backoffice/backoffice.module').then(
+        (m) => m.BackofficeModule
+      ),
+  },
 ];
 
 @NgModule({
   imports: [
     CommonModule,
     BrowserModule,
-    HttpClientModule ,
-    RouterModule.forRoot(routes,{
-       useHash: true
-    })
+    HttpClientModule,
+    RouterModule.forRoot(routes, {
+      useHash: true,
+    }),
   ],
-  exports: [
-  ],
+  exports: [RouterModule], // ✅ IMPORTANT : exporte RouterModule sinon <router-outlet> ne fonctionne pas
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}
