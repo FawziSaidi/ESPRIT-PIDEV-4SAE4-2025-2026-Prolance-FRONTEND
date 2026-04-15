@@ -511,13 +511,12 @@
           <!-- Error -->
           <div class="rag-error" *ngIf="ragError && !ragLoading">
             <i class="material-icons">error_outline</i>
-            <p>Something went wrong. The AI service might be unavailable. Please try again.</p>
           </div>
 
           <!-- Results -->
           <div class="rag-results" *ngIf="ragResponse && !ragLoading">
-            <!-- AI Answer -->
-            <div class="rag-answer">
+            <!-- AI Answer (Hidden if it's an Ollama crash/error message) -->
+            <div class="rag-answer" *ngIf="ragResponse.answer && !ragResponse.answer.includes('error occurred while generating') && !ragResponse.answer.includes('llama runner process has terminated') && !ragResponse.answer.includes('500 Internal Server')">
               <div class="rag-answer-header">
                 <i class="material-icons">auto_awesome</i>
                 <span>AI Answer</span>
@@ -560,7 +559,7 @@
             <!-- No ads found -->
             <div class="rag-empty" *ngIf="ragResponse.relevantAds && ragResponse.relevantAds.length === 0">
               <i class="material-icons">search_off</i>
-              <p>No matching ads found, but the AI gave its best answer above.</p>
+              <p>No matching ads found for your search.</p>
             </div>
           </div>
         </div>
