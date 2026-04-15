@@ -382,26 +382,17 @@ export class LandingComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy(): void {
-    // Cleanup ad subscriptions
     this.adSubscriptions.forEach(sub => sub.unsubscribe());
     this.adPlacementManager.cleanup();
 
-    // Cleanup tracking timers
     this.impressionTimers.forEach(timer => clearTimeout(timer));
     this.hoverTimers.forEach(timer => clearTimeout(timer));
     this.impressionTimers.clear();
     this.hoverTimers.clear();
 
-    // Cleanup existing observers and intervals
-    if (this.observer) {
-      this.observer.disconnect();
-    }
-    if (this.impressionObserver) {
-      this.impressionObserver.disconnect();
-    }
-    if (this.testimonialInterval) {
-      clearInterval(this.testimonialInterval);
-    }
+    if (this.observer) this.observer.disconnect();
+    if (this.impressionObserver) this.impressionObserver.disconnect();
+    if (this.testimonialInterval) clearInterval(this.testimonialInterval);
     document.body.classList.remove('landing-page');
   }
 }

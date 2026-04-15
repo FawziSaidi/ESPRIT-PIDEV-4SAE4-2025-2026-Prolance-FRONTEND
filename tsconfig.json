@@ -18,5 +18,14 @@
     "typeRoots": [
       "node_modules/@types"
     ],
+
+    // ✅ Solution principale pour ton erreur face-api.js / webgl2
+    "skipLibCheck": true,
+
+    // Options recommandées (bonus pour plus de stabilité)
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
   }
 }
