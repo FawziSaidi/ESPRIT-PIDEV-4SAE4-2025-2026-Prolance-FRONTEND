@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
+import { link } from 'fs';
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -13,12 +14,13 @@ export class SidebarComponent implements OnInit {
   menuItems = [
     { id: 'dashboard',    icon: '📊', label: 'DASHBOARD',    link: '/admin/dashboard' },
     { id: 'users',        icon: '👥', label: 'USERS',        link: '/admin/users' },
+     { id: 'projects', icon: '📋', label: 'PROJET', link: '/admin/projects' },
     { id: 'forum',        icon: '💬', label: 'FORUM',        link: '/admin/forum' },
-    // ✅ AJOUTÉ : liens subscription
-    { id: 'subscription', icon: '💳', label: 'ABONNEMENTS',  link: '/admin/subscription/list' },
-    { id: 'stats',        icon: '📈', label: 'STATISTIQUES', link: '/admin/subscription/stats' },
-    { id: 'churn',        icon: '🤖', label: 'AI CHURN',     link: '/admin/subscription/churn' },
-    { id: 'promos',       icon: '🎫', label: 'CODES PROMO',  link: '/admin/subscription/promos' },
+    { id: 'evenement', icon: '📅', label: 'ÉVÉNEMENT',              link: '/admin/events' },
+    { id: 'subscription', icon: '💳', label: 'ABONNEMENTS',  link:'/admin/subscription' },
+    //{ id: 'stats',        icon: '📈', label: 'STATISTIQUES', link: '/admin/subscription/stats' },
+    //{ id: 'churn',        icon: '🤖', label: 'AI CHURN',     link: '/admin/subscription/churn' },
+    //{ id: 'promos',       icon: '🎫', label: 'CODES PROMO',  link: '/admin/subscription/promos' },
     { id: 'logout',       icon: '🔌', label: 'LOGOUT',       link: '/login' },
   ];
 

@@ -8,15 +8,21 @@ import { MatRippleModule } from '@angular/material/core';
 import { UserDashboardComponent } from '../../authentification/user-dashboard/user-dashboard.component';
 import { ProfileComponent } from '../../pages/user/profile.component';
 import { SupportChatComponent } from '../../components/support-chat/support-chat.component';
+import { ProjectsComponent } from '../ProjectModule/components/projects/projects.component';
 
 const userRoutes: Routes = [
   { path: '',          redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard', component: UserDashboardComponent },
   { path: 'profile',   component: ProfileComponent },
+ { path: 'projects', component: ProjectsComponent },
   {
     path: 'forum', // ← AJOUTÉ
     loadChildren: () => import('../GestionForum/gestion-forum.module').then(m => m.GestionForumModule)
   },
+   {
+    path: 'events',
+    loadChildren: () => import('../GestionEvenement/gestion-evenement').then(m => m.GestionEvenementModule)
+  }
 ];
 
 @NgModule({
