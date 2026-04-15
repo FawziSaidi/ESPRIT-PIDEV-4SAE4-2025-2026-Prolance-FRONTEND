@@ -61,7 +61,9 @@ export class SubscriptionListComponent implements OnInit {
   ngOnInit(): void {
     this.loadSubscriptions();
   }
-
+refresh(): void {
+    this.loadSubscriptions();
+  }
   loadSubscriptions(): void {
     this.loading = true;
     this.subscriptionService.getAllSubscriptions().subscribe(

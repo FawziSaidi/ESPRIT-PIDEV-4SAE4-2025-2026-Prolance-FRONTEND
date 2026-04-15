@@ -4,6 +4,15 @@ import { BackofficeLayoutComponent } from './backoffice-layout.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { AdminUsersComponent } from '../pages/admin/user/admin-user.component';
 import { GestionForumComponent } from './GestionForum/gestion-forum.component';
+import { AdminProjectsComponent } from './components/admin-projects/admin-projects.component';
+import { EventFormComponent } from './components/event-form/event-form.component';
+import { AdminEventsComponent } from './components/admin-evenement/admin-event.component';
+import { SubscriptionListComponent } from './subscriptions/subscription-list/subscription-list.component';
+import { SubscriptionStatsComponent } from './subscriptions/subscription-stats/subscription-stats.component';
+import { ChurnPredictionComponent } from './subscriptions/churn-prediction/churn-prediction.component';
+import { PromoManagementComponent } from './subscriptions/promo-management/promo-management.component';
+import { SubscriptionMainComponent } from './subscriptions/subscription-main/subscription-main.component';
+import path from 'path/win32';
 
 const routes: Routes = [
   {
@@ -13,14 +22,34 @@ const routes: Routes = [
       { path: '',          redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'users',     component: AdminUsersComponent },
-      { path: 'forum',     component: GestionForumComponent },
-      // ✅ AJOUTÉ : module subscription lazy-loaded
       {
+        path: 'projects',
+        component: AdminProjectsComponent
+      },
+      { path: 'forum',     component: GestionForumComponent },
+      {
+        path: 'events',
+        component: AdminEventsComponent
+      },
+      {
+        path: 'events/create',
+        component: EventFormComponent
+      },
+      {
+        path: 'events/edit/:id',
+        component: EventFormComponent
+      },
+
+     {
         path: 'subscription',
-        loadChildren: () =>
-          import('./subscriptions/subscriptions.module').then(
-            (m) => m.SubscriptionsModule
-          ),
+        component: SubscriptionMainComponent,
+        children: [
+          { path: '', redirectTo: 'list', pathMatch: 'full' },
+          { path: 'list', component: SubscriptionListComponent },
+          { path: 'stats', component: SubscriptionStatsComponent },
+          { path: 'churn', component: ChurnPredictionComponent },
+          { path: 'promos', component: PromoManagementComponent }
+        ]
       },
     ],
   },

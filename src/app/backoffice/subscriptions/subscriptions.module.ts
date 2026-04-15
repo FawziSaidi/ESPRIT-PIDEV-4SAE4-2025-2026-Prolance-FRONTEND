@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+/* import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';  // ✅ ADD THIS
@@ -8,11 +8,12 @@ import { SubscriptionFormComponent } from './subscription-form/subscription-form
 import { SubscriptionStatsComponent } from './subscription-stats/subscription-stats.component';
 import { ChurnPredictionComponent } from './churn-prediction/churn-prediction.component';
 import { PromoManagementComponent } from './promo-management/promo-management.component';
+import { SubscriptionMainComponent } from './subscription-main/subscription-main.component';
 
 @NgModule({
   declarations: [
+    SubscriptionMainComponent,
     SubscriptionListComponent,
-    SubscriptionFormComponent,
     SubscriptionStatsComponent,
     ChurnPredictionComponent,
     PromoManagementComponent,
@@ -23,5 +24,13 @@ import { PromoManagementComponent } from './promo-management/promo-management.co
     HttpClientModule,   // ✅ ADD THIS — nécessaire pour les appels HTTP
     SubscriptionsRoutingModule,
   ],
+    
+  exports: [
+    SubscriptionMainComponent,
+    SubscriptionListComponent,
+    SubscriptionStatsComponent,
+    ChurnPredictionComponent,
+    PromoManagementComponent,
+  ], // ✅ IMPORTANT : Exporter les composants
 })
-export class SubscriptionsModule {}
+export class SubscriptionsModule {} */
