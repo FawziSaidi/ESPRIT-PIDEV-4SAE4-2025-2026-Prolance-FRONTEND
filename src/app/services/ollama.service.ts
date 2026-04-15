@@ -17,7 +17,7 @@ export class OllamaService {
       prompt: systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt,
       stream: true,
       format: 'json',
-      options: { temperature: 0.1, top_p: 0.9 },
+      options: { temperature: 0.1, top_p: 0.9, num_ctx: 1024 },
     });
 
     const response = await fetch(`${OLLAMA_BASE}/api/generate`, {
