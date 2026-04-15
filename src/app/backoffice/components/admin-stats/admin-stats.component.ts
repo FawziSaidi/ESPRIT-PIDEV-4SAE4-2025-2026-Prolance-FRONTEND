@@ -48,7 +48,7 @@ export class AdminStatsComponent implements OnInit {
   };
   timelineXAxis:  ApexXAxis  = { categories: [], labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } };
   timelineStroke: ApexStroke = { curve: 'smooth', width: 2 };
-  timelineFill:   ApexFill   = { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.02, stops: [0, 100] } };
+  timelineFill:   ApexFill   = { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.02 } as any };
   timelineColors  = ['#7c3aed', '#10b981'];
   timelineTooltip: ApexTooltip = { theme: 'dark' };
   timelineGrid:   ApexGrid   = { borderColor: 'rgba(255,255,255,0.04)', strokeDashArray: 3 };

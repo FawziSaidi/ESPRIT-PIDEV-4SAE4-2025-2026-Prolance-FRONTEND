@@ -41,6 +41,10 @@ import 'zone.js/dist/zone';  // Included with Angular CLI.
  * APPLICATION IMPORTS
  */
 
+// Buffer polyfill for packages that depend on Node.js buffer (e.g. nsfwjs)
+import { Buffer } from 'buffer';
+(window as any).Buffer = Buffer;
+
 /**
  * Date, currency, decimal and percent pipes.
  * Needed for: All but Chrome, Firefox, Edge, IE11 and Safari 10

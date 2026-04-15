@@ -10,6 +10,7 @@ import { AdCenterComponent } from '../../pages/ads/ad-center.component';
 import { InvoiceAgentComponent } from '../../pages/ads/invoice-agent/invoice-agent.component';
 import { ProfileComponent } from '../../pages/user/profile.component';
 import { SupportChatComponent } from '../../components/support-chat/support-chat.component';
+import { ProjectsModule } from '../ProjectModule/projects.module';
 import { ProjectsComponent } from '../ProjectModule/components/projects/projects.component';
 
 const userRoutes: Routes = [
@@ -36,6 +37,7 @@ const userRoutes: Routes = [
     RouterModule.forChild(userRoutes),
     MatTooltipModule,
     MatRippleModule,
+    ProjectsModule,
   ],
   declarations: [
     UserDashboardComponent,
