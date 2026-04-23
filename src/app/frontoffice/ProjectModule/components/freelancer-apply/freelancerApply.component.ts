@@ -83,7 +83,7 @@ export class FreelancerApplyComponent implements OnInit {
 
   ngOnInit(): void {
   const user = this.authService.getCurrentUser();
-  this.currentUserId = user?.userId ?? user?.id ?? null;  // ← ajouter user?.id
+  this.currentUserId = user?.userId ?? (user as any)?.id ?? null;  
   console.log('✅ currentUserId:', this.currentUserId);
   this.loadMySkills();
 }

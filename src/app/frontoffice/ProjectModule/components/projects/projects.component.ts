@@ -74,7 +74,7 @@ export class ProjectsComponent implements OnInit {
   const currentUser = this.authService.getCurrentUser();
   if (currentUser) {
     this.currentUserRole = currentUser.role;
-    this.currentUserId = currentUser.userId ?? (currentUser as any).id ?? null;  // ← fix
+    this.currentUserId = currentUser?.userId ?? (currentUser as any)?.id ?? null;  // ← fix
     this.isClient = this.currentUserRole === 'CLIENT' || this.currentUserRole === 'ADMIN';
     this.isFreelancer = this.currentUserRole === 'FREELANCER';
   }

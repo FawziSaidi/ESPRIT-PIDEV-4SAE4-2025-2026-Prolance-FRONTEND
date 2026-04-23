@@ -19,7 +19,7 @@ export class ChatbotComponent implements AfterViewChecked {
   loading = false;
   unreadCount = 0;
 
-  private readonly GROQ_API_KEY = '';
+  private readonly GROQ_API_KEY = '';  // Set your Groq API key here or use environment
 
   private readonly SYSTEM_PROMPT = `You are the official AI assistant of Prolance, a collaborative platform dedicated to software development and UI/UX design.
 

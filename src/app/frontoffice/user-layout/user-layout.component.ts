@@ -13,25 +13,32 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   navbarScrolled = false;
   profileDropdownOpen = false;
   mobileMenuOpen = false;
+  subscriptionDropdownOpen = false;
   currentYear = new Date().getFullYear();
   currentUser: SessionUser | null = null;
+
   private destroy$ = new Subject<void>();
 
-  private _overrideRole: string | null = null;
-
   get currentRole(): string {
-    if (this._overrideRole) return this._overrideRole;
-    const role = this.authService.getRole();
-    return role ? role.toLowerCase() : 'user';
+    return this.roleService.currentRole;
   }
 
-  get userName(): string {
-    const user = this.authService.getCurrentUser();
-    return user?.email?.split('@')[0] || 'User';
+  get isAdmin(): boolean {
+    return this.currentRole === 'admin';
   }
 
-  toggleRole(role: string): void {
-    this._overrideRole = role;
+  get userInitials(): string {
+    if (!this.currentUser) return '?';
+    const name = [this.currentUser.name, this.currentUser.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .map(p => p.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
   }
 
   constructor(
@@ -51,14 +58,17 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
     if (!target.closest('.profile-dropdown-wrapper')) {
       this.profileDropdownOpen = false;
     }
+    if (!target.closest('.subscription-dropdown')) {
+      this.subscriptionDropdownOpen = false;
+    }
   }
 
   ngOnInit(): void {
     document.body.classList.add('user-portal');
-  
+
     // Read immediately first
     this.currentUser = this.authService.getCurrentUser();
-  
+
     // Then subscribe for changes
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
@@ -73,12 +83,28 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  toggleRole(role: 'freelancer' | 'client'): void {
+    this.roleService.setRole(role);
+  }
+
   toggleProfileDropdown(): void {
     this.profileDropdownOpen = !this.profileDropdownOpen;
+    this.subscriptionDropdownOpen = false;
+  }
+
+  toggleSubscriptionDropdown(): void {
+    this.subscriptionDropdownOpen = !this.subscriptionDropdownOpen;
+    this.profileDropdownOpen = false;
   }
 
   toggleMobileMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
+
+  closeAllMenus(): void {
+    this.mobileMenuOpen = false;
+    this.subscriptionDropdownOpen = false;
+    this.profileDropdownOpen = false;
   }
 
   goToAdmin(): void {
@@ -86,7 +112,7 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    this.authService.logout(); // ← also clear the session properly
+    this.authService.logout();
     this.router.navigate(['/login']);
   }
 }
