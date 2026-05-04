@@ -70,11 +70,12 @@
                 <th>Status</th>
                 <th>Performance</th>
                 <th>Trend</th>
+                <th>ML</th>
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let c of roleCampaigns">
+              <tr *ngFor="let c of roleCampaigns" [class.ml-active-row]="mlPanelAdId === c.id && showMlPanel">
                 <!-- Thumbnail -->
                 <td class="td-thumb">
                   <img [src]="getAdImage(c)" [alt]="c.title" class="ad-thumbnail"
@@ -116,6 +117,19 @@
                           stroke-linecap="round"
                           stroke-linejoin="round" />
                   </svg>
+                </td>
+                <!-- ML Resume Button -->
+                <td class="td-ml">
+                  <button class="btn-ml-resume"
+                          [class.btn-ml-resume--active]="mlPanelAdId === c.id && showMlPanel"
+                          *ngIf="c.status === 'ACTIVE'"
+                          (click)="openMlPanel(c)"
+                          title="Open ML Resume">
+                    <span class="btn-ml-resume__dot"></span>
+                    <i class="material-icons">psychology</i>
+                    <span class="btn-ml-resume__label">ML Resume</span>
+                  </button>
+                  <span class="ml-na" *ngIf="c.status !== 'ACTIVE'">—</span>
                 </td>
                 <!-- Actions -->
                 <td class="text-right td-actions">
@@ -538,3 +552,306 @@
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
+<!-- ML RESUME PANEL — SIDE DRAWER                   -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="ml-panel-backdrop" [class.ml-panel-backdrop--visible]="showMlPanel" (click)="closeMlPanel()"></div>
+
+<div class="ml-panel" [class.ml-panel--open]="showMlPanel">
+
+  <!-- ── Panel Header ── -->
+  <div class="ml-panel__header">
+    <div class="ml-panel__header-left">
+      <div class="ml-panel__brain-icon">
+        <i class="material-icons">psychology</i>
+      </div>
+      <div class="ml-panel__header-text">
+        <span class="ml-panel__label">ML Resume</span>
+        <span class="ml-panel__ad-title" [title]="mlPanelAdTitle">{{ mlPanelAdTitle }}</span>
+      </div>
+    </div>
+    <button class="ml-panel__close" (click)="closeMlPanel()">
+      <i class="material-icons">close</i>
+    </button>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <div class="ml-panel__tabs">
+    <button class="ml-tab" [class.ml-tab--active]="mlPanelTab === 'classify'" (click)="switchMlTab('classify')">
+      <i class="material-icons">manage_search</i> Classify
+    </button>
+    <button class="ml-tab" [class.ml-tab--active]="mlPanelTab === 'benchmark'" (click)="switchMlTab('benchmark')">
+      <i class="material-icons">leaderboard</i> Benchmark
+    </button>
+    <button class="ml-tab" [class.ml-tab--active]="mlPanelTab === 'live'" (click)="switchMlTab('live')">
+      <i class="material-icons">sensors</i> Live
+    </button>
+  </div>
+
+  <!-- ─────────────────────── TAB: CLASSIFY ─────────────────────── -->
+  <div class="ml-panel__body" *ngIf="mlPanelTab === 'classify'">
+
+    <!-- Scanning Animation -->
+    <div class="ml-scanning" *ngIf="mlClassifying">
+      <div class="ml-scanning__orb">
+        <div class="ml-scanning__ring ml-scanning__ring--1"></div>
+        <div class="ml-scanning__ring ml-scanning__ring--2"></div>
+        <div class="ml-scanning__ring ml-scanning__ring--3"></div>
+        <i class="material-icons ml-scanning__icon">psychology</i>
+      </div>
+      <p class="ml-scanning__msg">{{ mlCurrentMessage }}</p>
+      <div class="ml-scanning__bar">
+        <div class="ml-scanning__bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <div class="ml-error-state" *ngIf="!mlClassifying && mlPredictionError">
+      <i class="material-icons">error_outline</i>
+      <p>ML service unavailable. Make sure <code>ads-ml-service</code> is running on port 8099.</p>
+      <button class="ml-btn-retry" (click)="startMlClassification(mlPanelAdId!)">
+        <i class="material-icons">refresh</i> Retry
+      </button>
+    </div>
+
+    <!-- Results -->
+    <ng-container *ngIf="!mlClassifying && mlPrediction && !mlPredictionError">
+
+      <!-- Verdict Card -->
+      <div class="ml-verdict" [class.ml-verdict--ai]="mlPrediction.recommended_prediction === 'AI'"
+                               [class.ml-verdict--human]="mlPrediction.recommended_prediction === 'HUMAN'">
+        <div class="ml-verdict__icon">
+          <i class="material-icons">{{ mlPrediction.recommended_prediction === 'AI' ? 'smart_toy' : 'person' }}</i>
+        </div>
+        <div class="ml-verdict__body">
+          <span class="ml-verdict__label">Recommended Verdict</span>
+          <span class="ml-verdict__class">{{ mlPrediction.recommended_prediction }}</span>
+          <span class="ml-verdict__conf">{{ mlConfidenceBar(mlPrediction.recommended_confidence) }} confidence</span>
+        </div>
+        <div class="ml-verdict__model-tag">
+          <i class="material-icons">{{ mlModelIcon(mlPrediction.recommended_model) }}</i>
+          {{ mlPrediction.recommended_model }}
+        </div>
+      </div>
+
+      <!-- Confidence bar strip -->
+      <div class="ml-conf-strip">
+        <span class="ml-conf-strip__label">AI probability</span>
+        <div class="ml-conf-strip__bar">
+          <div class="ml-conf-strip__fill"
+               [style.width]="mlConfidenceBar(mlPrediction.recommended_prediction === 'AI' ? mlPrediction.recommended_confidence : 1 - mlPrediction.recommended_confidence)">
+          </div>
+        </div>
+        <span class="ml-conf-strip__pct">{{ mlConfidenceBar(mlPrediction.recommended_prediction === 'AI' ? mlPrediction.recommended_confidence : 1 - mlPrediction.recommended_confidence) }}</span>
+      </div>
+
+      <!-- All Models Grid -->
+      <div class="ml-section-title">
+        <i class="material-icons">science</i> All Models
+      </div>
+      <div class="ml-models-grid">
+        <div class="ml-model-card"
+             *ngFor="let m of mlPrediction.predictions"
+             [class.ml-model-card--best]="m.model_name === mlPrediction.recommended_model"
+             [class.ml-model-card--ai]="m.predicted_class === 'AI'"
+             [class.ml-model-card--human]="m.predicted_class === 'HUMAN'">
+          <div class="ml-model-card__icon">
+            <i class="material-icons">{{ mlModelIcon(m.model_name) }}</i>
+          </div>
+          <span class="ml-model-card__name">{{ m.model_name }}</span>
+          <span class="ml-model-card__verdict" [class.verdict-ai]="m.predicted_class === 'AI'"
+                                               [class.verdict-human]="m.predicted_class === 'HUMAN'">
+            {{ m.predicted_class }}
+          </span>
+          <div class="ml-model-card__bars">
+            <div class="ml-model-card__bar-row">
+              <span class="bar-lbl">AI</span>
+              <div class="bar-track"><div class="bar-fill bar-fill--ai" [style.width]="mlConfidenceBar(m.probability_ai)"></div></div>
+              <span class="bar-pct">{{ mlConfidenceBar(m.probability_ai) }}</span>
+            </div>
+            <div class="ml-model-card__bar-row">
+              <span class="bar-lbl">HUM</span>
+              <div class="bar-track"><div class="bar-fill bar-fill--hum" [style.width]="mlConfidenceBar(m.probability_human)"></div></div>
+              <span class="bar-pct">{{ mlConfidenceBar(m.probability_human) }}</span>
+            </div>
+          </div>
+          <span class="ml-model-card__best-badge" *ngIf="m.model_name === mlPrediction.recommended_model">
+            <i class="material-icons">star</i> Best
+          </span>
+        </div>
+      </div>
+
+      <!-- Behavioral Features -->
+      <div class="ml-section-title" style="margin-top:20px">
+        <i class="material-icons">insights</i> Behavioral Signals
+      </div>
+      <div class="ml-features-grid">
+        <div class="ml-feature-chip" *ngFor="let feat of mlPrediction.features | keyvalue">
+          <span class="ml-feature-chip__key">{{ mlFeatureLabel(feat.key) }}</span>
+          <span class="ml-feature-chip__val">{{ mlFormatFeature(feat.key, feat.value) }}</span>
+        </div>
+      </div>
+
+    </ng-container>
+  </div>
+
+  <!-- ─────────────────────── TAB: BENCHMARK ─────────────────────── -->
+  <div class="ml-panel__body" *ngIf="mlPanelTab === 'benchmark'">
+
+    <div class="ml-loading-row" *ngIf="mlBenchmarkLoading">
+      <i class="material-icons spin">autorenew</i> Loading benchmark…
+    </div>
+
+    <div class="ml-error-state" *ngIf="!mlBenchmarkLoading && !mlBenchmark">
+      <i class="material-icons">model_training</i>
+      <p>No trained models yet.</p>
+      <button class="ml-btn-primary" [disabled]="mlTraining" (click)="triggerMlRetrain()">
+        <i class="material-icons">{{ mlTraining ? 'hourglass_empty' : 'play_arrow' }}</i>
+        {{ mlTraining ? 'Training…' : 'Train Now' }}
+      </button>
+    </div>
+
+    <ng-container *ngIf="!mlBenchmarkLoading && mlBenchmark">
+      <div class="ml-bench-summary">
+        <div class="ml-bench-kpi">
+          <i class="material-icons">emoji_events</i>
+          <span class="kpi-val">{{ mlBenchmark.best_model }}</span>
+          <span class="kpi-lbl">Best Model</span>
+        </div>
+        <div class="ml-bench-kpi">
+          <i class="material-icons">dataset</i>
+          <span class="kpi-val">{{ mlBenchmark.n_samples }}</span>
+          <span class="kpi-lbl">Samples</span>
+        </div>
+        <div class="ml-bench-kpi">
+          <i class="material-icons">schedule</i>
+          <span class="kpi-val">{{ mlBenchmark.last_trained | date:'shortTime' }}</span>
+          <span class="kpi-lbl">Last Trained</span>
+        </div>
+      </div>
+
+      <div class="ml-bench-rows">
+        <div class="ml-bench-row"
+             *ngFor="let m of mlBenchmarkSortedModels; let i = index"
+             [class.ml-bench-row--first]="i === 0">
+          <div class="ml-bench-row__rank">{{ i + 1 }}</div>
+          <div class="ml-bench-row__icon">
+            <i class="material-icons">{{ mlModelIcon(m.model_name) }}</i>
+          </div>
+          <div class="ml-bench-row__name">{{ m.model_name }}</div>
+          <div class="ml-bench-row__metrics">
+            <div class="bench-metric">
+              <span class="bench-metric__lbl">Acc</span>
+              <div class="bench-metric__bar-wrap">
+                <div class="bench-metric__bar" [style.width]="(m.accuracy_loo * 100) + '%'"
+                     [class.bench-bar--gold]="i === 0"></div>
+              </div>
+              <span class="bench-metric__val">{{ (m.accuracy_loo * 100).toFixed(0) }}%</span>
+            </div>
+            <div class="bench-metric">
+              <span class="bench-metric__lbl">F1</span>
+              <div class="bench-metric__bar-wrap">
+                <div class="bench-metric__bar bench-metric__bar--f1" [style.width]="(m.f1_loo * 100) + '%'"></div>
+              </div>
+              <span class="bench-metric__val">{{ (m.f1_loo * 100).toFixed(0) }}%</span>
+            </div>
+            <div class="bench-metric">
+              <span class="bench-metric__lbl">AUC</span>
+              <div class="bench-metric__bar-wrap">
+                <div class="bench-metric__bar bench-metric__bar--auc" [style.width]="(m.roc_auc_loo * 100) + '%'"></div>
+              </div>
+              <span class="bench-metric__val">{{ (m.roc_auc_loo * 100).toFixed(0) }}%</span>
+            </div>
+          </div>
+          <span class="ml-bench-row__crown" *ngIf="i === 0">
+            <i class="material-icons">workspace_premium</i>
+          </span>
+        </div>
+      </div>
+
+      <div class="ml-bench-actions">
+        <button class="ml-btn-primary" [disabled]="mlTraining" (click)="triggerMlRetrain()">
+          <i class="material-icons">{{ mlTraining ? 'hourglass_empty' : 'refresh' }}</i>
+          {{ mlTraining ? 'Training…' : 'Retrain Models' }}
+        </button>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- ─────────────────────── TAB: LIVE ─────────────────────── -->
+  <div class="ml-panel__body" *ngIf="mlPanelTab === 'live'">
+
+    <div class="ml-loading-row" *ngIf="mlLiveLoading">
+      <i class="material-icons spin">autorenew</i> Fetching live stats…
+    </div>
+
+    <ng-container *ngIf="!mlLiveLoading">
+
+      <div class="ml-section-title">
+        <i class="material-icons">monitor_heart</i> Service Health
+      </div>
+      <div class="ml-health-grid" *ngIf="mlHealth">
+        <div class="ml-health-chip" [class.ok]="mlHealth.kafka_connected" [class.err]="!mlHealth.kafka_connected">
+          <i class="material-icons">{{ mlHealth.kafka_connected ? 'check_circle' : 'error' }}</i> Kafka
+        </div>
+        <div class="ml-health-chip" [class.ok]="mlHealth.clickhouse_connected" [class.err]="!mlHealth.clickhouse_connected">
+          <i class="material-icons">{{ mlHealth.clickhouse_connected ? 'check_circle' : 'error' }}</i> ClickHouse
+        </div>
+        <div class="ml-health-chip" [class.ok]="mlHealth.mlflow_connected" [class.err]="!mlHealth.mlflow_connected">
+          <i class="material-icons">{{ mlHealth.mlflow_connected ? 'check_circle' : 'error' }}</i> MLFlow
+        </div>
+        <div class="ml-health-chip" [class.ok]="mlHealth.models_loaded" [class.err]="!mlHealth.models_loaded">
+          <i class="material-icons">{{ mlHealth.models_loaded ? 'check_circle' : 'error' }}</i>
+          {{ mlHealth.n_models }} Models
+        </div>
+      </div>
+
+      <div class="ml-status-badge"
+           *ngIf="mlHealth"
+           [class.ml-status-badge--healthy]="mlHealth.status === 'healthy'"
+           [class.ml-status-badge--warning]="mlHealth.status === 'warming_up'">
+        <span class="ml-status-dot"></span>
+        {{ mlHealth.status === 'healthy' ? 'All Systems Operational' : 'Warming Up — No Models Yet' }}
+      </div>
+
+      <div class="ml-section-title" style="margin-top:20px">
+        <i class="material-icons">stream</i> Kafka Event Buffer
+      </div>
+      <div class="ml-kafka-stats" *ngIf="mlKafkaStats">
+        <div class="ml-kafka-kpi">
+          <span class="kv-val">{{ mlKafkaStats.buffered_ads }}</span>
+          <span class="kv-lbl">Buffered Ads</span>
+        </div>
+        <div class="ml-kafka-kpi">
+          <span class="kv-val">{{ mlKafkaStats.buffered_events.toLocaleString() }}</span>
+          <span class="kv-lbl">Events in Buffer</span>
+        </div>
+        <div class="ml-kafka-kpi">
+          <span class="kv-val" [class.ok-text]="mlKafkaStats.consumer_connected" [class.err-text]="!mlKafkaStats.consumer_connected">
+            {{ mlKafkaStats.consumer_connected ? 'Connected' : 'Disconnected' }}
+          </span>
+          <span class="kv-lbl">Consumer</span>
+        </div>
+        <div class="ml-kafka-kpi">
+          <span class="kv-val kv-topic">{{ mlKafkaStats.topic }}</span>
+          <span class="kv-lbl">Topic</span>
+        </div>
+      </div>
+
+      <div class="ml-live-pulse" *ngIf="mlKafkaStats?.consumer_connected">
+        <div class="ml-pulse-dot"></div>
+        <span>Consuming events in real-time</span>
+      </div>
+
+      <div class="ml-bench-actions" style="margin-top:16px">
+        <button class="ml-btn-outline" (click)="loadMlLiveStats()">
+          <i class="material-icons">refresh</i> Refresh
+        </button>
+        <a class="ml-btn-outline" href="http://localhost:5000" target="_blank">
+          <i class="material-icons">open_in_new</i> MLFlow UI
+        </a>
+      </div>
+
+    </ng-container>
+  </div>
+
+</div>

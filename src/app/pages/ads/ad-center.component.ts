@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Cha
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.services';
 import { AdsService } from '../../services/ads.service';
+import { AdsMlService, MlPrediction, MlBenchmark, MlHealth, MlKafkaStats, MlTrainResult } from '../../services/ads-ml.service';
 import { ImageGuardService, ValidationResult } from '../../services/image-guard.service';
 import { AdPlan, AdCampaign, CampaignStatus, RoleType, CreateCampaignRequest, ContentValidationResponse } from './models/ad.models';
 
@@ -115,6 +116,33 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   violationCategory = '';
   showViolationAlert = false;
 
+  // ── ML Resume Panel State ──
+  showMlPanel = false;
+  mlPanelTab: 'classify' | 'benchmark' | 'live' = 'classify';
+  mlPanelAdId: number | null = null;
+  mlPanelAdTitle = '';
+  mlClassifying = false;
+  mlPrediction: MlPrediction | null = null;
+  mlPredictionError = false;
+  mlBenchmark: MlBenchmark | null = null;
+  mlBenchmarkLoading = false;
+  mlHealth: MlHealth | null = null;
+  mlKafkaStats: MlKafkaStats | null = null;
+  mlLiveLoading = false;
+  mlTraining = false;
+  mlTrainResult: MlTrainResult | null = null;
+  mlClassifyPhase: 'idle' | 'scanning' | 'classifying' | 'done' | 'error' = 'idle';
+  mlClassifyMessages = [
+    'Connecting to ML service…',
+    'Fetching ad behavioral signals…',
+    'Extracting click/hover features…',
+    'Running 6 classification models…',
+    'Computing confidence scores…',
+    'Aggregating predictions…'
+  ];
+  mlCurrentMessage = '';
+  private mlMessageTimer: any = null;
+
   // ── KPI Stats ──
   stats = {
     activeAds: 0,
@@ -142,6 +170,7 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   constructor(
     private authService: AuthService, 
     private adsService: AdsService,
+    private adsMl: AdsMlService,
     private imageGuard: ImageGuardService,
     private cdr: ChangeDetectorRef,
     private router: Router
@@ -165,6 +194,9 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnDestroy(): void {
     if (this.toastTimer !== null) {
       clearTimeout(this.toastTimer);
+    }
+    if (this.mlMessageTimer !== null) {
+      clearTimeout(this.mlMessageTimer);
     }
     this.perfChartInstance?.destroy();
     this.reachChartInstance?.destroy();
@@ -929,5 +961,151 @@ export class AdCenterComponent implements OnInit, OnDestroy, AfterViewInit {
     return this.currentRole === 'FREELANCER'
       ? 'Real-time market trends for Freelancers'
       : 'Real-time market trends for Clients';
+  }
+
+  // ═══════════════════════════════════════════════
+  // ML RESUME PANEL
+  // ═══════════════════════════════════════════════
+
+  openMlPanel(campaign: AdCampaign): void {
+    this.showMlPanel = true;
+    this.mlPanelAdId = campaign.id;
+    this.mlPanelAdTitle = campaign.title;
+    this.mlPanelTab = 'classify';
+    this.mlPrediction = null;
+    this.mlPredictionError = false;
+    this.mlClassifyPhase = 'idle';
+    this.startMlClassification(campaign.id);
+    this.loadMlBenchmark();
+    this.loadMlLiveStats();
+  }
+
+  closeMlPanel(): void {
+    this.showMlPanel = false;
+    this.mlPanelAdId = null;
+    this.mlPrediction = null;
+    this.mlClassifyPhase = 'idle';
+    if (this.mlMessageTimer) {
+      clearTimeout(this.mlMessageTimer);
+    }
+  }
+
+  switchMlTab(tab: 'classify' | 'benchmark' | 'live'): void {
+    this.mlPanelTab = tab;
+  }
+
+  startMlClassification(adId: number): void {
+    this.mlClassifying = true;
+    this.mlClassifyPhase = 'scanning';
+    this.mlPredictionError = false;
+    let msgIdx = 0;
+    this.mlCurrentMessage = this.mlClassifyMessages[0];
+
+    const cycleMessage = () => {
+      msgIdx = (msgIdx + 1) % this.mlClassifyMessages.length;
+      this.mlCurrentMessage = this.mlClassifyMessages[msgIdx];
+      if (msgIdx < this.mlClassifyMessages.length - 1) {
+        this.mlMessageTimer = setTimeout(cycleMessage, 600);
+      }
+    };
+    this.mlMessageTimer = setTimeout(cycleMessage, 600);
+
+    this.mlClassifyPhase = 'classifying';
+    this.adsMl.predict(adId).subscribe({
+      next: (result) => {
+        if (this.mlMessageTimer) clearTimeout(this.mlMessageTimer);
+        this.mlPrediction = result;
+        this.mlClassifying = false;
+        this.mlClassifyPhase = 'done';
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        if (this.mlMessageTimer) clearTimeout(this.mlMessageTimer);
+        this.mlClassifying = false;
+        this.mlClassifyPhase = 'error';
+        this.mlPredictionError = true;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private loadMlBenchmark(): void {
+    this.mlBenchmarkLoading = true;
+    this.adsMl.getBenchmark().subscribe({
+      next: (b) => { this.mlBenchmark = b; this.mlBenchmarkLoading = false; },
+      error: () => { this.mlBenchmarkLoading = false; }
+    });
+  }
+
+  loadMlLiveStats(): void {
+    this.mlLiveLoading = true;
+    this.adsMl.getHealth().subscribe({
+      next: (h) => { this.mlHealth = h; },
+      error: () => {}
+    });
+    this.adsMl.getKafkaStats().subscribe({
+      next: (k) => { this.mlKafkaStats = k; this.mlLiveLoading = false; },
+      error: () => { this.mlLiveLoading = false; }
+    });
+  }
+
+  triggerMlRetrain(): void {
+    this.mlTraining = true;
+    this.mlTrainResult = null;
+    this.adsMl.train().subscribe({
+      next: (r) => {
+        this.mlTrainResult = r;
+        this.mlTraining = false;
+        this.displayToast(`Training complete! Best: ${r.best_model} (${(r.best_accuracy * 100).toFixed(0)}%)`, 'success');
+        this.loadMlBenchmark();
+      },
+      error: () => {
+        this.mlTraining = false;
+        this.displayToast('Training failed. Check ML service logs.', 'error');
+      }
+    });
+  }
+
+  mlConfidenceBar(prob: number): string {
+    return (prob * 100).toFixed(1) + '%';
+  }
+
+  mlModelIcon(modelName: string): string {
+    const icons: Record<string, string> = {
+      'Dummy': 'device_unknown',
+      'LogisticRegression': 'linear_scale',
+      'DecisionTree': 'account_tree',
+      'RandomForest': 'forest',
+      'SVM': 'hub',
+      'KNN': 'grain'
+    };
+    return icons[modelName] || 'psychology';
+  }
+
+  mlFormatFeature(key: string, val: number): string {
+    if (key.includes('rate') || key.includes('ctr') || key.includes('per')) {
+      return (val * 100).toFixed(2) + '%';
+    }
+    if (key.includes('hours')) return val.toFixed(1) + 'h';
+    return Math.round(val).toLocaleString();
+  }
+
+  mlFeatureLabel(key: string): string {
+    const labels: Record<string, string> = {
+      n_views: 'Views', n_clicks: 'Clicks', n_hovers: 'Hovers',
+      n_events: 'Total Events', n_unique_users: 'Unique Users',
+      ctr: 'CTR', hover_rate: 'Hover Rate',
+      click_per_event: 'Click/Event', lifespan_hours: 'Lifespan'
+    };
+    return labels[key] || key;
+  }
+
+  get mlPanelRecommendedModel(): string {
+    return this.mlPrediction?.recommended_model || '';
+  }
+
+  get mlBenchmarkSortedModels() {
+    if (!this.mlBenchmark) return [];
+    return [...this.mlBenchmark.models].sort((a, b) => b.accuracy_loo - a.accuracy_loo);
   }
 }
