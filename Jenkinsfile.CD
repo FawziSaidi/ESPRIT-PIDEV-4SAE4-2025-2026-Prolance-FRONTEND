@@ -1,0 +1,116 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// PIPELINE CD — Prolance Frontend
+// Triggers automatically after CI pipeline succeeds
+// Steps: Pull Image → Deploy with Docker Compose → Health Check → Notify
+// ─────────────────────────────────────────────────────────────────────────────
+
+pipeline {
+
+    agent any
+
+    environment {
+        DOCKER_IMAGE     = 'farrahamami/prolance-frontend'
+        DOCKER_TAG       = 'latest'
+        CONTAINER_NAME   = 'prolance-frontend'
+        APP_PORT         = '80'
+        DEPLOY_DIR       = '/opt/prolance/frontend'
+    }
+
+    // Triggered automatically when CI pipeline completes successfully
+    triggers {
+        upstream(
+            upstreamProjects: 'Prolance-Frontend-CI',   // Must match your CI job name in Jenkins
+            threshold: hudson.model.Result.SUCCESS
+        )
+    }
+
+    stages {
+
+        // ── 1. Checkout deploy configs ───────────────────────────
+        stage('Checkout') {
+            steps {
+                checkout scm
+                echo "Deploying ${DOCKER_IMAGE}:${DOCKER_TAG}"
+            }
+        }
+
+        // ── 2. Pull latest image from DockerHub ──────────────────
+        stage('Pull Docker Image') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh """
+                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                            docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            docker logout
+                        """
+                    }
+                }
+            }
+        }
+
+        // ── 3. Stop old container ────────────────────────────────
+        stage('Stop Old Container') {
+            steps {
+                sh """
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm   ${CONTAINER_NAME} || true
+                """
+            }
+        }
+
+        // ── 4. Deploy with Docker Compose ────────────────────────
+        stage('Deploy') {
+            steps {
+                sh """
+                    mkdir -p ${DEPLOY_DIR}
+                    cp docker-compose.yml ${DEPLOY_DIR}/docker-compose.yml
+                    cd ${DEPLOY_DIR}
+
+                    DOCKER_TAG=${DOCKER_TAG} docker-compose pull
+                    DOCKER_TAG=${DOCKER_TAG} docker-compose up -d --force-recreate
+                """
+            }
+        }
+
+        // ── 5. Health Check ──────────────────────────────────────
+        stage('Health Check') {
+            steps {
+                script {
+                    // Wait up to 30s for the container to respond
+                    retry(6) {
+                        sleep(time: 5, unit: 'SECONDS')
+                        sh "curl -f http://localhost:${APP_PORT} || exit 1"
+                    }
+                    echo "✅ Application is up at http://localhost:${APP_PORT}"
+                }
+            }
+        }
+
+        // ── 6. Clean old Docker images ───────────────────────────
+        stage('Cleanup') {
+            steps {
+                sh 'docker image prune -f'
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo "🚀 Deployment successful — ${DOCKER_IMAGE}:${DOCKER_TAG} is live"
+        }
+        failure {
+            echo "💥 Deployment failed — rolling back"
+            // Restart the previous container if compose fails
+            sh "docker-compose -f ${DEPLOY_DIR}/docker-compose.yml restart || true"
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

@@ -1,0 +1,147 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// PIPELINE CI — Prolance Frontend
+// Triggers on every push to main or develop
+// Steps: Install → Test → SonarQube → Docker Build → Push to DockerHub
+// ─────────────────────────────────────────────────────────────────────────────
+
+pipeline {
+
+    agent any
+
+    environment {
+        NODE_VERSION     = '18'
+        DOCKER_IMAGE     = 'farrahamami/prolance-frontend'
+        DOCKER_TAG       = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+        SONAR_PROJECT    = 'prolance-frontend'
+    }
+
+    tools {
+        nodejs 'NodeJS-18'   // Must match the name configured in Jenkins → Global Tool Config
+    }
+
+    triggers {
+        githubPush()         // Fires on every GitHub push (requires GitHub plugin)
+    }
+
+    stages {
+
+        // ── 1. Checkout ──────────────────────────────────────────
+        stage('Checkout') {
+            steps {
+                checkout scm
+                echo "Branch: ${env.BRANCH_NAME} | Build: ${env.BUILD_NUMBER}"
+            }
+        }
+
+        // ── 2. Install Dependencies ──────────────────────────────
+        stage('Install') {
+            steps {
+                sh 'npm ci --legacy-peer-deps'
+            }
+        }
+
+        // ── 3. Unit Tests + Coverage ─────────────────────────────
+        stage('Test') {
+            steps {
+                sh '''
+                    npx ng test \
+                        --no-watch \
+                        --no-progress \
+                        --browsers=ChromeHeadlessCI \
+                        --code-coverage
+                '''
+            }
+            post {
+                always {
+                    // Publish JUnit test results
+                    junit allowEmptyResults: true,
+                          testResults: 'coverage/**/*.xml'
+
+                    // Publish HTML coverage report
+                    publishHTML([
+                        allowMissing:          false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll:               true,
+                        reportDir:             'coverage/prolance-frontend',
+                        reportFiles:           'index.html',
+                        reportName:            'Coverage Report'
+                    ])
+                }
+            }
+        }
+
+        // ── 4. SonarQube Analysis ────────────────────────────────
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {   // Must match name in Jenkins → Configure System
+                    sh '''
+                        npx sonar-scanner \
+                            -Dsonar.projectKey=${SONAR_PROJECT} \
+                            -Dsonar.projectName="Prolance Frontend" \
+                            -Dsonar.sources=src \
+                            -Dsonar.tests=src \
+                            -Dsonar.test.inclusions=**/*.spec.ts \
+                            -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts,src/assets/** \
+                            -Dsonar.javascript.lcov.reportPaths=coverage/prolance-frontend/lcov.info \
+                            -Dsonar.typescript.tsconfigPath=tsconfig.app.json
+                    '''
+                }
+            }
+        }
+
+        // ── 5. SonarQube Quality Gate ────────────────────────────
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        // ── 6. Build Angular App ─────────────────────────────────
+        stage('Build') {
+            steps {
+                sh 'npx ng build --configuration production'
+            }
+        }
+
+        // ── 7. Docker Build & Push ───────────────────────────────
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh """
+                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+
+                            docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                            docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+
+                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            docker push ${DOCKER_IMAGE}:latest
+
+                            docker logout
+                        """
+                    }
+                }
+            }
+        }
+
+    }
+
+    post {
+        success {
+            echo "✅ CI Pipeline passed — Image: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+        }
+        failure {
+            echo "❌ CI Pipeline failed — Check logs above"
+        }
+        always {
+            // Clean workspace to avoid disk space buildup
+            cleanWs()
+        }
+    }
+}
