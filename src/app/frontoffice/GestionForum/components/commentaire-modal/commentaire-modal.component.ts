@@ -45,7 +45,7 @@ export class CommentaireModalComponent implements OnInit {
   errorMessage: string = '';
 
   // AI Moderation
-  private readonly GROQ_API_KEY = '';
+  private readonly GROQ_API_KEY = '';  // Set your Groq API key here or use environment
   moderating: boolean = false;
   moderatingReply: boolean = false;
   moderatingEdit: boolean = false;
@@ -123,7 +123,7 @@ export class CommentaireModalComponent implements OnInit {
   ];
 
   // ✅ GIF PICKER — GIPHY API
-  private readonly GIPHY_API_KEY = '';
+  private readonly GIPHY_API_KEY = 'eZt5wvGwdhhEimbbSHRoUnxAHhLkPcCj';
   showGifPicker: boolean = false;
   activeGifField: 'new' | 'reply' | 'edit' | null = null;
   gifSearchQuery: string = '';

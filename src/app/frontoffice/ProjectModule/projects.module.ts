@@ -14,6 +14,7 @@ import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [ProjectsComponent, ProjectFormComponent, ProjectDetailsComponent, FreelancerApplyComponent,FreelancerSkillsSetupComponent, ToastComponent, ApplicantsModalComponent, AiRecommendationsComponent],
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ProjectsRoutingModule,HttpClientModule,]
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ProjectsRoutingModule,HttpClientModule,],
+  exports: [ProjectsComponent]
 })
 export class ProjectsModule {}

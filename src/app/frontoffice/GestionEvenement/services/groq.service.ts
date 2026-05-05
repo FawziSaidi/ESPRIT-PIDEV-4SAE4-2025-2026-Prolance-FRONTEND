@@ -15,7 +15,7 @@ export interface GeneratedActivity {
 @Injectable({ providedIn: 'root' })
 export class GroqService {
 
-  private readonly API_KEY = 'hh';
+  private readonly API_KEY = '';  // Set your Groq API key here or use environment
   private readonly API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
   constructor() {}

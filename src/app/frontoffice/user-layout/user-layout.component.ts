@@ -13,12 +13,32 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
   navbarScrolled = false;
   profileDropdownOpen = false;
   mobileMenuOpen = false;
+  subscriptionDropdownOpen = false;
   currentYear = new Date().getFullYear();
   currentUser: SessionUser | null = null;
+
   private destroy$ = new Subject<void>();
 
   get currentRole(): string {
     return this.roleService.currentRole;
+  }
+
+  get isAdmin(): boolean {
+    return this.currentRole === 'admin';
+  }
+
+  get userInitials(): string {
+    if (!this.currentUser) return '?';
+    const name = [this.currentUser.name, this.currentUser.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .map(p => p.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
   }
 
   constructor(
@@ -38,21 +58,24 @@ export class UserLayoutComponent implements OnInit, OnDestroy {
     if (!target.closest('.profile-dropdown-wrapper')) {
       this.profileDropdownOpen = false;
     }
+    if (!target.closest('.subscription-dropdown')) {
+      this.subscriptionDropdownOpen = false;
+    }
   }
 
-ngOnInit(): void {
-  document.body.classList.add('user-portal');
-  
-  // Read immediately first
-  this.currentUser = this.authService.getCurrentUser();
-  
-  // Then subscribe for changes
-  this.authService.currentUser$
-    .pipe(takeUntil(this.destroy$))
-    .subscribe(user => {
-      this.currentUser = user;
-    });
-}
+  ngOnInit(): void {
+    document.body.classList.add('user-portal');
+
+    // Read immediately first
+    this.currentUser = this.authService.getCurrentUser();
+
+    // Then subscribe for changes
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUser = user;
+      });
+  }
 
   ngOnDestroy(): void {
     document.body.classList.remove('user-portal');
@@ -66,10 +89,22 @@ ngOnInit(): void {
 
   toggleProfileDropdown(): void {
     this.profileDropdownOpen = !this.profileDropdownOpen;
+    this.subscriptionDropdownOpen = false;
+  }
+
+  toggleSubscriptionDropdown(): void {
+    this.subscriptionDropdownOpen = !this.subscriptionDropdownOpen;
+    this.profileDropdownOpen = false;
   }
 
   toggleMobileMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
+
+  closeAllMenus(): void {
+    this.mobileMenuOpen = false;
+    this.subscriptionDropdownOpen = false;
+    this.profileDropdownOpen = false;
   }
 
   goToAdmin(): void {
@@ -77,7 +112,7 @@ ngOnInit(): void {
   }
 
   logout(): void {
-    this.authService.logout(); // ← also clear the session properly
+    this.authService.logout();
     this.router.navigate(['/login']);
   }
 }

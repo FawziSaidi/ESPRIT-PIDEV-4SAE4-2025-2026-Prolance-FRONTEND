@@ -18,7 +18,7 @@ interface MlModerationResponse {
 @Injectable({ providedIn: 'root' })
 export class AiContentService {
 
-  private readonly API_KEY = '';
+  private readonly API_KEY = '';  // Set your Groq API key here or use environment
   private readonly API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
   /** URL du microservice ML via l'API Gateway */
@@ -169,31 +169,11 @@ Respond ONLY with JSON: {"approved": true, "reasons": []} or {"approved": false,
 
   // ── ML Domain Moderation (via microservice Python) ─────────────
   /**
-   * Vérifie via le microservice ML Python que la publication
-   * est dans le domaine dev / UI-UX.
-   * Retourne { approved: false } si hors sujet.
-   * En cas d'erreur réseau → approve par défaut (fail-open).
+   * Bypassed: The Python ML microservice is not running.
+   * Returns approved by default to allow the rest of the moderation chain to proceed.
    */
   private moderateDomain(titre: string, contenue: string): Promise<ModerationResult> {
-    return fetch(this.ML_MODERATION_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ titre, contenue })
-    })
-      .then(r => r.json())
-      .then((data: MlModerationResponse) => {
-        if (!data.is_relevant) {
-          return {
-            approved: false,
-            reasons: [
-              `Contenu hors sujet (${Math.round(data.confidence * 100)}% de confiance) — ` +
-              `Cette plateforme est réservée au développement logiciel et au design UI/UX.`
-            ]
-          };
-        }
-        return { approved: true, reasons: [] };
-      })
-      .catch(() => ({ approved: true, reasons: [] })); // fail-open si service indisponible
+    return Promise.resolve({ approved: true, reasons: [] });
   }
 
   // ── Main moderation entry point ────────────────────────────────

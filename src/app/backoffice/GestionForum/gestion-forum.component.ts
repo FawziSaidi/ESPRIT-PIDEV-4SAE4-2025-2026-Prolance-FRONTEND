@@ -55,7 +55,7 @@ export class GestionForumComponent implements OnInit {
   private toastTimer: any;
 
   // ── AI Rapport ────────────────────────────────────────────────────
-  private readonly GROQ_API_KEY = '';
+  private readonly GROQ_API_KEY = '';  // Set your Groq API key here or use environment
   private readonly GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
   generatingReport = false;
   showReportModal = false;

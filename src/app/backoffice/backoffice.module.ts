@@ -9,6 +9,7 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { FooterComponent } from './components/footer/footer.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { BackofficeLayoutComponent } from './backoffice-layout.component';
+import { AdminAdsComponent } from '../pages/admin/ads/admin-ads.component';
 import { AdminUsersComponent } from '../pages/admin/user/admin-user.component';
 import { GestionForumComponent } from './GestionForum/gestion-forum.component';
 import { ParticipantBadgeComponent } from './components/participant-badge/participant-badge.component';
@@ -16,8 +17,6 @@ import { ActivityFormComponent } from './components/activity-form/activity-form-
 import { EventFormComponent } from './components/event-form/event-form.component';
 import { AdminEventsComponent } from './components/admin-evenement/admin-event.component';
 import { AdminProjectsComponent } from './components/admin-projects/admin-projects.component';
-
-// Composants d'abonnement
 import { SubscriptionMainComponent } from './subscriptions/subscription-main/subscription-main.component';
 import { SubscriptionListComponent } from './subscriptions/subscription-list/subscription-list.component';
 import { SubscriptionStatsComponent } from './subscriptions/subscription-stats/subscription-stats.component';
@@ -31,6 +30,7 @@ import { PromoManagementComponent } from './subscriptions/promo-management/promo
     SidebarComponent,
     FooterComponent,
     DashboardComponent,
+    AdminAdsComponent,
     AdminUsersComponent,
     GestionForumComponent,
     AdminEventsComponent,
@@ -38,7 +38,6 @@ import { PromoManagementComponent } from './subscriptions/promo-management/promo
     ActivityFormComponent,
     ParticipantBadgeComponent,
     AdminProjectsComponent,
-    // ✅ TOUS les composants d'abonnement dans declarations
     SubscriptionMainComponent,
     SubscriptionListComponent,
     SubscriptionStatsComponent,

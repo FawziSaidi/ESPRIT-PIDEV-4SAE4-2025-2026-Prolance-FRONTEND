@@ -8,6 +8,8 @@ import { UserLayoutComponent } from './frontoffice/user-layout/user-layout.compo
 import { LandingComponent } from './authentification/landing/landing.component';
 import { LoginComponent } from './authentification/auth/login/login.component';
 import { RegisterComponent } from './authentification/auth/register/register.component';
+import { AdDetailsComponent } from './pages/ads/ad-details/ad-details.component';
+import { AdPolicyComponent } from './pages/ads/ad-policy/ad-policy.component';
 import { ResetPasswordComponent } from './authentification/auth/reset-password/reset-password.component';
 
 const routes: Routes = [
@@ -23,6 +25,14 @@ const routes: Routes = [
   {
     path: 'register',
     component: RegisterComponent,
+  },
+  {
+    path: 'ads/:id',
+    component: AdDetailsComponent,
+  },
+  {
+    path: 'ads-policy',
+    component: AdPolicyComponent,
   },
   {
     path: 'reset-password',
