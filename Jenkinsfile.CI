@@ -13,6 +13,7 @@ pipeline {
         DOCKER_IMAGE     = 'farrahamami/prolance-frontend'
         DOCKER_TAG       = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
         SONAR_PROJECT    = 'prolance-frontend'
+        CHROME_BIN       = '/usr/bin/chromium'
     }
 
     tools {
