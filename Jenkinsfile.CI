@@ -56,7 +56,6 @@ pipeline {
                             [path: 'tsconfig.spec.json'],
                             [path: 'typings.d.ts'],
                             [path: 'package.json'],
-                            [path: 'package-lock.json'],
                             [path: 'Dockerfile'],
                             [path: 'nginx.conf'],
                             [path: '.sonarcloud.properties']   // si présent
@@ -79,7 +78,8 @@ pipeline {
         // ── 2. Install Dependencies ──────────────────────────────────────────
         stage('Install') {
             steps {
-                sh 'npm ci --prefer-offline --legacy-peer-deps'
+                // FIX: pas de package-lock.json dans le repo → npm install à la place de npm ci
+                sh 'npm install --legacy-peer-deps'
             }
         }
 
