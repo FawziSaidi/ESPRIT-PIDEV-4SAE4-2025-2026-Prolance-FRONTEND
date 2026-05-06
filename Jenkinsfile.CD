@@ -1,7 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // PIPELINE CD — Prolance Frontend
-// Triggers automatically after CI pipeline succeeds
-// Steps: Pull Image → Deploy with Docker → Health Check → Notify
 // ─────────────────────────────────────────────────────────────────────────────
 
 pipeline {
@@ -13,11 +11,10 @@ pipeline {
         DOCKER_TAG       = 'latest'
         CONTAINER_NAME   = 'prolance-frontend'
         APP_PORT         = '80'
-        // Utiliser l'espace de travail Jenkins au lieu de /opt
-        DEPLOY_DIR       = "${WORKSPACE}/deploy"
+        // L'IP de l'hôte où Docker tourne (votre machine WSL)
+        HOST_IP          = '172.24.254.13'  // Même IP que Jenkins
     }
 
-    // Triggered automatically when CI pipeline completes successfully
     triggers {
         upstream(
             upstreamProjects: 'Prolance-Frontend-CI',
@@ -27,7 +24,6 @@ pipeline {
 
     stages {
 
-        // ── 1. Checkout deploy configs ───────────────────────────
         stage('Checkout') {
             steps {
                 checkout scm
@@ -35,7 +31,6 @@ pipeline {
             }
         }
 
-        // ── 2. Pull latest image from DockerHub ──────────────────
         stage('Pull Docker Image') {
             steps {
                 script {
@@ -54,7 +49,6 @@ pipeline {
             }
         }
 
-        // ── 3. Stop old container ────────────────────────────────
         stage('Stop Old Container') {
             steps {
                 sh """
@@ -64,11 +58,9 @@ pipeline {
             }
         }
 
-        // ── 4. Deploy with Docker (sans docker-compose) ──────────
         stage('Deploy') {
             steps {
                 sh """
-                    # Démarrer le nouveau conteneur
                     docker run -d \
                         --name ${CONTAINER_NAME} \
                         -p ${APP_PORT}:80 \
@@ -76,28 +68,37 @@ pipeline {
                         ${DOCKER_IMAGE}:${DOCKER_TAG}
                     
                     echo "✅ Conteneur démarré avec succès"
+                    
+                    # Afficher les logs initiaux
+                    sleep 3
+                    docker logs ${CONTAINER_NAME} --tail 20 || true
                 """
             }
         }
 
-        // ── 5. Health Check ──────────────────────────────────────
         stage('Health Check') {
             steps {
                 script {
-                    // Attendre que le conteneur soit prêt
-                    retry(6) {
-                        sleep(time: 5, unit: 'SECONDS')
+                    echo "Vérification de la santé de l'application..."
+                    
+                    // Attendre plus longtemps et tester correctement
+                    retry(15) {
+                        sleep(time: 4, unit: 'SECONDS')
+                        
                         sh """
-                            docker ps | grep ${CONTAINER_NAME} || exit 1
-                            curl -f http://localhost:${APP_PORT} || exit 1
+                            # Vérifier que le conteneur tourne
+                            docker inspect ${CONTAINER_NAME} --format='{{.State.Status}}' | grep -q running || exit 1
+                            
+                            # Tester via l'IP de l'hôte (depuis Jenkins)
+                            curl -f -s -o /dev/null -w "%{http_code}" http://${HOST_IP}:${APP_PORT} | grep -q "200\|301\|302" || exit 1
                         """
                     }
-                    echo "✅ Application is up at http://localhost:${APP_PORT}"
+                    
+                    echo "✅ Application opérationnelle sur http://${HOST_IP}:${APP_PORT}"
                 }
             }
         }
 
-        // ── 6. Clean old Docker images ───────────────────────────
         stage('Cleanup') {
             steps {
                 sh 'docker image prune -f'
@@ -107,10 +108,17 @@ pipeline {
 
     post {
         success {
-            echo "🚀 Deployment successful — ${DOCKER_IMAGE}:${DOCKER_TAG} is live"
+            echo "🚀 Déploiement réussi — ${DOCKER_IMAGE}:${DOCKER_TAG} est en ligne"
+            echo "🌐 Application accessible sur : http://${HOST_IP}:${APP_PORT}"
         }
         failure {
-            echo "💥 Deployment failed"
+            echo "💥 Échec du déploiement"
+            sh """
+                echo "=== Logs du conteneur ==="
+                docker logs ${CONTAINER_NAME} --tail 50 || true
+                echo "=== Statut du conteneur ==="
+                docker ps -a | grep ${CONTAINER_NAME} || true
+            """
         }
         always {
             cleanWs()
