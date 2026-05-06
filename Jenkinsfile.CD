@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // PIPELINE CD — Prolance Frontend
 // Triggers automatically after CI pipeline succeeds
-// Steps: Pull Image → Deploy with Docker Compose → Health Check → Notify
+// Steps: Pull Image → Deploy with Docker → Health Check → Notify
 // ─────────────────────────────────────────────────────────────────────────────
 
 pipeline {
@@ -13,13 +13,14 @@ pipeline {
         DOCKER_TAG       = 'latest'
         CONTAINER_NAME   = 'prolance-frontend'
         APP_PORT         = '80'
-        DEPLOY_DIR       = '/opt/prolance/frontend'
+        // Utiliser l'espace de travail Jenkins au lieu de /opt
+        DEPLOY_DIR       = "${WORKSPACE}/deploy"
     }
 
     // Triggered automatically when CI pipeline completes successfully
     triggers {
         upstream(
-            upstreamProjects: 'Prolance-Frontend-CI',   // Must match your CI job name in Jenkins
+            upstreamProjects: 'Prolance-Frontend-CI',
             threshold: hudson.model.Result.SUCCESS
         )
     }
@@ -63,16 +64,18 @@ pipeline {
             }
         }
 
-        // ── 4. Deploy with Docker Compose ────────────────────────
+        // ── 4. Deploy with Docker (sans docker-compose) ──────────
         stage('Deploy') {
             steps {
                 sh """
-                    mkdir -p ${DEPLOY_DIR}
-                    cp docker-compose.yml ${DEPLOY_DIR}/docker-compose.yml
-                    cd ${DEPLOY_DIR}
-
-                    DOCKER_TAG=${DOCKER_TAG} docker-compose pull
-                    DOCKER_TAG=${DOCKER_TAG} docker-compose up -d --force-recreate
+                    # Démarrer le nouveau conteneur
+                    docker run -d \
+                        --name ${CONTAINER_NAME} \
+                        -p ${APP_PORT}:80 \
+                        --restart unless-stopped \
+                        ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    
+                    echo "✅ Conteneur démarré avec succès"
                 """
             }
         }
@@ -81,10 +84,13 @@ pipeline {
         stage('Health Check') {
             steps {
                 script {
-                    // Wait up to 30s for the container to respond
+                    // Attendre que le conteneur soit prêt
                     retry(6) {
                         sleep(time: 5, unit: 'SECONDS')
-                        sh "curl -f http://localhost:${APP_PORT} || exit 1"
+                        sh """
+                            docker ps | grep ${CONTAINER_NAME} || exit 1
+                            curl -f http://localhost:${APP_PORT} || exit 1
+                        """
                     }
                     echo "✅ Application is up at http://localhost:${APP_PORT}"
                 }
@@ -97,7 +103,6 @@ pipeline {
                 sh 'docker image prune -f'
             }
         }
-
     }
 
     post {
@@ -105,9 +110,7 @@ pipeline {
             echo "🚀 Deployment successful — ${DOCKER_IMAGE}:${DOCKER_TAG} is live"
         }
         failure {
-            echo "💥 Deployment failed — rolling back"
-            // Restart the previous container if compose fails
-            sh "docker-compose -f ${DEPLOY_DIR}/docker-compose.yml restart || true"
+            echo "💥 Deployment failed"
         }
         always {
             cleanWs()
