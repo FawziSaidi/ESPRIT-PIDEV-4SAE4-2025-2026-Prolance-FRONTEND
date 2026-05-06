@@ -10,8 +10,10 @@ pipeline {
 
     environment {
         NODE_VERSION     = '18'
-        DOCKER_IMAGE     = 'farrahamami/prolance-frontend'
+        LOCAL_REGISTRY   = '172.24.254.13:5000'           // Local registry
+        DOCKER_IMAGE     = "${LOCAL_REGISTRY}/prolance-frontend"
         DOCKER_TAG = "${env.BRANCH_NAME ?: 'main'}-${env.BUILD_NUMBER}"
+        HUB_IMAGE        = 'farrahamami/prolance-frontend' // Docker Hub backup
         SONAR_PROJECT    = 'prolance-frontend'
         CHROME_BIN       = '/usr/bin/chromium'
     }
@@ -31,12 +33,8 @@ pipeline {
     stages {
 
         // ── 1. Checkout (Sparse + Shallow) ───────────────────────────────────
-        // FIX: Remplace 'checkout scm' par un sparse checkout pour ne cloner
-        //      que les fichiers nécessaires aux tests/coverage et éviter les
-        //      timeouts HTTP/2 sur un repo volumineux.
         stage('Checkout') {
             steps {
-                // FIX HTTP/2: forcer HTTP/1.1 + augmenter le buffer avant le clone
                 sh '''
                     git config --global http.version HTTP/1.1
                     git config --global http.postBuffer 524288000
@@ -46,7 +44,6 @@ pipeline {
                     $class: 'GitSCM',
                     branches: scm.branches,
                     extensions: [
-                        // ── Sparse checkout : seulement les dossiers/fichiers utiles ──
                         [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
                             [path: 'src'],
                             [path: 'angular.json'],
@@ -60,9 +57,8 @@ pipeline {
                             [path: 'extra-webpack.config.js'],
                             [path: 'Dockerfile'],
                             [path: 'nginx.conf'],
-                            [path: '.sonarcloud.properties']   // si présent
+                            [path: '.sonarcloud.properties']
                         ]],
-                        // ── Shallow clone : 1 seul commit, sans tags ──
                         [$class: 'CloneOption',
                             shallow : true,
                             depth   : 1,
@@ -97,11 +93,9 @@ pipeline {
             }
             post {
                 always {
-                    // Publish JUnit test results
                     junit allowEmptyResults: true,
                           testResults: 'coverage/**/*.xml'
 
-                    // Publish HTML coverage report
                     publishHTML([
                         allowMissing:          false,
                         alwaysLinkToLastBuild: true,
@@ -117,7 +111,7 @@ pipeline {
         // ── 4. SonarQube Analysis ────────────────────────────────────────────
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {   // Must match name in Jenkins → Configure System
+                withSonarQubeEnv('SonarQube') {
                     sh '''
                         npx sonar-scanner \
                             -Dsonar.projectKey=${SONAR_PROJECT} \
@@ -133,14 +127,14 @@ pipeline {
             }
         }
 
-      
+        // ── 5. Build ─────────────────────────────────────────────────────────
         stage('Build') {
             steps {
                 sh 'npx ng build --configuration development'
             }
         }
 
-        // ── 7. Docker Build & Push ───────────────────────────────────────────
+        // ── 6. Docker Build & Push (Local Registry + Docker Hub Backup) ──────
         stage('Docker Build & Push') {
             steps {
                 script {
@@ -150,21 +144,30 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
                         sh """
-                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-
+                            # Build image
                             docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
                             docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
 
+                            # Push to LOCAL registry (super fast!)
                             docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                             docker push ${DOCKER_IMAGE}:latest
 
+                            # Also push to Docker Hub as backup
+                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                            docker tag ${DOCKER_IMAGE}:latest ${HUB_IMAGE}:${DOCKER_TAG}
+                            docker tag ${DOCKER_IMAGE}:latest ${HUB_IMAGE}:latest
+                            docker push ${HUB_IMAGE}:${DOCKER_TAG}
+                            docker push ${HUB_IMAGE}:latest
                             docker logout
+
+                            echo "✅ Images pushed to local registry and Docker Hub"
+                            echo "   Local: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                            echo "   Hub:   ${HUB_IMAGE}:${DOCKER_TAG}"
                         """
                     }
                 }
             }
         }
-
     }
 
     post {
@@ -175,8 +178,6 @@ pipeline {
             echo "❌ CI Pipeline failed — Check logs above"
         }
         always {
-            // FIX: cleanWs() doit être dans un bloc node{} pour avoir accès
-            //      au contexte hudson.FilePath (sinon MissingContextVariableException)
             node('') {
                 cleanWs()
             }

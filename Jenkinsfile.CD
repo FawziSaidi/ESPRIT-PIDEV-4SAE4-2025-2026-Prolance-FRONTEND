@@ -7,8 +7,10 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE     = 'farrahamami/prolance-frontend'
+        LOCAL_REGISTRY   = '172.24.254.13:5000'           // Local registry
+        DOCKER_IMAGE     = "${LOCAL_REGISTRY}/prolance-frontend"
         DOCKER_TAG       = 'latest'
+        HUB_IMAGE        = 'farrahamami/prolance-frontend' // Fallback
         CONTAINER_NAME   = 'prolance-frontend'
         APP_PORT         = '80'
         HOST_IP          = '172.24.254.13'
@@ -39,9 +41,15 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
                         sh """
-                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                            docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}
-                            docker logout
+                            # Try local registry first (fast)
+                            echo "Trying local registry at ${LOCAL_REGISTRY}..."
+                            docker pull ${DOCKER_IMAGE}:${DOCKER_TAG} || {
+                                echo "Local registry failed, falling back to Docker Hub..."
+                                echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                                docker pull ${HUB_IMAGE}:${DOCKER_TAG}
+                                docker tag ${HUB_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:${DOCKER_TAG}
+                                docker logout
+                            }
                         """
                     }
                 }
