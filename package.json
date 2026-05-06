@@ -5,15 +5,17 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
-    "test": "ng test",
+    "build": "NODE_OPTIONS=\"--max-old-space-size=2048\" ng build",
+    "build:prod": "NODE_OPTIONS=\"--max-old-space-size=2048\" ng build --configuration production --optimization=true --source-map=false --delete-output-path=true --build-optimizer=true",
+    "test": "ng test --no-watch --no-progress --browsers=ChromeHeadlessCI --code-coverage --source-map=false",
+    "test:ci": "NODE_OPTIONS=\"--max-old-space-size=2048\" ng test --no-watch --no-progress --browsers=ChromeHeadlessCI --code-coverage --source-map=false",
     "lint": "ng lint",
     "e2e": "ng e2e",
     "install:clean": "rm -rf node_modules/ && rm -rf package-lock.json && npm install && ng serve -o"
   },
   "engines": {
-    "node": "6.11.1",
-    "npm": "3.10.9"
+    "node": "18.x",
+    "npm": "8.x"
   },
   "private": true,
   "dependencies": {

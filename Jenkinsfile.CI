@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// PIPELINE CI — Prolance Frontend
+// PIPELINE CI — Prolance Frontend (Optimized - No Crashes)
 // Triggers on every push to main or develop
-// Steps: Checkout (Sparse) → Install → Test → SonarQube → Docker Build → Push
+// Steps: Checkout → Install → Test → SonarQube → Docker Build → Push
 // ─────────────────────────────────────────────────────────────────────────────
 
 pipeline {
@@ -10,29 +10,33 @@ pipeline {
 
     environment {
         NODE_VERSION     = '18'
-        LOCAL_REGISTRY   = '172.24.254.13:5000'           // Local registry
+        LOCAL_REGISTRY   = '172.24.254.13:5000'
         DOCKER_IMAGE     = "${LOCAL_REGISTRY}/prolance-frontend"
-        DOCKER_TAG = "${env.BRANCH_NAME ?: 'main'}-${env.BUILD_NUMBER}"
-        HUB_IMAGE        = 'farrahamami/prolance-frontend' // Docker Hub backup
+        DOCKER_TAG       = "${env.BRANCH_NAME ?: 'main'}-${env.BUILD_NUMBER}"
+        HUB_IMAGE        = 'farrahamami/prolance-frontend'
         SONAR_PROJECT    = 'prolance-frontend'
         CHROME_BIN       = '/usr/bin/chromium'
+        // Memory optimizations
+        NODE_OPTIONS     = '--max-old-space-size=2048'
+        DOCKER_BUILDKIT  = '1'
+        BUILDKIT_PROGRESS = 'plain'
     }
 
     tools {
-        nodejs 'NodeJS-18'   // Must match the name configured in Jenkins → Global Tool Config
+        nodejs 'NodeJS-18'
     }
 
     triggers {
-        githubPush()         // Fires on every GitHub push (requires GitHub plugin)
+        githubPush()
     }
 
     options {
-        timeout(time: 40, unit: 'MINUTES')
+        timeout(time: 60, unit: 'MINUTES')
+        ansiColor('xterm')
     }
 
     stages {
 
-        // ── 1. Checkout (Sparse + Shallow) ───────────────────────────────────
         stage('Checkout') {
             steps {
                 sh '''
@@ -47,17 +51,11 @@ pipeline {
                         [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
                             [path: 'src'],
                             [path: 'angular.json'],
-                            [path: 'karma.conf.js'],
-                            [path: 'tsconfig.json'],
-                            [path: 'tsconfig.app.json'],
-                            [path: 'tsconfig.spec.json'],
-                            [path: 'typings.d.ts'],
                             [path: 'package.json'],
                             [path: 'package-lock.json'],
-                            [path: 'extra-webpack.config.js'],
                             [path: 'Dockerfile'],
                             [path: 'nginx.conf'],
-                            [path: '.sonarcloud.properties']
+                            [path: '.dockerignore']
                         ]],
                         [$class: 'CloneOption',
                             shallow : true,
@@ -70,25 +68,39 @@ pipeline {
                 ])
 
                 echo "Branch: ${env.BRANCH_NAME} | Build: ${env.BUILD_NUMBER}"
+                
+                // Verify .dockerignore exists
+                sh 'ls -la .dockerignore || echo "WARNING: .dockerignore not found!"'
             }
         }
 
-        // ── 2. Install Dependencies ──────────────────────────────────────────
         stage('Install') {
             steps {
-                sh 'npm ci --legacy-peer-deps'
+                sh '''
+                    echo "=== Memory before install ==="
+                    free -h
+                    echo "=== Disk space before install ==="
+                    df -h
+                    
+                    # Clean install with memory limit
+                    npm ci --legacy-peer-deps --maxsockets=1 --no-audit --no-fund
+                    
+                    echo "=== Memory after install ==="
+                    free -h
+                '''
             }
         }
 
-        // ── 3. Unit Tests + Coverage ─────────────────────────────────────────
         stage('Test') {
             steps {
                 sh '''
+                    echo "=== Running tests ==="
                     npx ng test \
                         --no-watch \
                         --no-progress \
                         --browsers=ChromeHeadlessCI \
-                        --code-coverage
+                        --code-coverage \
+                        --source-map=false
                 '''
             }
             post {
@@ -97,18 +109,17 @@ pipeline {
                           testResults: 'coverage/**/*.xml'
 
                     publishHTML([
-                        allowMissing:          false,
+                        allowMissing: false,
                         alwaysLinkToLastBuild: true,
-                        keepAll:               true,
-                        reportDir:             'coverage/prolance-frontend',
-                        reportFiles:           'index.html',
-                        reportName:            'Coverage Report'
+                        keepAll: true,
+                        reportDir: 'coverage/prolance-frontend',
+                        reportFiles: 'index.html',
+                        reportName: 'Coverage Report'
                     ])
                 }
             }
         }
 
-        // ── 4. SonarQube Analysis ────────────────────────────────────────────
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
@@ -121,20 +132,32 @@ pipeline {
                             -Dsonar.test.inclusions=**/*.spec.ts \
                             -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts,src/assets/** \
                             -Dsonar.javascript.lcov.reportPaths=coverage/prolance-frontend/lcov.info \
-                            -Dsonar.typescript.tsconfigPath=tsconfig.app.json
+                            -Dsonar.typescript.tsconfigPath=tsconfig.app.json \
+                            -Dsonar.scanner.skipJreProvisioning=true
                     '''
                 }
             }
         }
 
-        // ── 5. Build ─────────────────────────────────────────────────────────
         stage('Build') {
             steps {
-                sh 'npx ng build --configuration development'
+                sh '''
+                    echo "=== Building Angular app ==="
+                    free -h
+                    
+                    npx ng build \
+                        --configuration production \
+                        --optimization=true \
+                        --source-map=false \
+                        --delete-output-path=true \
+                        --build-optimizer=true
+                    
+                    echo "=== Build completed. Dist size: ==="
+                    du -sh dist/ 2>/dev/null || echo "Dist not found"
+                '''
             }
         }
 
-        // ── 6. Docker Build & Push (Local Registry + Docker Hub Backup) ──────
         stage('Docker Build & Push') {
             steps {
                 script {
@@ -144,15 +167,27 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
                         sh """
-                            # Build image
-                            docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                            docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                            echo "=== Docker Build Context Size ==="
+                            du -sh . --exclude=node_modules 2>/dev/null || echo "Cannot calculate"
+                            
+                            echo "=== Building Docker image ==="
+                            # Build with memory limit
+                            docker build \
+                                --memory=2g \
+                                --build-arg BUILDKIT_INLINE_CACHE=1 \
+                                --cache-from ${DOCKER_IMAGE}:latest \
+                                -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                                -t ${DOCKER_IMAGE}:latest \
+                                .
 
-                            # Push to LOCAL registry (super fast!)
+                            echo "=== Image size ==="
+                            docker images | grep prolance-frontend | head -2
+
+                            echo "=== Pushing to local registry ==="
                             docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                             docker push ${DOCKER_IMAGE}:latest
 
-                            # Also push to Docker Hub as backup
+                            echo "=== Pushing to Docker Hub as backup ==="
                             echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
                             docker tag ${DOCKER_IMAGE}:latest ${HUB_IMAGE}:${DOCKER_TAG}
                             docker tag ${DOCKER_IMAGE}:latest ${HUB_IMAGE}:latest
@@ -160,9 +195,7 @@ pipeline {
                             docker push ${HUB_IMAGE}:latest
                             docker logout
 
-                            echo "✅ Images pushed to local registry and Docker Hub"
-                            echo "   Local: ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                            echo "   Hub:   ${HUB_IMAGE}:${DOCKER_TAG}"
+                            echo "✅ CI Pipeline passed — Image: ${DOCKER_IMAGE}:${DOCKER_TAG}"
                         """
                     }
                 }
@@ -176,11 +209,16 @@ pipeline {
         }
         failure {
             echo "❌ CI Pipeline failed — Check logs above"
+            sh '''
+                echo "=== Docker disk usage ==="
+                docker system df
+                echo "=== Last 50 lines of build log ==="
+                tail -100 build.log 2>/dev/null || echo "No build log"
+            '''
         }
         always {
-            node('') {
-                cleanWs()
-            }
+            // Clean workspace but keep Docker cache
+            cleanWs()
         }
     }
 }
