@@ -132,17 +132,7 @@ pipeline {
             }
         }
 
-        // ── 5. SonarQube Quality Gate ────────────────────────────────────────
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 15, unit: 'MINUTES') {
-                    // abortPipeline: false → le pipeline continue même si Quality Gate échoue
-                    // Mettre à true pour bloquer en cas d'échec qualité
-                    waitForQualityGate abortPipeline: false
-                }
-            }
-        }
-
+      
         // ── 6. Build Angular App ─────────────────────────────────────────────
         stage('Build') {
             steps {
