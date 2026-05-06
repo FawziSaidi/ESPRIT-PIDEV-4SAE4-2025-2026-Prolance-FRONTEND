@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// PIPELINE CI — Prolance Frontend (Optimized - Minimal Sparse Checkout)
+// PIPELINE CI — Prolance Frontend (COMPLETE - All Stages Working)
 // ─────────────────────────────────────────────────────────────────────────────
 
 pipeline {
@@ -41,12 +41,12 @@ pipeline {
             }
         }
 
-        stage('Minimal Sparse Checkout') {
+        stage('Sparse Checkout') {
             steps {
                 sh '''
-                    echo "=== Minimal sparse checkout - downloading ONLY required files ==="
+                    echo "=== Sparse checkout - downloading ONLY required files ==="
                     
-                    # Clean workspace
+                    # Clean everything
                     rm -rf * .git 2>/dev/null || true
                     
                     # Initialize git
@@ -56,16 +56,23 @@ pipeline {
                     # Enable sparse checkout
                     git config core.sparseCheckout true
                     
-                    # ONLY download these files (NO src/, NO node_modules, NO large assets)
+                    # ONLY these files (for test, build, sonar, docker)
                     cat > .git/info/sparse-checkout << 'EOF'
+                    src/
+                    angular.json
+                    package.json
+                    package-lock.json
+                    tsconfig.json
+                    tsconfig.app.json
+                    tsconfig.spec.json
+                    karma.conf.js
                     Dockerfile
                     nginx.conf
                     .dockerignore
-                    package.json
-                    angular.json
+                    .sonarcloud.properties
                     EOF
                     
-                    # Fetch only the latest commit (shallow clone)
+                    # Fetch only latest commit
                     git fetch --depth 1 origin ${BRANCH_NAME:-main}
                     
                     # Checkout the files
@@ -80,6 +87,87 @@ pipeline {
             }
         }
 
+        stage('Install') {
+            steps {
+                sh '''
+                    echo "=== Installing dependencies ==="
+                    echo "Memory before install:"
+                    free -h
+                    
+                    npm ci --legacy-peer-deps --maxsockets=1 --no-audit --no-fund
+                    
+                    echo "Memory after install:"
+                    free -h
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    echo "=== Running unit tests ==="
+                    npx ng test \
+                        --no-watch \
+                        --no-progress \
+                        --browsers=ChromeHeadlessCI \
+                        --code-coverage \
+                        --source-map=false
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true,
+                          testResults: 'coverage/**/*.xml'
+
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'coverage/prolance-frontend',
+                        reportFiles: 'index.html',
+                        reportName: 'Coverage Report'
+                    ])
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        echo "=== Running SonarQube analysis ==="
+                        npx sonar-scanner \
+                            -Dsonar.projectKey=${SONAR_PROJECT} \
+                            -Dsonar.projectName="Prolance Frontend" \
+                            -Dsonar.sources=src \
+                            -Dsonar.tests=src \
+                            -Dsonar.test.inclusions=**/*.spec.ts \
+                            -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts,src/assets/** \
+                            -Dsonar.javascript.lcov.reportPaths=coverage/prolance-frontend/lcov.info \
+                            -Dsonar.typescript.tsconfigPath=tsconfig.app.json \
+                            -Dsonar.scanner.skipJreProvisioning=true
+                    '''
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh '''
+                    echo "=== Building Angular app ==="
+                    npx ng build \
+                        --configuration production \
+                        --optimization=true \
+                        --source-map=false \
+                        --delete-output-path=true \
+                        --build-optimizer=true
+                    
+                    echo "=== Build complete ==="
+                    du -sh dist/
+                '''
+            }
+        }
+
         stage('Docker Build & Push') {
             steps {
                 script {
@@ -89,9 +177,9 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
                         sh """
-                            echo "=== Building Docker image from sparse checkout ==="
-                            echo "Files in build context:"
-                            ls -la
+                            echo "=== Building Docker image ==="
+                            echo "Build context size:"
+                            du -sh .
                             
                             docker build \
                                 --memory=2g \
@@ -105,7 +193,7 @@ pipeline {
                             docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                             docker push ${DOCKER_IMAGE}:latest
 
-                            echo "=== Pushing to Docker Hub as backup ==="
+                            echo "=== Pushing to Docker Hub ==="
                             echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
                             docker tag ${DOCKER_IMAGE}:latest ${HUB_IMAGE}:${DOCKER_TAG}
                             docker tag ${DOCKER_IMAGE}:latest ${HUB_IMAGE}:latest
@@ -123,10 +211,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI Pipeline passed"
+            echo "✅ CI Pipeline completed successfully!"
         }
         failure {
-            echo "❌ CI Pipeline failed"
+            echo "❌ CI Pipeline failed - Check logs above"
             sh '''
                 echo "=== Docker disk usage ==="
                 docker system df
