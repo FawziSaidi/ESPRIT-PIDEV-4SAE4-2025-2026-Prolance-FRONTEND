@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // PIPELINE CI — Prolance Frontend
 // Triggers on every push to main or develop
-// Steps: Install → Test → SonarQube → Docker Build → Push to DockerHub
+// Steps: Checkout (Sparse) → Install → Test → SonarQube → Docker Build → Push
 // ─────────────────────────────────────────────────────────────────────────────
 
 pipeline {
@@ -24,25 +24,66 @@ pipeline {
         githubPush()         // Fires on every GitHub push (requires GitHub plugin)
     }
 
+    options {
+        timeout(time: 40, unit: 'MINUTES')
+    }
+
     stages {
 
-        // ── 1. Checkout ──────────────────────────────────────────
+        // ── 1. Checkout (Sparse + Shallow) ───────────────────────────────────
+        // FIX: Remplace 'checkout scm' par un sparse checkout pour ne cloner
+        //      que les fichiers nécessaires aux tests/coverage et éviter les
+        //      timeouts HTTP/2 sur un repo volumineux.
         stage('Checkout') {
             steps {
-                checkout scm
+                // FIX HTTP/2: forcer HTTP/1.1 + augmenter le buffer avant le clone
+                sh '''
+                    git config --global http.version HTTP/1.1
+                    git config --global http.postBuffer 524288000
+                '''
+
+                checkout([
+                    $class: 'GitSCM',
+                    branches: scm.branches,
+                    extensions: [
+                        // ── Sparse checkout : seulement les dossiers/fichiers utiles ──
+                        [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
+                            [path: 'src'],
+                            [path: 'angular.json'],
+                            [path: 'karma.conf.js'],
+                            [path: 'tsconfig.json'],
+                            [path: 'tsconfig.app.json'],
+                            [path: 'tsconfig.spec.json'],
+                            [path: 'typings.d.ts'],
+                            [path: 'package.json'],
+                            [path: 'package-lock.json'],
+                            [path: 'Dockerfile'],
+                            [path: 'nginx.conf'],
+                            [path: '.sonarcloud.properties']   // si présent
+                        ]],
+                        // ── Shallow clone : 1 seul commit, sans tags ──
+                        [$class: 'CloneOption',
+                            shallow : true,
+                            depth   : 1,
+                            noTags  : true,
+                            timeout : 20
+                        ]
+                    ],
+                    userRemoteConfigs: scm.userRemoteConfigs
+                ])
+
                 echo "Branch: ${env.BRANCH_NAME} | Build: ${env.BUILD_NUMBER}"
             }
         }
 
-        // ── 2. Install Dependencies ──────────────────────────────
+        // ── 2. Install Dependencies ──────────────────────────────────────────
         stage('Install') {
             steps {
-                sh 'npm install --legacy-peer-deps'
-
+                sh 'npm ci --prefer-offline --legacy-peer-deps'
             }
         }
 
-        // ── 3. Unit Tests + Coverage ─────────────────────────────
+        // ── 3. Unit Tests + Coverage ─────────────────────────────────────────
         stage('Test') {
             steps {
                 sh '''
@@ -72,7 +113,7 @@ pipeline {
             }
         }
 
-        // ── 4. SonarQube Analysis ────────────────────────────────
+        // ── 4. SonarQube Analysis ────────────────────────────────────────────
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {   // Must match name in Jenkins → Configure System
@@ -91,7 +132,7 @@ pipeline {
             }
         }
 
-        // ── 5. SonarQube Quality Gate ────────────────────────────
+        // ── 5. SonarQube Quality Gate ────────────────────────────────────────
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
@@ -100,14 +141,14 @@ pipeline {
             }
         }
 
-        // ── 6. Build Angular App ─────────────────────────────────
+        // ── 6. Build Angular App ─────────────────────────────────────────────
         stage('Build') {
             steps {
                 sh 'npx ng build --configuration production'
             }
         }
 
-        // ── 7. Docker Build & Push ───────────────────────────────
+        // ── 7. Docker Build & Push ───────────────────────────────────────────
         stage('Docker Build & Push') {
             steps {
                 script {
@@ -142,8 +183,11 @@ pipeline {
             echo "❌ CI Pipeline failed — Check logs above"
         }
         always {
-            // Clean workspace to avoid disk space buildup
-            cleanWs()
+            // FIX: cleanWs() doit être dans un bloc node{} pour avoir accès
+            //      au contexte hudson.FilePath (sinon MissingContextVariableException)
+            node('') {
+                cleanWs()
+            }
         }
     }
 }
