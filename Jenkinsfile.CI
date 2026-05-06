@@ -11,7 +11,7 @@ pipeline {
     environment {
         NODE_VERSION     = '18'
         DOCKER_IMAGE     = 'farrahamami/prolance-frontend'
-        DOCKER_TAG       = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+        DOCKER_TAG = "${env.BRANCH_NAME ?: 'main'}-${env.BUILD_NUMBER}"
         SONAR_PROJECT    = 'prolance-frontend'
         CHROME_BIN       = '/usr/bin/chromium'
     }
