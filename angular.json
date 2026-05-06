@@ -38,13 +38,14 @@
             "allowedCommonJsDependencies": [
               "rxjs/add/operator/filter",
               "jquery",
-              "chartist"
+              "chartist",
+              "nsfwjs"
             ]
           },
           "configurations": {
             "production": {
               "optimization": {
-                "scripts": true,
+                "scripts": false,
                 "styles": {
                   "minify": false,
                   "inlineCritical": false
@@ -56,7 +57,7 @@
               "namedChunks": false,
               "extractLicenses": true,
               "vendorChunk": false,
-              "buildOptimizer": true,
+              "buildOptimizer": false,
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -112,8 +113,8 @@
             "tsConfig": "src/tsconfig.spec.json",
             "codeCoverage": true,
             "codeCoverageExclude": [
-                 "src/environments/**",
-                 "src/main.ts"
+              "src/environments/**",
+              "src/main.ts"
             ],
             "scripts": [
               "node_modules/jquery/dist/jquery.js",
