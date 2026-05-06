@@ -136,7 +136,7 @@ pipeline {
         // ── 6. Build Angular App ─────────────────────────────────────────────
         stage('Build') {
             steps {
-                sh 'npx ng build --configuration production --optimization=false'
+                sh 'npx ng build --configuration development'
             }
         }
 
