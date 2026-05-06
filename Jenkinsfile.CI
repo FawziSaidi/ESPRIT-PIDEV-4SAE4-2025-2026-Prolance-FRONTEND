@@ -68,7 +68,7 @@ pipeline {
                     # Fetch only the latest commit (shallow clone)
                     git fetch --depth 1 origin ${BRANCH_NAME:-main}
                     
-                    # Checkout
+                    # Checkout the files
                     git checkout FETCH_HEAD
                     
                     echo "=== Downloaded files ==="
@@ -77,58 +77,6 @@ pipeline {
                     du -sh .
                 '''
                 echo "Branch: ${env.BRANCH_NAME} | Build: ${env.BUILD_NUMBER}"
-            }
-        }
-
-        // SKIP Install - Docker will handle dependencies
-        stage('Install') {
-            steps {
-                sh '''
-                    echo "=== SKIPPING npm install - Docker will handle dependencies ==="
-                    echo "No need to download node_modules on Jenkins"
-                '''
-            }
-        }
-
-        // SKIP Test - Run tests in Docker or separate pipeline
-        stage('Test') {
-            steps {
-                sh '''
-                    echo "=== SKIPPING tests - Run in Docker or separate test pipeline ==="
-                '''
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true,
-                          testResults: 'coverage/**/*.xml'
-
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'coverage/prolance-frontend',
-                        reportFiles: 'index.html',
-                        reportName: 'Coverage Report'
-                    ])
-                }
-            }
-        }
-
-        // SKIP SonarQube - Should run in separate pipeline
-        stage('SonarQube Analysis') {
-            steps {
-                sh '''
-                    echo "=== SKIPPING SonarQube - Run in dedicated pipeline ==="
-                '''
-            }
-        }
-
-        // SKIP Build - Docker will build
-        stage('Build') {
-            steps {
-                sh '''
-                    echo "=== SKIPPING local build - Docker will build the app ==="
-                '''
             }
         }
 
@@ -142,8 +90,8 @@ pipeline {
                     )]) {
                         sh """
                             echo "=== Building Docker image from sparse checkout ==="
-                            echo "Build context size:"
-                            du -sh .
+                            echo "Files in build context:"
+                            ls -la
                             
                             docker build \
                                 --memory=2g \
