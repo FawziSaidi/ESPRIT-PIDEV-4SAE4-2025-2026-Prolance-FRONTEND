@@ -133,10 +133,12 @@ pipeline {
         }
 
       
-        // ── 6. Build Angular App ─────────────────────────────────────────────
         stage('Build') {
             steps {
-                sh 'npx ng build --configuration development'
+                sh '''
+                    npx ng build --configuration development \
+                        --allowed-common-js-dependencies nsfwjs,html2canvas,leaflet,buffer,long
+                '''
             }
         }
 
