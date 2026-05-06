@@ -1,7 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // PIPELINE CI — Prolance Frontend (Optimized - No Crashes)
-// Triggers on every push to main or develop
-// Steps: Checkout → Install → Test → SonarQube → Docker Build → Push
 // ─────────────────────────────────────────────────────────────────────────────
 
 pipeline {
@@ -16,7 +14,6 @@ pipeline {
         HUB_IMAGE        = 'farrahamami/prolance-frontend'
         SONAR_PROJECT    = 'prolance-frontend'
         CHROME_BIN       = '/usr/bin/chromium'
-        // Memory optimizations
         NODE_OPTIONS     = '--max-old-space-size=2048'
         DOCKER_BUILDKIT  = '1'
         BUILDKIT_PROGRESS = 'plain'
@@ -32,44 +29,46 @@ pipeline {
 
     options {
         timeout(time: 60, unit: 'MINUTES')
-        // ansiColor('xterm') - REMOVED: Plugin not installed in this Jenkins version
+        // Clean workspace before each build to avoid corruption
+        skipDefaultCheckout(true)
     }
 
     stages {
+
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+                echo "Workspace cleaned"
+            }
+        }
 
         stage('Checkout') {
             steps {
                 sh '''
                     git config --global http.version HTTP/1.1
                     git config --global http.postBuffer 524288000
+                    # Clean git globals
+                    git config --global --unset core.bare || true
                 '''
 
                 checkout([
                     $class: 'GitSCM',
                     branches: scm.branches,
                     extensions: [
-                        [$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [
-                            [path: 'src'],
-                            [path: 'angular.json'],
-                            [path: 'package.json'],
-                            [path: 'package-lock.json'],
-                            [path: 'Dockerfile'],
-                            [path: 'nginx.conf'],
-                            [path: '.dockerignore']
-                        ]],
+                        [$class: 'CleanBeforeCheckout'],
+                        [$class: 'CleanAfterCheckout'],
                         [$class: 'CloneOption',
                             shallow : true,
                             depth   : 1,
                             noTags  : true,
-                            timeout : 20
+                            timeout : 30,
+                            reference: ''
                         ]
                     ],
                     userRemoteConfigs: scm.userRemoteConfigs
                 ])
 
                 echo "Branch: ${env.BRANCH_NAME} | Build: ${env.BUILD_NUMBER}"
-                
-                // Verify .dockerignore exists
                 sh 'ls -la .dockerignore || echo "WARNING: .dockerignore not found!"'
             }
         }
@@ -79,12 +78,7 @@ pipeline {
                 sh '''
                     echo "=== Memory before install ==="
                     free -h
-                    echo "=== Disk space before install ==="
-                    df -h
-                    
-                    # Clean install with memory limit
                     npm ci --legacy-peer-deps --maxsockets=1 --no-audit --no-fund
-                    
                     echo "=== Memory after install ==="
                     free -h
                 '''
@@ -94,7 +88,6 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                    echo "=== Running tests ==="
                     npx ng test \
                         --no-watch \
                         --no-progress \
@@ -142,18 +135,12 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                    echo "=== Building Angular app ==="
-                    free -h
-                    
                     npx ng build \
                         --configuration production \
                         --optimization=true \
                         --source-map=false \
                         --delete-output-path=true \
                         --build-optimizer=true
-                    
-                    echo "=== Build completed. Dist size: ==="
-                    du -sh dist/ 2>/dev/null || echo "Dist not found"
                 '''
             }
         }
@@ -167,11 +154,6 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
                         sh """
-                            echo "=== Docker Build Context Size ==="
-                            du -sh . --exclude=node_modules 2>/dev/null || echo "Cannot calculate"
-                            
-                            echo "=== Building Docker image ==="
-                            # Build with memory limit
                             docker build \
                                 --memory=2g \
                                 --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -180,14 +162,9 @@ pipeline {
                                 -t ${DOCKER_IMAGE}:latest \
                                 .
 
-                            echo "=== Image size ==="
-                            docker images | grep prolance-frontend | head -2
-
-                            echo "=== Pushing to local registry ==="
                             docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                             docker push ${DOCKER_IMAGE}:latest
 
-                            echo "=== Pushing to Docker Hub as backup ==="
                             echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
                             docker tag ${DOCKER_IMAGE}:latest ${HUB_IMAGE}:${DOCKER_TAG}
                             docker tag ${DOCKER_IMAGE}:latest ${HUB_IMAGE}:latest
@@ -205,14 +182,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI Pipeline passed — Image: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+            echo "✅ CI Pipeline passed"
         }
         failure {
-            echo "❌ CI Pipeline failed — Check logs above"
-            sh '''
-                echo "=== Docker disk usage ==="
-                docker system df
-            '''
+            echo "❌ CI Pipeline failed"
         }
         always {
             cleanWs()
