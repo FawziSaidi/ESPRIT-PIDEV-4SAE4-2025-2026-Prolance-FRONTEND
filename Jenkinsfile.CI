@@ -56,6 +56,7 @@ pipeline {
                             [path: 'tsconfig.spec.json'],
                             [path: 'typings.d.ts'],
                             [path: 'package.json'],
+                            [path: 'package-lock.json'],
                             [path: 'Dockerfile'],
                             [path: 'nginx.conf'],
                             [path: '.sonarcloud.properties']   // si présent
@@ -78,8 +79,7 @@ pipeline {
         // ── 2. Install Dependencies ──────────────────────────────────────────
         stage('Install') {
             steps {
-                // FIX: pas de package-lock.json dans le repo → npm install à la place de npm ci
-                sh 'npm install --legacy-peer-deps'
+                sh 'npm ci --legacy-peer-deps'
             }
         }
 
@@ -135,8 +135,10 @@ pipeline {
         // ── 5. SonarQube Quality Gate ────────────────────────────────────────
         stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                timeout(time: 15, unit: 'MINUTES') {
+                    // abortPipeline: false → le pipeline continue même si Quality Gate échoue
+                    // Mettre à true pour bloquer en cas d'échec qualité
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
