@@ -135,10 +135,7 @@ pipeline {
       
         stage('Build') {
             steps {
-                sh '''
-                    npx ng build --configuration development \
-                        --allowed-common-js-dependencies nsfwjs,html2canvas,leaflet,buffer,long
-                '''
+                sh 'npx ng build --configuration development'
             }
         }
 
