@@ -29,7 +29,6 @@ pipeline {
 
     options {
         timeout(time: 60, unit: 'MINUTES')
-        // Clean workspace before each build to avoid corruption
         skipDefaultCheckout(true)
     }
 
@@ -47,7 +46,6 @@ pipeline {
                 sh '''
                     git config --global http.version HTTP/1.1
                     git config --global http.postBuffer 524288000
-                    # Clean git globals
                     git config --global --unset core.bare || true
                 '''
 
@@ -55,14 +53,11 @@ pipeline {
                     $class: 'GitSCM',
                     branches: scm.branches,
                     extensions: [
-                        [$class: 'CleanBeforeCheckout'],
-                        [$class: 'CleanAfterCheckout'],
                         [$class: 'CloneOption',
                             shallow : true,
                             depth   : 1,
                             noTags  : true,
-                            timeout : 30,
-                            reference: ''
+                            timeout : 30
                         ]
                     ],
                     userRemoteConfigs: scm.userRemoteConfigs
