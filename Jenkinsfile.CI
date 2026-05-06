@@ -57,6 +57,7 @@ pipeline {
                             [path: 'typings.d.ts'],
                             [path: 'package.json'],
                             [path: 'package-lock.json'],
+                            [path: 'extra-webpack.config.js'],
                             [path: 'Dockerfile'],
                             [path: 'nginx.conf'],
                             [path: '.sonarcloud.properties']   // si présent
