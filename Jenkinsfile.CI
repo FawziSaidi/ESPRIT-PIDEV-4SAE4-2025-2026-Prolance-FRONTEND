@@ -7,15 +7,15 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION     = '18'
-        LOCAL_REGISTRY   = '172.24.254.13:5000'
-        DOCKER_IMAGE     = "${LOCAL_REGISTRY}/prolance-frontend"
-        DOCKER_TAG       = "${env.BRANCH_NAME ?: 'main'}-${env.BUILD_NUMBER}"
-        HUB_IMAGE        = 'farrahamami/prolance-frontend'
-        SONAR_PROJECT    = 'prolance-frontend'
-        CHROME_BIN       = '/usr/bin/chromium'
-        NODE_OPTIONS     = '--max-old-space-size=2048'
-        DOCKER_BUILDKIT  = '1'
+        NODE_VERSION      = '18'
+        LOCAL_REGISTRY    = '172.24.254.13:5000'
+        DOCKER_IMAGE      = "${LOCAL_REGISTRY}/prolance-frontend"
+        DOCKER_TAG        = "${env.BRANCH_NAME ?: 'main'}-${env.BUILD_NUMBER}"
+        HUB_IMAGE         = 'farrahamami/prolance-frontend'
+        SONAR_PROJECT     = 'prolance-frontend'
+        CHROME_BIN        = '/usr/bin/chromium'
+        NODE_OPTIONS      = '--max-old-space-size=2048'
+        DOCKER_BUILDKIT   = '1'
         BUILDKIT_PROGRESS = 'plain'
     }
 
@@ -45,41 +45,36 @@ pipeline {
             steps {
                 sh '''
                     echo "=== Sparse checkout - downloading ONLY required files ==="
-                    
+
                     # Clean everything
                     rm -rf * .git 2>/dev/null || true
-                    
+
                     # Initialize git
                     git init
                     git remote add origin https://github.com/FawziSaidi/ESPRIT-PIDEV-4SAE4-2025-2026-Prolance-FRONTEND.git
-                    
+
                     # Enable sparse checkout
                     git config core.sparseCheckout true
-                    
-                    # ONLY these files (for test, build, sonar, docker)
-                    cat > .git/info/sparse-checkout << 'EOF'
-                    src/
-                    angular.json
-                    package.json
-                    package-lock.json
-                    tsconfig.json
-                    tsconfig.app.json
-                    tsconfig.spec.json
-                    karma.conf.js
-                    Dockerfile
-                    nginx.conf
-                    .dockerignore
-                    .sonarcloud.properties
-                    EOF
-                    
+
+                    # FIX: use printf so paths have NO leading whitespace
+                    # (heredoc indentation was causing all paths to be prefixed
+                    #  with spaces, so git never matched any files — including
+                    #  package-lock.json, which broke npm ci downstream)
+                    printf 'src/\nangular.json\npackage.json\npackage-lock.json\ntsconfig.json\ntsconfig.app.json\ntsconfig.spec.json\nkarma.conf.js\nDockerfile\nnginx.conf\n.dockerignore\n.sonarcloud.properties\n' \
+                        > .git/info/sparse-checkout
+
+                    echo "=== Sparse-checkout patterns ==="
+                    cat .git/info/sparse-checkout
+
                     # Fetch only latest commit
                     git fetch --depth 1 origin ${BRANCH_NAME:-main}
-                    
+
                     # Checkout the files
                     git checkout FETCH_HEAD
-                    
+
                     echo "=== Downloaded files ==="
                     ls -la
+
                     echo "=== Total size ==="
                     du -sh .
                 '''
@@ -91,11 +86,18 @@ pipeline {
             steps {
                 sh '''
                     echo "=== Installing dependencies ==="
+
+                    # Sanity-check: fail fast with a clear message if lock file is missing
+                    if [ ! -f package-lock.json ]; then
+                        echo "❌ package-lock.json not found — sparse checkout may have failed"
+                        exit 1
+                    fi
+
                     echo "Memory before install:"
                     free -h
-                    
+
                     npm ci --legacy-peer-deps --maxsockets=1 --no-audit --no-fund
-                    
+
                     echo "Memory after install:"
                     free -h
                 '''
@@ -161,7 +163,7 @@ pipeline {
                         --source-map=false \
                         --delete-output-path=true \
                         --build-optimizer=true
-                    
+
                     echo "=== Build complete ==="
                     du -sh dist/
                 '''
@@ -180,7 +182,7 @@ pipeline {
                             echo "=== Building Docker image ==="
                             echo "Build context size:"
                             du -sh .
-                            
+
                             docker build \
                                 --memory=2g \
                                 --build-arg BUILDKIT_INLINE_CACHE=1 \
