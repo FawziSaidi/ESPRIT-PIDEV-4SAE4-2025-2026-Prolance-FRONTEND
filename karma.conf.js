@@ -29,11 +29,18 @@ module.exports = function (config) {
       ],
     },
     reporters: ['progress', 'kjhtml', 'coverage'],
-    browsers: ['ChromeHeadless'],
+    browsers: ['ChromeHeadlessCI'],
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
-        flags: ['--no-sandbox', '--disable-gpu'],
+        flags: [
+          '--no-sandbox',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-setuid-sandbox',
+          '--headless',
+          '--remote-debugging-port=9222',
+        ],
       },
     },
     restartOnFileChange: true,
