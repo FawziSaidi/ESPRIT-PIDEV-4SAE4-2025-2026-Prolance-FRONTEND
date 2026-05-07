@@ -15,7 +15,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies (legacy-peer-deps needed for ng-apexcharts conflict)
-RUN npm ci --legacy-peer-deps --omit=dev --maxsockets=1
+RUN npm ci --legacy-peer-deps --maxsockets=1
 
 # Copy source code
 COPY . .
