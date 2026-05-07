@@ -37,21 +37,8 @@ RUN apk add --no-cache wget
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy our custom nginx config (if exists)
-COPY nginx.conf /etc/nginx/conf.d/default.conf 2>/dev/null || true
-
-# Create default nginx config if none provided
-RUN if [ ! -f /etc/nginx/conf.d/default.conf ]; then \
-    echo 'server { \
-        listen 80; \
-        server_name localhost; \
-        root /usr/share/nginx/html; \
-        index index.html; \
-        location / { \
-            try_files $uri $uri/ /index.html; \
-        } \
-    }' > /etc/nginx/conf.d/default.conf; \
-    fi
+# Copy our custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built Angular app from builder stage
 # outputPath in angular.json is "dist" (no subfolder), so we copy /app/dist/
